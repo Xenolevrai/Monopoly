@@ -43,6 +43,7 @@
  * @property {[number, number]|null} values
  * @property {number} doublesCount  - doubles consécutifs dans le tour courant
  * @property {boolean} rolled       - la joueuse a déjà lancé pour ce déplacement
+ * @property {boolean} extraRoll    - un double lui donne un tour supplémentaire
  *
  * @typedef {Object} Auction
  * @property {number} spaceId
@@ -68,7 +69,7 @@
  *
  * @typedef {Object} Pending
  * Ce que le moteur attend maintenant. Une seule décision en cours à la fois.
- * @property {'buy_or_auction'|'pay_debt'|'jail_choice'|'card_choice'|'auction_bid'|'trade_response'|'end_turn'|null} kind
+ * @property {'roll'|'buy_or_auction'|'pay_debt'|'card_choice'|'auction_bid'|'end_turn'|null} kind
  * @property {string[]} playerIds     - qui doit répondre
  * @property {Object} [payload]       - données propres au type (spaceId, montant, options de carte…)
  *
@@ -100,6 +101,9 @@
  * @property {number} freeParkingPot  - utilisé seulement si houseRules.freeParkingPot
  * @property {Pending} pending
  * @property {Auction|null} auction
+ * @property {number[]} auctionQueue  - biens d'une faillite à liquider un par un
+ * @property {{collectorId: string, amount: number, remaining: string[]}|null} pendingCollection
+ * @property {boolean} awaitingTurnEnd - la joueuse courante a fait faillite, on passe la main
  * @property {TradeOffer[]} trades
  * @property {Debt|null} debt         - dette en cours à régler avant de continuer
  * @property {LogEntry[]} log
@@ -137,7 +141,7 @@ export function createGameState(code, hostId) {
     players: [],
     currentPlayerIndex: 0,
     turnCount: 0,
-    dice: { values: null, doublesCount: 0, rolled: false },
+    dice: { values: null, doublesCount: 0, rolled: false, extraRoll: false },
     properties,
     bank: { houses: rules.housesInBank, hotels: rules.hotelsInBank },
     decks: { chance: [], community_chest: [] },
@@ -145,6 +149,9 @@ export function createGameState(code, hostId) {
     freeParkingPot: 0,
     pending: { kind: null, playerIds: [] },
     auction: null,
+    auctionQueue: [],
+    pendingCollection: null,
+    awaitingTurnEnd: false,
     trades: [],
     debt: null,
     log: [],
