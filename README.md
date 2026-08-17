@@ -50,10 +50,11 @@ alternative dans `docs/ART_DIRECTION.md`.
 
 ## Prochaines étapes
 
-3. Lobby + Socket.io
-4. Plateau et synchronisation temps réel
-5. Achats, enchères, constructions, hypothèques
-6. Cartes Chance / Caisse de Communauté
-7. Prison, faillite, fin de partie
-8. Échanges et chat
-9. Polish visuel et animations
+Les règles des étapes 5 à 8 du plan initial (achats, enchères, constructions,
+hypothèques, cartes, prison, faillite, échanges) sont déjà dans le moteur : il
+reste à leur donner une interface.
+
+3. Serveur : lobby, codes de partie, Socket.io, reconnexion
+4. Client : plateau, panneau joueuse, synchronisation temps réel
+5. Écrans d'action : achat, enchère, construction, hypothèque, échange, chat
+6. Polish visuel et animations (piste « Salon de Minuit »)
