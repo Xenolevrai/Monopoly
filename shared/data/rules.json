@@ -1,0 +1,35 @@
+{
+  "startingCash": 1500,
+  "goSalary": 200,
+  "jailBail": 50,
+  "maxJailTurns": 3,
+  "jailSpace": 10,
+  "goSpace": 0,
+  "freeParkingSpace": 20,
+  "diceCount": 2,
+  "diceSides": 6,
+  "doublesToJail": 3,
+  "housesInBank": 32,
+  "hotelsInBank": 12,
+  "housesPerHotel": 4,
+  "mortgageInterestRate": 0.1,
+  "sellBuildingRatio": 0.5,
+  "minPlayers": 2,
+  "maxPlayers": 6,
+  "auctionStartingBid": 0,
+  "houseRules": {
+    "freeParkingPot": false,
+    "auctionOnDecline": true,
+    "collectGoOnGoToLyon": true,
+    "evenBuildRule": true,
+    "auctionBankruptcyAssets": true
+  },
+  "tokens": [
+    { "id": "chapeau", "label": "Chapeau", "color": "#C6303A" },
+    { "id": "chat", "label": "Chat", "color": "#2A5CAA" },
+    { "id": "bateau", "label": "Bateau", "color": "#2E9E63" },
+    { "id": "brouette", "label": "Brouette", "color": "#E8862B" },
+    { "id": "de", "label": "Dé à coudre", "color": "#D45A93" },
+    { "id": "lanterne", "label": "Lanterne", "color": "#7B4FA8" }
+  ]
+}

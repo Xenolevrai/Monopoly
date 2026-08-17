@@ -1,0 +1,10 @@
+{
+  "name": "monopoly-paris",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Monopoly classique (édition française) multijoueur en temps réel",
+  "scripts": {
+    "test": "node --test"
+  }
+}
