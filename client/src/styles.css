@@ -1,0 +1,156 @@
+@import 'tailwindcss';
+
+/* Polices embarquées dans le build : la partie fonctionne sans internet,
+   sur un simple réseau wifi local. */
+@import '@fontsource/cormorant-garamond/500.css';
+@import '@fontsource/cormorant-garamond/600.css';
+@import '@fontsource-variable/inter/index.css';
+
+/**
+ * Direction artistique « Salon de Minuit ».
+ * Toutes les couleurs du jeu passent par ces variables : changer d'ambiance ne
+ * demande pas de toucher aux composants.
+ */
+@theme {
+  --color-night: #141a2b;
+  --color-night-soft: #1c2438;
+  --color-slate-board: #212a40;
+  --color-slate-space: #27314a;
+  --color-gold: #c9a227;
+  --color-gold-soft: #e4c05b;
+  --color-parchment: #e8e6e1;
+  --color-muted: #8a93a8;
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Inter Variable', 'Inter', system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(120% 90% at 50% -10%, #1e2740 0%, transparent 60%),
+    var(--color-night);
+  color: var(--color-parchment);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* Chiffres alignés : les montants ne dansent pas quand ils changent. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Filet doré fin, signature visuelle du plateau et des panneaux. */
+.gilt {
+  box-shadow:
+    inset 0 0 0 1px rgb(201 162 39 / 0.25),
+    0 18px 50px -20px rgb(0 0 0 / 0.8);
+}
+
+.gilt-soft {
+  box-shadow: inset 0 0 0 1px rgb(201 162 39 / 0.15);
+}
+
+/* Halo de la case active. */
+@keyframes pulse-gold {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgb(228 192 91 / 0.7), 0 0 18px 2px rgb(228 192 91 / 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgb(228 192 91 / 0.95), 0 0 26px 6px rgb(228 192 91 / 0.4);
+  }
+}
+
+.space-active {
+  animation: pulse-gold 1.8s ease-in-out infinite;
+  z-index: 5;
+}
+
+/* Dés : une rotation courte avant l'affichage du résultat. */
+@keyframes roll-die {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.15);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+.die-rolling {
+  animation: roll-die 0.28s linear infinite;
+}
+
+/* Montants qui montent au-dessus d'un pion. */
+@keyframes float-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  20% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-22px);
+  }
+}
+
+.float-amount {
+  animation: float-up 1.6s ease-out forwards;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) rotate(-2deg) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(-1.5deg) scale(1);
+  }
+}
+
+.card-in {
+  animation: card-in 0.3s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+/* Barres de défilement discrètes dans les panneaux. */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(201 162 39 / 0.35) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .space-active,
+  .die-rolling,
+  .float-amount,
+  .card-in,
+  .fade-in {
+    animation: none;
+  }
+}

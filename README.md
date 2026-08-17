@@ -3,15 +3,18 @@
 Version numérique du Monopoly classique (édition française, plateau parisien),
 jouable à 2-6 depuis un navigateur, sur le même wifi ou à distance.
 
-**État actuel : étapes 1 à 3 terminées** — données du plateau, moteur de jeu
-complet et serveur temps réel (66 tests). Il reste l'interface.
+**Le jeu est complet et jouable** : plateau, règles, temps réel, lobby, échanges,
+chat, reconnexion. 66 tests automatisés.
+
+![Une partie en cours](docs/captures/partie.png)
 
 ## Démarrage
 
 ```bash
 npm install
-npm start      # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
-npm test       # 66 tests : données, règles, parties simulées, temps réel
+npm run build   # compile l'interface
+npm start       # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
+npm test        # 66 tests : données, règles, parties simulées, temps réel
 ```
 
 Node 22+. Le serveur affiche aussi l'adresse locale (`http://192.168.x.x:3000`) à
@@ -29,9 +32,11 @@ server/
   index.js  serveur HTTP + API, sert le client compilé
   sockets.js passerelle Socket.io ↔ moteur
   rooms.js  registre des parties, codes, sauvegarde sur disque
+client/     interface React + Vite + Tailwind (« Salon de Minuit »)
+  src/components/  plateau, joueuses, actions, échanges, journal et chat
+  src/lib/         connexion temps réel, état, données du plateau
 tests/      data / engine / simulation / server
-docs/       DATA_MODEL.md, MOTEUR.md, SERVEUR.md, ART_DIRECTION.md
-client/     (à venir) React + Vite + Tailwind
+docs/       DATA_MODEL.md, MOTEUR.md, SERVEUR.md, CLIENT.md, ART_DIRECTION.md
 ```
 
 ## Stack retenue
@@ -54,12 +59,21 @@ Piste retenue : **« Salon de Minuit »** — fond bleu nuit, plateau ardoise à
 doré, bandeaux de couleur lumineux, typo Cormorant dorée en titres. Détails et
 alternative dans `docs/ART_DIRECTION.md`.
 
-## Prochaines étapes
+## Jouer ensemble
 
-Les règles des étapes 5 à 8 du plan initial (achats, enchères, constructions,
-hypothèques, cartes, prison, faillite, échanges) sont déjà dans le moteur : il
-reste à leur donner une interface.
+1. Une personne lance `npm start` sur son ordinateur.
+2. Elle partage l'adresse affichée (`http://192.168.x.x:3000`) aux autres, sur le
+   même wifi. À distance, un tunnel (ngrok, Cloudflare Tunnel) sur le port 3000
+   fait la même chose.
+3. Elle crée une partie et dicte le code à six lettres ; les autres le saisissent.
+4. L'hôte lance la partie quand tout le monde est là.
 
-4. Client : plateau, panneau joueuse, synchronisation temps réel
-5. Écrans d'action : achat, enchère, construction, hypothèque, échange, chat
-6. Polish visuel et animations (piste « Salon de Minuit »)
+Fermer un onglet par erreur ne fait rien perdre : rouvrir la page reprend la
+partie au même point. Si le serveur redémarre, les parties de moins de 24 h sont
+rechargées depuis le disque.
+
+## Pistes si l'envie vient
+
+- Direction artistique « Papier & Encre » en variante (tout est en variables CSS)
+- Sauvegarde longue durée en SQLite plutôt qu'en fichiers JSON
+- Statistiques de fin de partie (patrimoine, loyers encaissés)

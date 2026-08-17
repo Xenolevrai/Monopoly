@@ -102,14 +102,15 @@ test('seule la joueuse dont c\'est le tour peut agir', async (t) => {
   });
 
   host.socket.emit('game:create', { name: 'Julie' });
-  const { code } = await host.once('game:joined');
+  const { code, playerId: hostId } = await host.once('game:joined');
   guest.socket.emit('game:join', { code, name: 'Sophie' });
   await guest.once('game:joined');
   host.socket.emit('game:start');
   const playing = await host.once('game:state', (s) => s.phase === 'playing');
 
+  // L'ordre de jeu est tiré aux dés : c'est lui qui décide qui doit attendre.
   const currentId = playing.players[playing.currentPlayerIndex].id;
-  const waiting = currentId === playing.players[0].id ? guest : host;
+  const waiting = currentId === hostId ? guest : host;
 
   waiting.socket.emit('game:action', { type: 'ROLL_DICE' });
   const error = await waiting.once('game:error');
