@@ -3,16 +3,19 @@
 Version numérique du Monopoly classique (édition française, plateau parisien),
 jouable à 2-6 depuis un navigateur, sur le même wifi ou à distance.
 
-**État actuel : étapes 1 et 2 terminées** — données du plateau, modèle d'état et
-moteur de jeu complet (56 tests). Le serveur temps réel et le client viennent ensuite.
+**État actuel : étapes 1 à 3 terminées** — données du plateau, moteur de jeu
+complet et serveur temps réel (66 tests). Il reste l'interface.
 
 ## Démarrage
 
 ```bash
-npm test     # 56 tests : données du plateau, règles du moteur, parties simulées
+npm install
+npm start      # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
+npm test       # 66 tests : données, règles, parties simulées, temps réel
 ```
 
-Aucune dépendance à installer pour l'instant (Node 22+, tests via `node --test`).
+Node 22+. Le serveur affiche aussi l'adresse locale (`http://192.168.x.x:3000`) à
+donner aux autres joueuses du même wifi.
 
 ## Structure
 
@@ -23,8 +26,11 @@ shared/     données de jeu + schéma d'état, partagés serveur ↔ client
   schema.js typedefs de l'état + fabriques d'état initial
 server/
   engine/   moteur de jeu : tour, déplacements, loyers, cartes, enchères, faillite
-tests/      data / engine / simulation
-docs/       DATA_MODEL.md, MOTEUR.md, ART_DIRECTION.md
+  index.js  serveur HTTP + API, sert le client compilé
+  sockets.js passerelle Socket.io ↔ moteur
+  rooms.js  registre des parties, codes, sauvegarde sur disque
+tests/      data / engine / simulation / server
+docs/       DATA_MODEL.md, MOTEUR.md, SERVEUR.md, ART_DIRECTION.md
 client/     (à venir) React + Vite + Tailwind
 ```
 
@@ -54,7 +60,6 @@ Les règles des étapes 5 à 8 du plan initial (achats, enchères, constructions
 hypothèques, cartes, prison, faillite, échanges) sont déjà dans le moteur : il
 reste à leur donner une interface.
 
-3. Serveur : lobby, codes de partie, Socket.io, reconnexion
 4. Client : plateau, panneau joueuse, synchronisation temps réel
 5. Écrans d'action : achat, enchère, construction, hypothèque, échange, chat
 6. Polish visuel et animations (piste « Salon de Minuit »)

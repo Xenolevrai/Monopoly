@@ -62,6 +62,12 @@ export function removePlayer(game, playerId) {
   }
   state.players = state.players.filter((p) => p.id !== playerId);
   state.players.forEach((p, i) => (p.order = i));
+  // Si l'hôte s'en va avant le début, la première joueuse restante reprend la main :
+  // sans ça, plus personne ne pourrait lancer la partie.
+  if (state.hostId === playerId && state.players.length) {
+    state.hostId = state.players[0].id;
+    log(state, 'lobby', `${state.players[0].name} devient l'hôte de la partie.`, { playerId: state.hostId });
+  }
   return { ok: true };
 }
 
