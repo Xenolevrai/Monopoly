@@ -14,7 +14,7 @@ const ALL_CARDS = Object.fromEntries(
 );
 
 export default function App() {
-  const { state, me, error, connected, setError, leave } = useGame();
+  const { state, me, mine, error, connected, setError, leave, focusOn } = useGame();
   const [tradeOpen, setTradeOpen] = useState(false);
   const [inspected, setInspected] = useState(null);
 
@@ -27,25 +27,25 @@ export default function App() {
 
   // Une proposition d'échange reçue ouvre la fenêtre d'échange.
   useEffect(() => {
-    if (state?.trades?.some((t) => t.status === 'pending' && t.toPlayerId === me?.id)) {
+    if (state?.trades?.some((t) => t.status === 'pending' && mine.some((p) => p.id === t.toPlayerId))) {
       setTradeOpen(true);
     }
   }, [state?.trades?.length]);
 
   if (!state) return <Home error={error} />;
-  if (state.phase === 'lobby') return <WaitingRoom state={state} me={me} onLeave={leave} />;
+  if (state.phase === 'lobby') return <WaitingRoom state={state} me={me} mine={mine} onLeave={leave} />;
 
   const drawnCard = state.drawnCardId ? ALL_CARDS[state.drawnCardId] : null;
 
   return (
     <div className="min-h-screen p-3 lg:p-5">
       {!connected && (
-        <div className="fixed inset-x-0 top-0 z-50 bg-rose-700/90 py-1.5 text-center text-xs">
+        <div className="fixed inset-x-0 top-0 z-50 bg-[var(--color-accent)] py-1.5 text-center text-xs text-white">
           Connexion perdue — reprise automatique dès que le serveur répond…
         </div>
       )}
       {error && (
-        <div className="fade-in fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-md bg-rose-600/90 px-4 py-2 text-sm shadow-lg">
+        <div className="fade-in fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm text-white shadow-lg">
           {error}
         </div>
       )}
@@ -57,10 +57,10 @@ export default function App() {
 
         {/* La colonne défile toute seule : le plateau, lui, ne bouge jamais. */}
         <aside className="scroll-thin flex w-full shrink-0 flex-col gap-4 xl:h-full xl:w-[380px] xl:overflow-y-auto">
-          <Actions state={state} me={me} onOpenTrade={() => setTradeOpen(true)} />
-          <Players state={state} me={me} />
+          <Actions state={state} me={me} mine={mine} onOpenTrade={() => setTradeOpen(true)} />
+          <Players state={state} me={me} mine={mine} onFocus={focusOn} />
           <div className="h-72 shrink-0">
-            <Feed state={state} />
+            <Feed state={state} actor={me?.id} />
           </div>
         </aside>
       </div>
@@ -71,14 +71,14 @@ export default function App() {
 
       {inspected != null && (
         <div
-          className="fade-in fixed inset-0 z-40 flex items-center justify-center bg-night/80 p-4"
+          className="fade-in fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4"
           onClick={() => setInspected(null)}
         >
           <div className="w-full max-w-xs" onClick={(e) => e.stopPropagation()}>
             <PropertyCard spaceId={inspected} />
             <button
               onClick={() => setInspected(null)}
-              className="mt-2 w-full rounded-md bg-white/10 py-2 text-sm hover:bg-white/20"
+              className="mt-2 w-full rounded border border-black/15 bg-white py-2 font-condensed text-sm uppercase hover:bg-black/5"
             >
               Fermer
             </button>

@@ -1,5 +1,11 @@
-/** État partagé de la partie, alimenté par le serveur. */
-import { useEffect, useRef, useState } from 'react';
+/**
+ * État partagé de la partie, alimenté par le serveur.
+ *
+ * Une même connexion peut porter plusieurs joueuses (mode « même ordinateur ») :
+ * `mine` est la liste de celles qui jouent sur ce poste, et `me` celle qui a la
+ * main en ce moment — c'est elle qui agit quand on clique.
+ */
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { socket, saveSession, loadSession, clearSession } from './socket.js';
 
 export function useGame() {
@@ -7,13 +13,15 @@ export function useGame() {
   const [session, setSession] = useState(() => loadSession());
   const [error, setError] = useState(null);
   const [connected, setConnected] = useState(socket.connected);
+  const [focusId, setFocusId] = useState(null);
   const rejoined = useRef(false);
 
   useEffect(() => {
     const onState = (next) => setState(next);
     const onJoined = (next) => {
-      setSession(next);
-      saveSession(next);
+      const clean = { code: next.code, playerIds: next.playerIds ?? [next.playerId].filter(Boolean) };
+      setSession(clean);
+      saveSession(clean);
       setError(null);
     };
     const onError = ({ message }) => setError(message);
@@ -21,7 +29,7 @@ export function useGame() {
       setConnected(true);
       // Reprise automatique après un rafraîchissement de page ou une coupure.
       const saved = loadSession();
-      if (saved?.code && saved?.playerId) socket.emit('game:rejoin', saved);
+      if (saved?.code && saved.playerIds?.length) socket.emit('game:rejoin', saved);
       rejoined.current = true;
     };
     const onDisconnect = () => setConnected(false);
@@ -52,14 +60,38 @@ export function useGame() {
     clearSession();
     setSession(null);
     setState(null);
+    setFocusId(null);
   };
 
-  const me = state && session ? state.players.find((p) => p.id === session.playerId) ?? null : null;
+  /** Les joueuses installées sur ce poste, dans l'ordre de jeu. */
+  const mine = useMemo(() => {
+    if (!state || !session?.playerIds) return [];
+    return state.players.filter((p) => session.playerIds.includes(p.id));
+  }, [state, session]);
 
-  return { state, me, session, error, connected, setError, leave };
-}
+  /**
+   * La joueuse qui agit quand on clique : celle du poste à qui le jeu demande
+   * quelque chose, sinon celle sélectionnée à la main, sinon la première.
+   */
+  const me = useMemo(() => {
+    if (!mine.length) return null;
+    const awaited = mine.find((p) => state?.pending?.playerIds?.includes(p.id) && !p.bankrupt);
+    if (awaited) return awaited;
+    const focused = mine.find((p) => p.id === focusId && !p.bankrupt);
+    return focused ?? mine.find((p) => !p.bankrupt) ?? mine[0];
+  }, [mine, state, focusId]);
 
-/** Vrai si c'est à cette joueuse de répondre à ce qui est en attente. */
-export function isMyTurn(state, me) {
-  return Boolean(me && state?.pending?.playerIds?.includes(me.id));
+  return {
+    state,
+    me,
+    mine,
+    session,
+    error,
+    connected,
+    setError,
+    leave,
+    focusOn: setFocusId,
+    /** Vrai si plusieurs joueuses partagent cet écran. */
+    hotSeat: mine.length > 1,
+  };
 }

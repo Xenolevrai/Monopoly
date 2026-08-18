@@ -31,7 +31,9 @@ Client → serveur :
 |---|---|---|
 | `game:create` | `{ name, token, settings }` | crée une partie, renvoie son code |
 | `game:join` | `{ code, name, token }` | rejoint, ou reprend une place vacante au même pseudo |
-| `game:rejoin` | `{ code, playerId }` | reconnexion silencieuse après un rafraîchissement |
+| `game:add-local` | `{ name, token }` | ajoute une joueuse **sur ce même ordinateur** |
+| `game:remove-local` | `{ playerId }` | retire une joueuse de ce poste (lobby) |
+| `game:rejoin` | `{ code, playerIds }` | reconnexion silencieuse après un rafraîchissement |
 | `game:settings` | `{ settings }` | règles maison (hôte, lobby uniquement) |
 | `game:start` | — | lance la partie (hôte) |
 | `game:action` | `{ type, … }` | toute action de jeu, transmise au moteur |
@@ -41,12 +43,26 @@ Serveur → client :
 
 | Événement | Charge utile |
 |---|---|
-| `game:joined` | `{ code, playerId }` — à stocker côté client pour la reconnexion |
+| `game:joined` | `{ code, playerIds }` — les joueuses de ce poste, à stocker pour la reconnexion |
 | `game:state` | l'état public complet, après chaque mutation |
 | `game:error` | `{ message }` — refus lisible, en français |
 
 API HTTP : `GET /api/health`, `GET /api/board` (plateau + pions + règles maison),
 `GET /api/game/:code` (vérifier un code avant de saisir son pseudo).
+
+## Un poste, plusieurs joueuses
+
+Une connexion peut porter **plusieurs joueuses** : c'est le mode « même
+ordinateur ». La session garde une liste d'identifiants au lieu d'un seul.
+
+Chaque `game:action` peut préciser `playerId` ; sans lui, le serveur joue pour
+celle du poste à qui le jeu demande quelque chose. C'est ce qui rend le partage
+d'écran naturel : on clique, et c'est toujours la bonne joueuse qui agit. Un
+poste ne peut jamais agir pour une joueuse qui n'est pas la sienne — le serveur
+refuse.
+
+Les deux modes se mélangent librement : trois personnes autour d'un portable et
+deux autres à distance, dans la même partie.
 
 ## Codes de partie
 

@@ -3,19 +3,21 @@ import { useEffect, useRef, useState } from 'react';
 import { sendAction } from '../lib/socket.js';
 
 const TONE = {
-  buy: 'text-emerald-300',
-  rent: 'text-amber-300',
-  payment: 'text-amber-200/90',
-  credit: 'text-emerald-300',
-  debt: 'text-rose-300',
-  bankruptcy: 'text-rose-400',
-  jail: 'text-sky-300',
-  card: 'text-violet-300',
-  auction: 'text-gold-soft',
-  trade: 'text-teal-300',
-  build: 'text-emerald-400',
-  victory: 'text-gold-soft',
-  turn: 'text-muted',
+  buy: 'text-[var(--color-money)]',
+  build: 'text-[var(--color-money)]',
+  credit: 'text-[var(--color-money)]',
+  rent: 'text-[#8a5a00]',
+  payment: 'text-[#8a5a00]',
+  debt: 'text-[var(--color-accent)]',
+  bankruptcy: 'text-[var(--color-accent)] font-medium',
+  jail: 'text-[#2f5c8f]',
+  card: 'text-[#5b3a8e]',
+  auction: 'text-[#8a6a12]',
+  trade: 'text-[#116b6b]',
+  victory: 'text-[var(--color-accent)] font-semibold',
+  turn: 'text-ink-soft',
+  setup: 'text-ink-soft',
+  lobby: 'text-ink-soft',
 };
 
 function Journal({ log }) {
@@ -25,7 +27,7 @@ function Journal({ log }) {
   return (
     <div className="scroll-thin flex-1 space-y-1 overflow-y-auto pr-1 text-[12px] leading-snug">
       {log.map((entry) => (
-        <p key={entry.id} className={TONE[entry.type] ?? 'text-parchment/80'}>
+        <p key={entry.id} className={TONE[entry.type] ?? 'text-ink'}>
           {entry.text}
         </p>
       ))}
@@ -34,7 +36,7 @@ function Journal({ log }) {
   );
 }
 
-function Chat({ state }) {
+function Chat({ state, actor }) {
   const [text, setText] = useState('');
   const bottom = useRef(null);
   useEffect(() => bottom.current?.scrollIntoView({ behavior: 'smooth' }), [state.chat.length]);
@@ -42,7 +44,7 @@ function Chat({ state }) {
   const send = (event) => {
     event.preventDefault();
     if (!text.trim()) return;
-    sendAction({ type: 'CHAT', text });
+    sendAction({ type: 'CHAT', text }, actor);
     setText('');
   };
 
@@ -53,8 +55,10 @@ function Chat({ state }) {
           const author = state.players.find((p) => p.id === message.playerId);
           return (
             <p key={message.id}>
-              <span style={{ color: author?.color }}>{author?.name ?? '—'}</span>
-              <span className="text-parchment/85"> : {message.text}</span>
+              <span className="font-medium" style={{ color: author?.color }}>
+                {author?.name ?? '—'}
+              </span>
+              <span> : {message.text}</span>
             </p>
           );
         })}
@@ -66,11 +70,11 @@ function Chat({ state }) {
           onChange={(e) => setText(e.target.value)}
           placeholder="Écrire un message…"
           maxLength={300}
-          className="min-w-0 flex-1 rounded-md border border-white/10 bg-night px-2 py-1.5 text-sm"
+          className="min-w-0 flex-1 rounded border border-black/20 bg-white px-2 py-1.5 text-sm"
         />
         <button
           type="submit"
-          className="rounded-md bg-white/10 px-3 text-sm hover:bg-white/20"
+          className="rounded border border-black/15 bg-white px-3 font-condensed text-sm uppercase hover:bg-black/5"
         >
           Envoyer
         </button>
@@ -79,7 +83,7 @@ function Chat({ state }) {
   );
 }
 
-export default function Feed({ state }) {
+export default function Feed({ state, actor }) {
   const [tab, setTab] = useState('journal');
   const tabs = [
     ['journal', 'Journal'],
@@ -87,22 +91,22 @@ export default function Feed({ state }) {
   ];
 
   return (
-    <div className="gilt-soft flex h-full min-h-[220px] flex-col rounded-lg bg-night-soft/80 p-3">
+    <div className="panel flex h-full min-h-[220px] flex-col rounded-lg p-3">
       <div className="mb-2 flex gap-1">
         {tabs.map(([id, label]) => (
           <button
             key={id}
             type="button"
             onClick={() => setTab(id)}
-            className={`rounded px-2 py-1 text-[11px] uppercase tracking-widest transition-colors ${
-              tab === id ? 'bg-gold/20 text-gold-soft' : 'text-muted hover:text-parchment'
+            className={`rounded px-2 py-1 font-condensed text-[11px] uppercase tracking-widest transition-colors ${
+              tab === id ? 'bg-[var(--color-accent)] text-white' : 'text-ink-soft hover:bg-black/5'
             }`}
           >
             {label}
           </button>
         ))}
       </div>
-      {tab === 'journal' ? <Journal log={state.log} /> : <Chat state={state} />}
+      {tab === 'journal' ? <Journal log={state.log} /> : <Chat state={state} actor={actor} />}
     </div>
   );
 }

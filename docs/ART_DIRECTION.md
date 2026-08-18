@@ -1,70 +1,70 @@
-# Deux pistes de direction artistique — à choisir avant l'intégration
+# Direction artistique — « Plateau de table »
 
-Les deux reprennent les 8 couleurs de groupes (dans une version légèrement
-désaturée, plus agréable sur écran que les couleurs d'imprimerie) et la grille
-11×11 avec 4 grands coins. Elles diffèrent par l'ambiance, la typo et le rendu
-des cases. Aucun élément Hasbro n'est repris : logo, pions et cartes sont dessinés
-de zéro.
+Le parti pris : **ressembler au vrai jeu posé sur une table**, pas à une
+interface de jeu vidéo. Tout est redessiné de zéro — aucun logo, aucune
+illustration ni aucun visuel de marque n'est repris.
 
----
+## Palette
 
-## Piste A — « Papier & Encre » *(ma recommandation)*
+| Rôle | Couleur | Usage |
+|---|---|---|
+| Table | `#2b2320` | le bois sur lequel le plateau est posé |
+| Carton du plateau | `#cfe3d3` | le vert pâle du centre |
+| Case | `#f7f4ea` | le crème des cases |
+| Encre | `#16130f` | filets et textes |
+| Rouge | `#b3242c` | cartouche du titre, Chance, boutons d'action |
+| Vert | `#1f9d55` / `#1f7a4d` | maisons, montants gagnés |
+| Rouge hôtel | `#c62828` | hôtels |
 
-L'esprit d'un vrai plateau posé sur une table, vu du dessus.
+Les huit couleurs de groupes viennent de `shared/data/groups.json` : ce sont les
+mêmes côté serveur et côté client.
 
-- **Fond** : crème papier (`#F4ECDD`) avec un grain très léger ; le plateau est
-  une carte blanc cassé posée dessus, ombre douce, coins légèrement arrondis.
-- **Cases** : bordure fine encre (`#2B2B2B` à 20 %), bandeau de couleur en haut de
-  chaque terrain avec un liseré plus foncé — comme une bande imprimée.
-- **Typo** : *Playfair Display* (ou *DM Serif*) pour le logo et les noms de rues en
-  petites capitales ; *Inter* pour tous les chiffres (montants, loyers), qui doivent
-  rester lisibles à 11 px.
-- **Logo** : un monogramme « M » art-déco dans un losange, façon enseigne de métro
-  parisien, au centre du plateau. Dessiné en SVG, deux traits, rien d'imité.
-- **Pions** : pastilles pleines avec un anneau blanc et une ombre portée courte —
-  on lit instantanément qui est où, même à 3 sur la même case (léger décalage en
-  éventail).
-- **Cartes Chance / Caisse** : cartons crème qui arrivent en rotation légère
-  (3-4°) au centre du plateau, avec un point d'interrogation art-déco pour Chance
-  et un coffre stylisé pour la Caisse.
-- **Panneau joueuse** : colonne à droite, fond blanc cassé, propriétés groupées en
-  petites piles de couleur avec des points pour les maisons et un carré pour l'hôtel.
+## Typographie
 
-**Pourquoi je la recommande** : c'est la plus lisible à 6 joueuses (beaucoup
-d'infos à l'écran) et la plus facile à faire tenir sur un écran de portable 13″ ;
-le côté « papier » pardonne les densités d'information que le style néon supporte mal.
+- **Oswald** (condensée, capitales) pour tout ce qui est imprimé sur le plateau :
+  noms de rues, boutons, titres de panneaux. C'est ce qui donne l'air « jeu de
+  société » immédiat.
+- **Inter** pour les données lisibles en continu : montants, journal, chat.
+- **Cormorant Garamond** en réserve pour les titres longs.
 
----
+Les trois sont **embarquées dans le build** : la partie garde sa typographie sur
+un wifi sans internet, et aucune requête ne part vers l'extérieur.
 
-## Piste B — « Salon de Minuit »
+## Le plateau
 
-Un Monopoly du soir, sombre et un peu chic, façon jeu de plateau numérique moderne.
+- Grille 11 × 11, quatre coins agrandis (`1.55fr` contre `1fr`), `aspect-ratio: 1`
+  — il ne se déforme jamais.
+- Chaque case est cernée d'un filet noir, avec son bandeau de couleur plein du
+  côté intérieur.
+- **Les textes sont orientés vers le centre**, comme sur le plateau papier : droits
+  en bas, tournés d'un quart de tour sur les côtés, à l'envers en haut. C'est ce
+  détail qui fait « vrai plateau » au premier coup d'œil. Techniquement, le
+  contenu est tourné dans un conteneur dimensionné en unités de conteneur
+  (`100cqh` × `100cqw`), ce qui lui donne la bonne place quelle que soit la taille
+  de l'écran.
+- Pictogrammes dessinés en SVG : locomotive sur les gares, ampoule sur
+  l'Électricité, robinet sur les Eaux, point d'interrogation rouge sur Chance,
+  coffre bleu sur la Caisse, diamant et bague sur les taxes, flèche sur Départ,
+  barreaux sur la Prison, voiture sur le Parc Gratuit, agent sur Allez en Prison.
+- Maisons vertes et hôtel rouge posés **sur le bandeau de couleur**, comme les
+  vraies pièces.
+- Mentions imprimées sous les coins : « Recevez 200 € », « Simple visite »,
+  « Sans passer par Départ ».
+- Cartouche **MONOPOLY** en diagonale au centre, sur bandeau rouge.
 
-- **Fond** : bleu nuit profond (`#141A2B`), plateau en carte gris-ardoise avec un
-  filet doré très fin.
-- **Cases** : les bandeaux de couleur deviennent lumineux sur fond sombre, avec un
-  halo discret sur la case active ; les propriétés possédées prennent un liseré de
-  la couleur de leur propriétaire.
-- **Typo** : *Cormorant* doré pour les titres, *Inter* blanc cassé pour les données.
-- **Pions** : jetons avec un dégradé et un reflet, ombre colorée sous le pion.
-- **Dés** : gros dés blancs qui roulent au centre avec un rebond, éclairés par le
-  dessous.
-- **Ambiance** : les transitions de tour balayent l'écran d'un liseré doré, les
-  montants gagnés/perdus montent en `+200 €` vert / `−90 €` rouge au-dessus du pion.
+## Les pions
 
-**Le compromis** : très joli en capture d'écran, un peu plus fatigant sur une
-longue partie, et les couleurs claires (jaune, bleu ciel) demandent un travail de
-contraste supplémentaire pour rester distinctes du blanc du texte.
+Six silhouettes dessinées en SVG (`components/TokenIcon.jsx`), chacune dans sa
+couleur : **chapeau haut-de-forme, chat, bateau, brouette, dé à coudre,
+lanterne**. Elles servent partout — sélection au lobby, panneau des joueuses,
+et posées sur les cases dans une pastille blanche cerclée de noir.
 
----
+Un pion par personne : au lobby, ceux déjà pris sont grisés et non cliquables, et
+le serveur refuse un doublon même si un client bricolé essayait.
 
-Dans les deux cas, communs :
+## Ce qui a précédé
 
-- grille CSS 11×11 en `aspect-ratio: 1`, plateau qui se réduit sans jamais se
-  déformer ; en dessous de 1100 px de large, le panneau joueuse passe en tiroir ;
-- déplacement du pion **case par case** (~90 ms par case, avec accélération/freinage)
-  et non en téléportation ;
-- lancer de dés animé (~600 ms) avant l'affichage du résultat, identique sur tous
-  les écrans puisque le tirage vient du serveur ;
-- surbrillance de la case active et de la joueuse dont c'est le tour ;
-- journal d'événements et chat dans la même colonne, en deux onglets.
+Une première version sombre (« Salon de Minuit », bleu nuit et filets dorés) a
+été écrite puis remplacée à la demande. Elle reste facile à retrouver : toutes
+les couleurs passent par des variables dans `client/src/styles.css`, et aucun
+composant ne code une couleur en dur.

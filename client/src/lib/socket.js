@@ -35,7 +35,11 @@ export function clearSession() {
   }
 }
 
-/** Raccourci : envoyer une action de jeu au serveur. */
-export function sendAction(action) {
-  socket.emit('game:action', action);
+/**
+ * Envoie une action de jeu.
+ * `playerId` précise pour quelle joueuse du poste l'action est jouée : c'est ce
+ * qui permet à plusieurs personnes de partager un même écran.
+ */
+export function sendAction(action, playerId = null) {
+  socket.emit('game:action', playerId ? { ...action, playerId } : action);
 }

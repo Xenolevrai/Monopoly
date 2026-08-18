@@ -54,6 +54,16 @@ function connect(url) {
         socket.on(event, handler);
       });
     },
+    /**
+     * Attend un état satisfaisant `predicate`, en regardant d'abord ceux déjà
+     * reçus : le serveur diffuse l'état juste après `game:joined`, et un test
+     * qui s'abonne ensuite le manquerait.
+     */
+    waitState(predicate = () => true) {
+      const already = states.filter(predicate).at(-1);
+      if (already) return Promise.resolve(already);
+      return this.once('game:state', predicate);
+    },
     close() {
       socket.close();
     },
@@ -304,4 +314,136 @@ test('une partie sauvegardée se recharge après un redémarrage', async (t) => 
   const reloaded = rooms.getRoom(room.state.code);
   assert.equal(reloaded.state.players[0].cash, 1234);
   assert.equal(reloaded.state.players[0].connected, false, 'tout le monde est à reconnecter');
+});
+
+// ————————————————————————————————————— Mode « même ordinateur »
+
+test('plusieurs joueuses partagent une même connexion', async (t) => {
+  const server = await startServer();
+  const poste = connect(server.url);
+  const distant = connect(server.url);
+  t.after(async () => {
+    poste.close();
+    distant.close();
+    await server.close();
+  });
+
+  poste.socket.emit('game:create', { name: 'Julie', token: 'bateau' });
+  const { code, playerIds } = await poste.once('game:joined');
+  assert.equal(playerIds.length, 1);
+
+  poste.socket.emit('game:add-local', { name: 'Marc', token: 'chat' });
+  const withMarc = await poste.once('game:joined', (p) => p.playerIds.length === 2);
+  assert.equal(withMarc.playerIds.length, 2, 'les deux joueuses sont sur ce poste');
+
+  distant.socket.emit('game:join', { code, name: 'Sophie', token: 'chapeau' });
+  await distant.once('game:joined');
+
+  const lobby = await poste.once('game:state', (s) => s.players.length === 3);
+  assert.deepEqual(
+    lobby.players.map((p) => p.token).sort(),
+    ['bateau', 'chapeau', 'chat'],
+    'un pion différent par joueuse',
+  );
+
+  poste.socket.emit('game:start');
+  const playing = await poste.once('game:state', (s) => s.phase === 'playing');
+
+  // Le poste joue pour celle qui a la main, sans avoir à préciser laquelle.
+  const currentId = playing.players[playing.currentPlayerIndex].id;
+  const holder = withMarc.playerIds.includes(currentId) ? poste : distant;
+  holder.socket.emit('game:action', { type: 'ROLL_DICE' });
+  const rolled = await poste.once('game:state', (s) => s.dice.values !== null);
+  assert.equal(rolled.dice.values.length, 2);
+});
+
+test('un poste ne peut pas jouer pour une joueuse qui n\'est pas la sienne', async (t) => {
+  const server = await startServer();
+  const poste = connect(server.url);
+  const distant = connect(server.url);
+  t.after(async () => {
+    poste.close();
+    distant.close();
+    await server.close();
+  });
+
+  poste.socket.emit('game:create', { name: 'Julie' });
+  const { code } = await poste.once('game:joined');
+  distant.socket.emit('game:join', { code, name: 'Sophie' });
+  const { playerId: sophieId } = await distant.once('game:joined');
+  poste.socket.emit('game:start');
+  await poste.once('game:state', (s) => s.phase === 'playing');
+
+  poste.socket.emit('game:action', { type: 'ROLL_DICE', playerId: sophieId });
+  const error = await poste.once('game:error');
+  assert.match(error.message, /pas sur ce poste/i);
+});
+
+test('deux joueuses du même poste ne peuvent pas prendre le même pion', async (t) => {
+  const server = await startServer();
+  const poste = connect(server.url);
+  t.after(async () => {
+    poste.close();
+    await server.close();
+  });
+
+  poste.socket.emit('game:create', { name: 'Julie', token: 'chat' });
+  await poste.once('game:joined');
+
+  poste.socket.emit('game:add-local', { name: 'Marc', token: 'chat' });
+  const error = await poste.once('game:error');
+  assert.match(error.message, /pion/i);
+});
+
+test('retirer une joueuse du poste libère sa place et son pion', async (t) => {
+  const server = await startServer();
+  const poste = connect(server.url);
+  t.after(async () => {
+    poste.close();
+    await server.close();
+  });
+
+  poste.socket.emit('game:create', { name: 'Julie', token: 'chat' });
+  await poste.once('game:joined');
+  poste.socket.emit('game:add-local', { name: 'Marc', token: 'bateau' });
+  const two = await poste.once('game:joined', (p) => p.playerIds.length === 2);
+  const marcId = two.playerIds[1];
+
+  poste.socket.emit('game:remove-local', { playerId: marcId });
+  const after = await poste.once('game:joined', (p) => p.playerIds.length === 1);
+  assert.equal(after.playerIds.length, 1);
+
+  const state = await poste.waitState((s) => s.players.length === 1);
+  assert.equal(state.players[0].name, 'Julie');
+});
+
+test('la reconnexion ramène toutes les joueuses du poste', async (t) => {
+  const server = await startServer();
+  let poste = connect(server.url);
+  const distant = connect(server.url);
+  t.after(async () => {
+    poste.close();
+    distant.close();
+    await server.close();
+  });
+
+  poste.socket.emit('game:create', { name: 'Julie' });
+  const { code } = await poste.once('game:joined');
+  poste.socket.emit('game:add-local', { name: 'Marc' });
+  const two = await poste.once('game:joined', (p) => p.playerIds.length === 2);
+  distant.socket.emit('game:join', { code, name: 'Sophie' });
+  await distant.once('game:joined');
+  poste.socket.emit('game:start');
+  await distant.once('game:state', (s) => s.phase === 'playing');
+
+  poste.close();
+  await distant.once('game:state', (s) => s.players.filter((p) => !p.connected).length === 2);
+
+  poste = connect(server.url);
+  poste.socket.emit('game:rejoin', { code, playerIds: two.playerIds });
+  const back = await poste.once('game:joined');
+  assert.deepEqual(back.playerIds.sort(), [...two.playerIds].sort(), 'les deux places sont reprises');
+
+  const state = await poste.waitState((s) => s.players.length === 3 && s.players.every((p) => p.connected));
+  assert.equal(state.players.length, 3);
 });

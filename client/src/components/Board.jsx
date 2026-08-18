@@ -1,12 +1,28 @@
 /**
- * Le plateau : grille 11 × 11, quatre grands coins, bandeaux de couleur
- * lumineux sur ardoise. Les pions se déplacent case par case.
+ * Le plateau, dans l'esprit du plateau papier : carton vert pâle, cases crème
+ * cernées d'un filet noir, bandeaux de couleur pleins, et — comme sur la vraie
+ * boîte — les textes orientés vers le centre selon le côté du plateau.
  */
 import { useEffect, useRef, useState } from 'react';
 import { board, gridPosition, groupColor, euros } from '../lib/board.js';
+import { iconFor } from './SpaceIcons.jsx';
+import TokenIcon from './TokenIcon.jsx';
 import Dice from './Dice.jsx';
 
 const STEP_MS = 90;
+
+/** Rotation du contenu d'une case selon son côté, comme sur le plateau papier. */
+const ROTATION = { bottom: 0, left: 90, top: 180, right: -90 };
+
+/** Les mentions imprimées sous les quatre coins. */
+const CORNER_NOTE = {
+  0: 'Recevez 200 €',
+  10: 'Simple visite',
+  30: 'Sans passer par Départ',
+};
+
+/** Les pictogrammes de Chance et Caisse gardent leur couleur d'origine. */
+const ICON_TINT = { chance: 'text-[var(--color-accent)]', community_chest: 'text-[#2f5c8f]' };
 
 /** Fait avancer chaque pion case par case jusqu'à sa position réelle. */
 function useAnimatedPositions(players) {
@@ -49,33 +65,43 @@ function useAnimatedPositions(players) {
   return positions;
 }
 
-function Token({ player, index, total }) {
-  // Plusieurs pions sur une case : on les décale en éventail.
-  const offset = total > 1 ? (index - (total - 1) / 2) * 9 : 0;
+/** Un pion posé sur une case : la silhouette du joueur, dans sa couleur. */
+function Pawn({ player, index, total }) {
+  const offset = total > 1 ? (index - (total - 1) / 2) * 10 : 0;
   return (
     <span
-      className="absolute bottom-1 left-1/2 h-3.5 w-3.5 rounded-full border border-white/70 transition-all duration-200"
-      style={{
-        backgroundColor: player.color,
-        transform: `translateX(calc(-50% + ${offset}px))`,
-        boxShadow: `0 0 10px ${player.color}, 0 2px 4px rgb(0 0 0 / 0.6)`,
-        opacity: player.bankrupt ? 0.25 : 1,
-      }}
+      className="absolute bottom-0.5 left-1/2 transition-all duration-200"
+      style={{ transform: `translateX(calc(-50% + ${offset}px))`, opacity: player.bankrupt ? 0.3 : 1 }}
       title={player.name}
-    />
+    >
+      <span
+        className="flex h-[19px] w-[19px] items-center justify-center rounded-full border border-black/60"
+        style={{ backgroundColor: '#fffdf7', boxShadow: '0 1px 3px rgb(0 0 0 / 0.5)' }}
+      >
+        <TokenIcon token={player.token} color={player.color} className="h-[15px] w-[15px]" title={player.name} />
+      </span>
+    </span>
   );
 }
 
+/** Maisons vertes et hôtel rouge, posés sur le bandeau de couleur. */
 function Buildings({ prop }) {
   if (!prop) return null;
   if (prop.hotel) {
-    return <span className="absolute right-0.5 top-0.5 text-[9px] leading-none text-gold-soft">▮</span>;
+    return (
+      <span className="flex items-center justify-center gap-0.5">
+        <span className="h-[7px] w-[11px] rounded-[1px] border border-black/50 bg-[var(--color-hotel)]" />
+      </span>
+    );
   }
   if (prop.houses > 0) {
     return (
-      <span className="absolute right-0.5 top-0.5 flex gap-px">
+      <span className="flex items-center justify-center gap-[1.5px]">
         {Array.from({ length: prop.houses }).map((_, i) => (
-          <span key={i} className="h-1 w-1 rounded-[1px] bg-emerald-400" />
+          <span
+            key={i}
+            className="h-[6px] w-[5px] rounded-[1px] border border-black/50 bg-[var(--color-house)]"
+          />
         ))}
       </span>
     );
@@ -88,118 +114,138 @@ function Space({ space, state, players, active, onSelect }) {
   const color = groupColor(space);
   const prop = state.properties?.[space.id];
   const owner = prop?.ownerId ? state.players.find((p) => p.id === prop.ownerId) : null;
+  const Icon = iconFor(space);
   const corner = space.corner;
-
-  const bandVertical = side === 'left' || side === 'right';
 
   return (
     <button
       type="button"
       onClick={() => onSelect?.(space.id)}
-      style={{ gridColumn: col, gridRow: row }}
-      className={`relative flex select-none flex-col items-center justify-center overflow-hidden rounded-[3px] border border-white/5 bg-slate-space p-0.5 text-center transition-colors hover:bg-white/10 ${
+      style={{ gridColumn: col, gridRow: row, containerType: 'size' }}
+      className={`space-tile relative overflow-hidden transition-[filter] hover:brightness-95 ${
         active ? 'space-active' : ''
-      }`}
+      } ${space.type === 'go' ? 'text-[var(--color-accent)]' : ''}`}
     >
-      {color && (
-        <span
-          className={`absolute ${bandVertical ? 'inset-y-0 w-1.5' : 'inset-x-0 h-1.5'} ${
-            side === 'right' ? 'left-0' : side === 'left' ? 'right-0' : side === 'top' ? 'bottom-0' : 'top-0'
-          }`}
-          style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}88` }}
-        />
-      )}
+      {/* Le contenu tourne vers le centre du plateau ; il occupe la case
+          « à l'endroit » grâce aux unités de conteneur (100cqh × 100cqw). */}
+      <span
+        className="absolute left-1/2 top-1/2 flex flex-col items-center"
+        style={{
+          width: corner ? '100cqw' : '100cqh',
+          height: corner ? '100cqh' : '100cqw',
+          transform: `translate(-50%, -50%) rotate(${corner ? 0 : ROTATION[side]}deg)`,
+        }}
+      >
+        {color && (
+          <span
+            className="flex w-full shrink-0 items-end justify-center border-b border-black/80 pb-px"
+            style={{ backgroundColor: color, height: '26%' }}
+          >
+            <Buildings prop={prop} />
+          </span>
+        )}
 
-      {/* Liseré à la couleur de la propriétaire. */}
+        <span className="flex flex-1 flex-col items-center justify-center gap-0.5 px-1 text-center">
+          {Icon && (
+            <Icon
+              className={`${corner ? 'h-7 w-7' : 'h-4 w-4'} ${ICON_TINT[space.type] ?? 'text-ink'}`}
+            />
+          )}
+          <span
+            className={`font-condensed uppercase leading-[1.05] ${
+              space.type === 'go' ? 'text-[var(--color-accent)]' : 'text-ink'
+            } ${
+              corner ? 'text-[9px]' : 'text-[7.5px]'
+            }`}
+          >
+            {space.shortName}
+          </span>
+          {CORNER_NOTE[space.id] && (
+            <span className="font-condensed text-[7px] uppercase leading-tight text-ink-soft">
+              {CORNER_NOTE[space.id]}
+            </span>
+          )}
+          {space.price != null && (
+            <span className="tabular font-condensed text-[7px] text-ink-soft">{space.price} €</span>
+          )}
+          {space.amount != null && (
+            <span className="tabular font-condensed text-[7px] text-ink-soft">{space.amount} €</span>
+          )}
+          {prop?.mortgaged && (
+            <span className="font-condensed text-[6.5px] uppercase text-[var(--color-accent)]">
+              hypothéquée
+            </span>
+          )}
+        </span>
+      </span>
+
+      {/* Liseré à la couleur de la propriétaire, autour de la case. */}
       {owner && (
         <span
-          className="pointer-events-none absolute inset-0 rounded-[3px]"
-          style={{ boxShadow: `inset 0 0 0 1.5px ${owner.color}${prop.mortgaged ? '55' : 'dd'}` }}
+          className="pointer-events-none absolute inset-0"
+          style={{ boxShadow: `inset 0 0 0 2px ${owner.color}${prop.mortgaged ? '44' : 'cc'}` }}
         />
       )}
 
-      <span
-        className={`px-0.5 leading-tight text-parchment/85 ${
-          corner ? 'font-display text-[11px] tracking-wide' : 'text-[7.5px]'
-        }`}
-      >
-        {space.shortName}
-      </span>
-      {space.price != null && !corner && (
-        <span className="tabular text-[7px] text-muted">{space.price} €</span>
-      )}
-      {prop?.mortgaged && (
-        <span className="text-[6.5px] uppercase tracking-wide text-amber-400/80">hypo.</span>
-      )}
-
-      <Buildings prop={prop} />
-
-      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-4">
+      <span className="pointer-events-none absolute inset-x-0 bottom-0 h-5">
         {players.map((player, i) => (
-          <Token key={player.id} player={player} index={i} total={players.length} />
+          <Pawn key={player.id} player={player} index={i} total={players.length} />
         ))}
       </span>
     </button>
   );
 }
 
-/** Le centre du plateau : logo, dés, dernière carte piochée. */
+/** Le centre du plateau : titre, dés, dernière carte piochée. */
 function Center({ state, drawnCard }) {
   const current = state.players[state.currentPlayerIndex];
   return (
     <div
       style={{ gridColumn: '2 / 11', gridRow: '2 / 11' }}
-      className="relative flex flex-col items-center justify-center gap-4 rounded-lg bg-slate-board/60 p-4"
+      className="relative flex flex-col items-center justify-center gap-4 p-4"
     >
-      <div className="flex flex-col items-center gap-1">
-        {/* Monogramme original, dessiné en SVG (aucun visuel de marque repris). */}
-        <svg viewBox="0 0 64 64" className="h-12 w-12" aria-hidden="true">
-          <rect
-            x="16"
-            y="16"
-            width="32"
-            height="32"
-            transform="rotate(45 32 32)"
-            fill="none"
-            stroke="var(--color-gold)"
-            strokeWidth="1.5"
-          />
-          <text
-            x="32"
-            y="41"
-            textAnchor="middle"
-            fontFamily="Cormorant Garamond, serif"
-            fontSize="28"
-            fill="var(--color-gold-soft)"
-          >
-            M
-          </text>
-        </svg>
-        <h1 className="font-display text-2xl tracking-[0.3em] text-gold-soft">MONOPOLY</h1>
-        <p className="text-[10px] uppercase tracking-[0.4em] text-muted">Paris</p>
+      {/* Le cartouche du titre, posé en diagonale comme sur le plateau. */}
+      <div className="-rotate-[45deg]">
+        <div className="border-y-2 border-ink bg-[var(--color-accent)] px-8 py-1.5 shadow-[0_3px_0_rgba(0,0,0,.35)]">
+          <p className="font-condensed text-3xl uppercase tracking-[0.18em] text-[#f7f4ea]">Monopoly</p>
+        </div>
+        <p className="mt-1 text-center font-condensed text-[11px] uppercase tracking-[0.45em] text-ink-soft">
+          Paris
+        </p>
       </div>
 
-      {state.phase === 'playing' && current && (
-        <p className="text-xs text-muted">
-          Au tour de <span style={{ color: current.color }}>{current.name}</span>
-        </p>
-      )}
-
-      <Dice values={state.dice?.values} rolling={false} />
+      <div className="absolute bottom-5 left-1/2 flex w-full -translate-x-1/2 flex-col items-center gap-3 px-4">
+        {state.phase === 'playing' && current && (
+          <p className="font-condensed text-xs uppercase tracking-widest text-ink-soft">
+            Au tour de <span style={{ color: current.color }}>{current.name}</span>
+          </p>
+        )}
+        <Dice values={state.dice?.values} />
+        {state.settings?.freeParkingPot && state.freeParkingPot > 0 && (
+          <p className="tabular text-[11px] text-ink-soft">
+            Cagnotte du Parc Gratuit :{' '}
+            <span className="font-semibold text-[var(--color-money)]">{euros(state.freeParkingPot)}</span>
+          </p>
+        )}
+      </div>
 
       {drawnCard && (
-        <div className="card-in max-w-[260px] rounded-md border border-gold/30 bg-night-soft/90 p-3 text-center">
-          <p className="mb-1 font-display text-sm tracking-widest text-gold-soft">
-            {drawnCard.deck === 'chance' ? 'CHANCE' : 'CAISSE DE COMMUNAUTÉ'}
+        <div
+          className={`card-in absolute left-1/2 top-6 w-[min(62%,270px)] -translate-x-1/2 border-2 p-3 text-center shadow-[0_10px_24px_-12px_rgba(0,0,0,.7)] ${
+            drawnCard.deck === 'chance'
+              ? 'border-[var(--color-accent)] bg-[#fdf6f0]'
+              : 'border-[#2f5c8f] bg-[#f2f6fb]'
+          }`}
+        >
+          <p
+            className={`mb-1 font-condensed text-sm uppercase tracking-[0.2em] ${
+              drawnCard.deck === 'chance' ? 'text-[var(--color-accent)]' : 'text-[#2f5c8f]'
+            }`}
+          >
+            {drawnCard.deck === 'chance' ? 'Chance' : 'Caisse de Communauté'}
           </p>
-          <p className="text-xs leading-snug text-parchment/90">{drawnCard.text}</p>
+          <p className="text-xs leading-snug text-ink">{drawnCard.text}</p>
         </div>
-      )}
-
-      {state.settings?.freeParkingPot && state.freeParkingPot > 0 && (
-        <p className="tabular text-[11px] text-muted">
-          Cagnotte du Parc Gratuit : <span className="text-gold-soft">{euros(state.freeParkingPot)}</span>
-        </p>
       )}
     </div>
   );
@@ -210,10 +256,10 @@ export default function Board({ state, onSelectSpace, drawnCard }) {
   const activeSpace = state.players[state.currentPlayerIndex]?.position;
 
   return (
-    <div className="gilt aspect-square w-full max-w-[900px] shrink-0 rounded-xl bg-slate-board p-2 xl:h-full xl:w-auto">
+    <div className="board-surface aspect-square w-full max-w-[900px] shrink-0 p-1.5 xl:h-full xl:w-auto">
       {/* Les quatre coins sont plus grands que les cases de bord, comme sur le plateau papier. */}
       <div
-        className="grid h-full w-full gap-px"
+        className="grid h-full w-full"
         style={{
           gridTemplateColumns: '1.55fr repeat(9, 1fr) 1.55fr',
           gridTemplateRows: '1.55fr repeat(9, 1fr) 1.55fr',

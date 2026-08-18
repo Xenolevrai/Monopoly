@@ -2,39 +2,53 @@
 
 /* Polices embarquées dans le build : la partie fonctionne sans internet,
    sur un simple réseau wifi local. */
-@import '@fontsource/cormorant-garamond/500.css';
 @import '@fontsource/cormorant-garamond/600.css';
+@import '@fontsource/cormorant-garamond/700.css';
 @import '@fontsource-variable/inter/index.css';
+@import '@fontsource/oswald/400.css';
+@import '@fontsource/oswald/500.css';
 
 /**
- * Direction artistique « Salon de Minuit ».
- * Toutes les couleurs du jeu passent par ces variables : changer d'ambiance ne
- * demande pas de toucher aux composants.
+ * Direction artistique « Plateau de table ».
+ *
+ * On reprend les codes du plateau papier : carton vert pâle, cases crème,
+ * bandeaux de couleur pleins, filets noirs fins, titres condensés en capitales.
+ * Toutes les couleurs passent par ces variables — changer d'ambiance ne demande
+ * pas de toucher aux composants.
  */
 @theme {
-  --color-night: #141a2b;
-  --color-night-soft: #1c2438;
-  --color-slate-board: #212a40;
-  --color-slate-space: #27314a;
-  --color-gold: #c9a227;
-  --color-gold-soft: #e4c05b;
-  --color-parchment: #e8e6e1;
-  --color-muted: #8a93a8;
+  --color-table: #2b2320;        /* le bois de la table */
+  --color-table-dark: #1e1917;
+  --color-board: #cfe3d3;        /* le carton du plateau */
+  --color-board-edge: #b9d3be;
+  --color-space: #f7f4ea;        /* le crème des cases */
+  --color-space-alt: #efeade;
+  --color-ink: #16130f;          /* l'encre des titres */
+  --color-ink-soft: #4a453c;
+  --color-panel: #f6f2e7;
+  --color-panel-edge: #d9d0ba;
+  --color-accent: #b3242c;       /* le rouge des cartes Chance */
+  --color-accent-deep: #8c1b22;
+  --color-money: #1f7a4d;
+  --color-house: #1f9d55;
+  --color-hotel: #c62828;
+  --color-gold: #b08733;
 
   --font-display: 'Cormorant Garamond', Georgia, serif;
   --font-sans: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  --font-condensed: 'Oswald', 'Inter Variable', system-ui, sans-serif;
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
   margin: 0;
+  /* Un plateau posé sur une table en bois : dégradé chaud et grain discret. */
   background:
-    radial-gradient(120% 90% at 50% -10%, #1e2740 0%, transparent 60%),
-    var(--color-night);
-  color: var(--color-parchment);
+    radial-gradient(120% 100% at 50% 0%, #3a302a 0%, var(--color-table) 45%, var(--color-table-dark) 100%);
+  color: var(--color-ink);
   font-family: var(--font-sans);
   min-height: 100vh;
 }
@@ -43,35 +57,50 @@ body {
   font-family: var(--font-display);
 }
 
+.font-condensed {
+  font-family: var(--font-condensed);
+  letter-spacing: 0.02em;
+}
+
 /* Chiffres alignés : les montants ne dansent pas quand ils changent. */
 .tabular {
   font-variant-numeric: tabular-nums;
 }
 
-/* Filet doré fin, signature visuelle du plateau et des panneaux. */
-.gilt {
+/* Le plateau : carton épais posé sur la table. */
+.board-surface {
+  background: var(--color-board);
+  border: 2px solid var(--color-ink);
   box-shadow:
-    inset 0 0 0 1px rgb(201 162 39 / 0.25),
-    0 18px 50px -20px rgb(0 0 0 / 0.8);
+    0 2px 0 rgb(0 0 0 / 0.35),
+    0 26px 60px -20px rgb(0 0 0 / 0.75);
 }
 
-.gilt-soft {
-  box-shadow: inset 0 0 0 1px rgb(201 162 39 / 0.15);
+/* Une case : crème, filet noir, léger relief papier. */
+.space-tile {
+  background: var(--color-space);
+  border: 1px solid var(--color-ink);
+}
+
+.panel {
+  background: var(--color-panel);
+  border: 1px solid var(--color-panel-edge);
+  box-shadow: 0 12px 30px -18px rgb(0 0 0 / 0.6);
 }
 
 /* Halo de la case active. */
-@keyframes pulse-gold {
+@keyframes pulse-active {
   0%,
   100% {
-    box-shadow: 0 0 0 1px rgb(228 192 91 / 0.7), 0 0 18px 2px rgb(228 192 91 / 0.25);
+    box-shadow: 0 0 0 2px rgb(179 36 44 / 0.55), 0 0 14px 2px rgb(179 36 44 / 0.3);
   }
   50% {
-    box-shadow: 0 0 0 1px rgb(228 192 91 / 0.95), 0 0 26px 6px rgb(228 192 91 / 0.4);
+    box-shadow: 0 0 0 2px rgb(179 36 44 / 0.9), 0 0 22px 5px rgb(179 36 44 / 0.45);
   }
 }
 
 .space-active {
-  animation: pulse-gold 1.8s ease-in-out infinite;
+  animation: pulse-active 1.8s ease-in-out infinite;
   z-index: 5;
 }
 
@@ -92,29 +121,10 @@ body {
   animation: roll-die 0.28s linear infinite;
 }
 
-/* Montants qui montent au-dessus d'un pion. */
-@keyframes float-up {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  20% {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-22px);
-  }
-}
-
-.float-amount {
-  animation: float-up 1.6s ease-out forwards;
-}
-
 @keyframes card-in {
   from {
     opacity: 0;
-    transform: translateY(12px) rotate(-2deg) scale(0.96);
+    transform: translateY(14px) rotate(-3deg) scale(0.95);
   }
   to {
     opacity: 1;
@@ -123,7 +133,7 @@ body {
 }
 
 .card-in {
-  animation: card-in 0.3s ease-out;
+  animation: card-in 0.32s ease-out;
 }
 
 @keyframes fade-in {
@@ -142,13 +152,12 @@ body {
 /* Barres de défilement discrètes dans les panneaux. */
 .scroll-thin {
   scrollbar-width: thin;
-  scrollbar-color: rgb(201 162 39 / 0.35) transparent;
+  scrollbar-color: rgb(0 0 0 / 0.25) transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .space-active,
   .die-rolling,
-  .float-amount,
   .card-in,
   .fade-in {
     animation: none;

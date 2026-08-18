@@ -1,73 +1,81 @@
 /** Panneau des joueuses : solde, propriétés par couleur, état (prison, absente). */
 import { propertiesByGroup, euros } from '../lib/board.js';
+import TokenIcon from './TokenIcon.jsx';
 
-function PropertyChip({ item }) {
+function PropertyChip({ item, groupColor }) {
   const { space, houses, hotel, mortgaged } = item;
   return (
     <span
       title={`${space.name}${hotel ? ' — hôtel' : houses ? ` — ${houses} maison(s)` : ''}${
         mortgaged ? ' — hypothéquée' : ''
       }`}
-      className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] leading-none ${
-        mortgaged ? 'opacity-40 line-through' : ''
+      className={`flex items-center gap-1 rounded border border-black/10 bg-white px-1.5 py-0.5 text-[10px] leading-none ${
+        mortgaged ? 'opacity-45 line-through' : ''
       }`}
-      style={{ backgroundColor: `${item.space.group ? '' : ''}rgb(255 255 255 / 0.06)` }}
     >
-      <span className="truncate max-w-[92px]">{space.shortName}</span>
-      {hotel && <span className="text-gold-soft">▮</span>}
-      {!hotel && houses > 0 && <span className="text-emerald-400">{'▪'.repeat(houses)}</span>}
+      <span className="h-2 w-2 rounded-sm" style={{ backgroundColor: groupColor }} />
+      <span className="max-w-[92px] truncate">{space.shortName}</span>
+      {hotel && <span className="text-[var(--color-hotel)]">▮</span>}
+      {!hotel && houses > 0 && <span className="text-[var(--color-house)]">{'▪'.repeat(houses)}</span>}
     </span>
   );
 }
 
-function PlayerCard({ player, state, isMe, isCurrent }) {
+function PlayerCard({ player, state, isLocal, isActingHere, isCurrent, onFocus }) {
   const groups = propertiesByGroup(state, player.id);
 
   return (
     <div
-      className={`gilt-soft rounded-lg bg-night-soft/80 p-3 transition-all ${
-        isCurrent ? 'ring-1 ring-gold/60' : ''
-      } ${player.bankrupt ? 'opacity-45' : ''}`}
+      className={`rounded-md border bg-white/70 p-2.5 transition-all ${
+        isCurrent ? 'border-[var(--color-accent)] shadow-[0_0_0_2px_rgba(179,36,44,.18)]' : 'border-black/10'
+      } ${player.bankrupt ? 'opacity-50' : ''} ${isActingHere ? 'ring-2 ring-[var(--color-gold)]' : ''}`}
     >
-      <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => isLocal && onFocus?.(player.id)}
+        className={`flex w-full items-center gap-2 text-left ${isLocal ? 'cursor-pointer' : 'cursor-default'}`}
+      >
         <span
-          className="h-3 w-3 shrink-0 rounded-full"
-          style={{ backgroundColor: player.color, boxShadow: `0 0 8px ${player.color}` }}
-        />
-        <span className="truncate font-medium">
-          {player.name}
-          {isMe && <span className="ml-1 text-[10px] text-muted">(vous)</span>}
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-black/25 bg-white"
+          style={{ boxShadow: `0 0 0 1.5px ${player.color}55` }}
+        >
+          <TokenIcon token={player.token} color={player.color} className="h-4 w-4" />
         </span>
-        <span className="tabular ml-auto shrink-0 text-gold-soft">{euros(player.cash)}</span>
-      </div>
-
-      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-muted">
-        {player.bankrupt && <span className="text-rose-400">éliminée</span>}
-        {player.inJail && <span className="text-amber-400">en prison ({player.jailTurns}/3)</span>}
-        {!player.connected && !player.bankrupt && <span className="text-rose-300/80">absente</span>}
-        {player.getOutOfJailCards > 0 && (
-          <span className="text-emerald-300">
-            {player.getOutOfJailCards} carte(s) de sortie
+        <span className="truncate font-condensed text-[15px] uppercase">{player.name}</span>
+        {isLocal && (
+          <span className="rounded bg-[var(--color-gold)]/20 px-1 text-[9px] uppercase tracking-wide text-[#6b5216]">
+            ici
           </span>
+        )}
+        <span className="tabular ml-auto shrink-0 font-semibold text-[var(--color-money)]">
+          {euros(player.cash)}
+        </span>
+      </button>
+
+      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-ink-soft">
+        {player.bankrupt && <span className="text-[var(--color-accent)]">éliminée</span>}
+        {player.inJail && <span className="text-[var(--color-accent)]">en prison ({player.jailTurns}/3)</span>}
+        {!player.connected && !player.bankrupt && <span className="text-[var(--color-accent)]">absente</span>}
+        {player.getOutOfJailCards > 0 && (
+          <span className="text-[var(--color-money)]">{player.getOutOfJailCards} carte(s) de sortie</span>
         )}
       </div>
 
       {groups.length > 0 && (
-        <div className="mt-2 space-y-1">
+        <div className="mt-1.5 space-y-1">
           {groups.map(({ group, items, complete }) => (
             <div key={group.id} className="flex items-start gap-1.5">
               <span
-                className="mt-1 h-2.5 w-2.5 shrink-0 rounded-sm"
+                className="mt-1 h-2.5 w-2.5 shrink-0 rounded-sm border border-black/30"
                 style={{
                   backgroundColor: group.color,
-                  boxShadow: complete ? `0 0 8px ${group.color}` : 'none',
-                  outline: complete ? '1px solid rgb(228 192 91 / 0.8)' : 'none',
+                  outline: complete ? '1.5px solid var(--color-gold)' : 'none',
                 }}
                 title={complete ? `${group.label} — groupe complet` : group.label}
               />
               <div className="flex flex-wrap gap-1">
                 {items.map((item) => (
-                  <PropertyChip key={item.spaceId} item={item} />
+                  <PropertyChip key={item.spaceId} item={item} groupColor={group.color} />
                 ))}
               </div>
             </div>
@@ -78,14 +86,16 @@ function PlayerCard({ player, state, isMe, isCurrent }) {
   );
 }
 
-export default function Players({ state, me }) {
+export default function Players({ state, mine, me, onFocus }) {
   const current = state.players[state.currentPlayerIndex];
+  const localIds = new Set(mine.map((p) => p.id));
+
   return (
-    <div className="space-y-2">
+    <div className="panel space-y-2 rounded-lg p-3">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-display text-lg tracking-widest text-gold-soft">JOUEUSES</h2>
-        <span className="tabular text-[11px] text-muted">
-          banque : {state.bank.houses} 🏠 · {state.bank.hotels} 🏨
+        <h2 className="font-condensed text-base uppercase tracking-[0.2em]">Joueuses</h2>
+        <span className="tabular text-[11px] text-ink-soft">
+          banque : {state.bank.houses} maisons · {state.bank.hotels} hôtels
         </span>
       </div>
       {state.players.map((player) => (
@@ -93,10 +103,17 @@ export default function Players({ state, me }) {
           key={player.id}
           player={player}
           state={state}
-          isMe={player.id === me?.id}
+          isLocal={localIds.has(player.id)}
+          isActingHere={mine.length > 1 && player.id === me?.id}
           isCurrent={player.id === current?.id && state.phase === 'playing'}
+          onFocus={onFocus}
         />
       ))}
+      {mine.length > 1 && (
+        <p className="text-[10px] text-ink-soft">
+          Plusieurs joueuses sur cet écran : cliquez sur un nom pour agir en son nom hors de son tour.
+        </p>
+      )}
     </div>
   );
 }

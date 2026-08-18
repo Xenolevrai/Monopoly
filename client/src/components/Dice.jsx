@@ -14,15 +14,12 @@ function Die({ value, rolling }) {
   const pips = PIPS[value] ?? [];
   return (
     <div
-      className={`grid h-11 w-11 grid-cols-3 grid-rows-3 gap-0.5 rounded-lg bg-parchment p-1.5 shadow-[0_6px_16px_-6px_rgba(0,0,0,0.9)] ${
+      className={`grid h-11 w-11 grid-cols-3 grid-rows-3 gap-0.5 rounded-lg border border-black/25 bg-white p-1.5 shadow-[0_4px_10px_-4px_rgba(0,0,0,.6)] ${
         rolling ? 'die-rolling' : ''
       }`}
     >
       {Array.from({ length: 9 }).map((_, i) => (
-        <span
-          key={i}
-          className={`rounded-full ${pips.includes(i) ? 'bg-night' : 'bg-transparent'}`}
-        />
+        <span key={i} className={`rounded-full ${pips.includes(i) ? 'bg-ink' : 'bg-transparent'}`} />
       ))}
     </div>
   );
@@ -55,7 +52,7 @@ export default function Dice({ values }) {
       <Die value={rolling ? 1 + ((Date.now() / 90) % 6 | 0) : shown?.[0]} rolling={rolling} />
       <Die value={rolling ? 1 + ((Date.now() / 70) % 6 | 0) : shown?.[1]} rolling={rolling} />
       {!rolling && total != null && (
-        <span className="tabular font-display text-2xl text-gold-soft">{total}</span>
+        <span className="tabular font-condensed text-2xl text-ink">{total}</span>
       )}
     </div>
   );

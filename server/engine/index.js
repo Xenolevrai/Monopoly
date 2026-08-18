@@ -39,7 +39,12 @@ export function addPlayer(game, { id, name, token }) {
     return { ok: false, error: 'Ce pseudo est déjà pris.' };
   if (state.players.some((p) => p.token === token)) return { ok: false, error: 'Ce pion est déjà choisi.' };
 
-  const tokenDef = rules.tokens.find((t) => t.id === token) ?? rules.tokens[state.players.length];
+  // Un pion par joueuse : on prend celui demandé, sinon le premier encore libre.
+  const taken = new Set(state.players.map((p) => p.token));
+  const tokenDef =
+    rules.tokens.find((t) => t.id === token && !taken.has(t.id)) ??
+    rules.tokens.find((t) => !taken.has(t.id));
+  if (!tokenDef) return { ok: false, error: 'Tous les pions sont déjà pris.' };
   const player = createPlayer({
     id,
     name,

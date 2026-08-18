@@ -4,6 +4,10 @@
  * Cette couche ne connaît aucune règle du Monopoly : elle identifie la joueuse,
  * appelle `dispatch`, et rediffuse l'état. Toute la validation reste dans le
  * moteur — un client bricolé ne peut donc rien faire d'illégal.
+ *
+ * Une connexion peut porter PLUSIEURS joueuses : c'est le mode « même
+ * ordinateur ». La session garde donc une liste d'identifiants, et chaque
+ * action précise pour qui elle est jouée.
  */
 import {
   addPlayer,
@@ -31,17 +35,30 @@ function broadcast(io, room) {
 
 export function registerSocketHandlers(io) {
   io.on('connection', (socket) => {
-    /** Contexte de cette connexion, rempli à la première entrée dans une partie. */
+    /** Contexte de cette connexion : une partie, une ou plusieurs joueuses. */
     let session = null;
 
     const fail = (message) => socket.emit('game:error', { message });
 
-    const enterRoom = (room, playerId) => {
-      session = { code: room.state.code, playerId };
-      socket.join(room.state.code);
-      socket.emit('game:joined', { code: room.state.code, playerId });
+    /** Confirme au client la liste de « ses » joueuses sur ce poste. */
+    const announce = (room) => {
+      socket.emit('game:joined', {
+        code: room.state.code,
+        playerIds: session.playerIds,
+        // Compatibilité : la dernière joueuse ajoutée sur ce poste.
+        playerId: session.playerIds.at(-1) ?? null,
+      });
       broadcast(io, room);
     };
+
+    const enterRoom = (room, playerIds) => {
+      session = { code: room.state.code, playerIds: [...playerIds] };
+      socket.join(room.state.code);
+      announce(room);
+    };
+
+    /** La salle de cette session, ou null. */
+    const currentRoom = () => (session ? getRoom(session.code) : null);
 
     // — Créer une partie ————————————————————————————————————
     socket.on('game:create', ({ name, token, settings } = {}) => {
@@ -53,7 +70,7 @@ export function registerSocketHandlers(io) {
       const added = addPlayer(room, { id: playerId, name: pseudo, token });
       if (!added.ok) return fail(added.error);
       if (settings) updateSettings(room, playerId, settings);
-      enterRoom(room, playerId);
+      enterRoom(room, [playerId]);
     });
 
     // — Rejoindre avec un code ————————————————————————————————
@@ -69,55 +86,90 @@ export function registerSocketHandlers(io) {
       );
       if (existing) {
         reconnectPlayer(room, existing.id);
-        return enterRoom(room, existing.id);
+        return enterRoom(room, [existing.id]);
       }
 
       const playerId = newPlayerId();
       const added = addPlayer(room, { id: playerId, name: pseudo, token });
       if (!added.ok) return fail(added.error);
-      enterRoom(room, playerId);
+      enterRoom(room, [playerId]);
+    });
+
+    // — Ajouter une joueuse sur CE poste (mode même ordinateur) ————————
+    socket.on('game:add-local', ({ name, token } = {}) => {
+      const room = currentRoom();
+      if (!room) return fail("Vous n'êtes dans aucune partie.");
+      const pseudo = cleanName(name);
+      if (!pseudo) return fail('Choisissez un pseudo.');
+
+      const playerId = newPlayerId();
+      const added = addPlayer(room, { id: playerId, name: pseudo, token });
+      if (!added.ok) return fail(added.error);
+      session.playerIds.push(playerId);
+      announce(room);
+    });
+
+    // — Retirer une joueuse de ce poste (lobby uniquement) ————————————
+    socket.on('game:remove-local', ({ playerId } = {}) => {
+      const room = currentRoom();
+      if (!room) return fail("Vous n'êtes dans aucune partie.");
+      if (!session.playerIds.includes(playerId)) return fail("Cette joueuse n'est pas sur ce poste.");
+      if (room.state.phase !== 'lobby') return fail('La partie a déjà commencé.');
+      if (session.playerIds.length === 1) return fail('Il doit rester au moins une joueuse sur ce poste.');
+
+      removePlayer(room, playerId);
+      session.playerIds = session.playerIds.filter((id) => id !== playerId);
+      announce(room);
     });
 
     // — Reconnexion silencieuse (rafraîchissement de la page) ————————————
-    socket.on('game:rejoin', ({ code, playerId } = {}) => {
+    socket.on('game:rejoin', ({ code, playerId, playerIds } = {}) => {
       const room = getRoom(code);
-      if (!room) return fail('Cette partie n\'existe plus.');
-      const result = reconnectPlayer(room, playerId);
-      if (!result.ok) return fail(result.error);
-      enterRoom(room, playerId);
+      if (!room) return fail("Cette partie n'existe plus.");
+
+      const wanted = (playerIds ?? [playerId]).filter(Boolean);
+      const found = wanted.filter((id) => reconnectPlayer(room, id).ok);
+      if (!found.length) return fail('Joueuse inconnue dans cette partie.');
+      enterRoom(room, found);
     });
 
     // — Réglages et lancement (hôte) ————————————————————————————
     socket.on('game:settings', ({ settings } = {}) => {
-      const room = session && getRoom(session.code);
-      if (!room) return fail('Vous n\'êtes dans aucune partie.');
-      const result = updateSettings(room, session.playerId, settings ?? {});
+      const room = currentRoom();
+      if (!room) return fail("Vous n'êtes dans aucune partie.");
+      const host = session.playerIds.find((id) => id === room.state.hostId) ?? session.playerIds[0];
+      const result = updateSettings(room, host, settings ?? {});
       if (!result.ok) return fail(result.error);
       broadcast(io, room);
     });
 
     socket.on('game:start', () => {
-      const room = session && getRoom(session.code);
-      if (!room) return fail('Vous n\'êtes dans aucune partie.');
-      const result = startGame(room, session.playerId);
+      const room = currentRoom();
+      if (!room) return fail("Vous n'êtes dans aucune partie.");
+      const host = session.playerIds.find((id) => id === room.state.hostId) ?? session.playerIds[0];
+      const result = startGame(room, host);
       if (!result.ok) return fail(result.error);
       broadcast(io, room);
     });
 
     // — Actions de jeu ————————————————————————————————————
     socket.on('game:action', (action = {}) => {
-      const room = session && getRoom(session.code);
-      if (!room) return fail('Vous n\'êtes dans aucune partie.');
-      const result = dispatch(room, session.playerId, action);
+      const room = currentRoom();
+      if (!room) return fail("Vous n'êtes dans aucune partie.");
+
+      const actor = resolveActor(room.state, session.playerIds, action.playerId);
+      if (!actor) return fail("Cette joueuse n'est pas sur ce poste.");
+
+      const result = dispatch(room, actor, action);
       if (!result.ok) return fail(result.error);
       broadcast(io, room);
     });
 
     // — Quitter ————————————————————————————————————————
     socket.on('game:leave', () => {
-      const room = session && getRoom(session.code);
+      const room = currentRoom();
       if (room) {
-        removePlayer(room, session.playerId);
+        for (const playerId of session.playerIds) removePlayer(room, playerId);
         socket.leave(room.state.code);
         broadcast(io, room);
       }
@@ -125,16 +177,31 @@ export function registerSocketHandlers(io) {
     });
 
     socket.on('disconnect', () => {
-      const room = session && getRoom(session.code);
+      const room = currentRoom();
       if (!room) return;
       // On ne retire personne d'une partie lancée : la place et les biens
       // attendent la reconnexion.
-      removePlayer(room, session.playerId);
-      const player = playerById(room.state, session.playerId);
-      if (player) player.connected = false;
+      for (const playerId of session.playerIds) {
+        removePlayer(room, playerId);
+        const player = playerById(room.state, playerId);
+        if (player) player.connected = false;
+      }
       broadcast(io, room);
     });
   });
+}
+
+/**
+ * Décide pour quelle joueuse du poste l'action est jouée.
+ * Si le client précise `playerId`, on le respecte (à condition qu'il soit bien
+ * sur ce poste). Sinon on prend celle à qui le jeu demande quelque chose —
+ * c'est ce qui rend le mode « même ordinateur » naturel : on clique, et c'est
+ * toujours la bonne joueuse qui agit.
+ */
+export function resolveActor(state, playerIds, requested) {
+  if (requested) return playerIds.includes(requested) ? requested : null;
+  const awaited = playerIds.find((id) => state.pending?.playerIds?.includes(id));
+  return awaited ?? playerIds[0] ?? null;
 }
 
 /** Métadonnées utiles au client avant même d'entrer dans une partie. */

@@ -2,98 +2,119 @@
  * Barre d'action contextuelle : elle n'affiche que ce que le serveur attend
  * (`state.pending`). Aucune règle n'est décidée ici — le moteur refuserait de
  * toute façon une action illégale.
+ *
+ * En mode « même ordinateur », toutes les actions sont jouées au nom de `me`,
+ * la joueuse du poste à qui le jeu demande quelque chose.
  */
 import { useState } from 'react';
-import { board, euros } from '../lib/board.js';
+import { board, euros, groups } from '../lib/board.js';
 import { sendAction } from '../lib/socket.js';
+import TokenIcon from './TokenIcon.jsx';
 
-function Button({ children, onClick, tone = 'gold', disabled, className = '' }) {
+function Button({ children, onClick, tone = 'primary', disabled, className = '' }) {
   const tones = {
-    gold: 'bg-gold/90 text-night hover:bg-gold-soft disabled:bg-gold/30',
-    ghost: 'bg-white/5 text-parchment hover:bg-white/10 disabled:opacity-40',
-    danger: 'bg-rose-600/80 text-white hover:bg-rose-500 disabled:opacity-40',
+    primary:
+      'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-deep)] disabled:bg-black/15 disabled:text-black/40',
+    ghost: 'bg-white border border-black/15 text-ink hover:bg-black/5 disabled:opacity-40',
+    danger: 'bg-[#7a1015] text-white hover:bg-[#5d0c10] disabled:opacity-40',
   };
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`rounded-md px-3 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed ${tones[tone]} ${className}`}
+      className={`rounded font-condensed text-sm uppercase tracking-wide transition-colors px-3 py-2 disabled:cursor-not-allowed ${tones[tone]} ${className}`}
     >
       {children}
     </button>
   );
 }
 
-/** Fiche d'une propriété : prix, loyers, hypothèque. */
+/** Le titre de propriété, dans l'esprit des cartes du jeu. */
 export function PropertyCard({ spaceId }) {
   const space = board[spaceId];
   if (!space) return null;
+  const color = space.group ? groups[space.group]?.color : null;
   const rows =
     space.type === 'property'
       ? [
-          ['Loyer nu', space.rent[0]],
-          ['1 maison', space.rent[1]],
-          ['2 maisons', space.rent[2]],
-          ['3 maisons', space.rent[3]],
-          ['4 maisons', space.rent[4]],
-          ['Hôtel', space.rent[5]],
+          ['Loyer terrain nu', space.rent[0]],
+          ['Avec 1 maison', space.rent[1]],
+          ['Avec 2 maisons', space.rent[2]],
+          ['Avec 3 maisons', space.rent[3]],
+          ['Avec 4 maisons', space.rent[4]],
+          ['Avec hôtel', space.rent[5]],
         ]
       : space.type === 'railroad'
-        ? space.rent.map((r, i) => [`${i + 1} gare${i ? 's' : ''}`, r])
+        ? space.rent.map((r, i) => [`${i + 1} gare${i ? 's' : ''} possédée${i ? 's' : ''}`, r])
         : [];
 
   return (
-    <div className="rounded-md border border-white/10 bg-night-soft/80 p-3">
-      <p className="font-display text-base text-gold-soft">{space.name}</p>
-      <p className="tabular text-xs text-muted">Prix : {euros(space.price)}</p>
-      {rows.length > 0 && (
-        <table className="mt-2 w-full text-[11px]">
-          <tbody>
-            {rows.map(([label, value]) => (
-              <tr key={label} className="text-muted">
-                <td className="py-px">{label}</td>
-                <td className="tabular py-px text-right text-parchment/90">{euros(value)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="overflow-hidden rounded border-2 border-ink bg-[var(--color-space)]">
+      {color && (
+        <div
+          className="border-b-2 border-ink px-2 py-2 text-center"
+          style={{ backgroundColor: color }}
+        >
+          <p className="font-condensed text-[13px] uppercase leading-tight text-ink">{space.name}</p>
+        </div>
       )}
-      {space.type === 'utility' && (
-        <p className="mt-2 text-[11px] text-muted">
-          Loyer : dés × 4 (une compagnie) ou × 10 (les deux).
-        </p>
-      )}
-      {space.houseCost && (
-        <p className="mt-2 tabular text-[11px] text-muted">
-          Maison : {euros(space.houseCost)} · Hypothèque : {euros(space.mortgage)}
-        </p>
-      )}
+      <div className="p-2.5">
+        {!color && (
+          <p className="mb-1 text-center font-condensed text-[13px] uppercase">{space.name}</p>
+        )}
+        {rows.length > 0 && (
+          <table className="w-full text-[11px]">
+            <tbody>
+              {rows.map(([label, value]) => (
+                <tr key={label}>
+                  <td className="py-px text-ink-soft">{label}</td>
+                  <td className="tabular py-px text-right font-medium">{euros(value)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {space.type === 'utility' && (
+          <p className="text-[11px] text-ink-soft">
+            Loyer : 4 × le jet de dés, ou 10 × si les deux compagnies sont possédées.
+          </p>
+        )}
+        <div className="mt-2 border-t border-black/15 pt-1.5 text-[11px] text-ink-soft">
+          <p className="tabular">Prix d'achat : {euros(space.price)}</p>
+          {space.houseCost && (
+            <p className="tabular">
+              Maison : {euros(space.houseCost)} · Hôtel : {euros(space.houseCost)} + 4 maisons
+            </p>
+          )}
+          <p className="tabular">Valeur hypothécaire : {euros(space.mortgage)}</p>
+        </div>
+      </div>
     </div>
   );
 }
 
-function Roll({ me, payload }) {
+function Roll({ payload, actor }) {
   if (!payload?.inJail) {
-    return <Button onClick={() => sendAction({ type: 'ROLL_DICE' })}>Lancer les dés</Button>;
+    return <Button onClick={() => sendAction({ type: 'ROLL_DICE' }, actor)}>Lancer les dés</Button>;
   }
   return (
     <div className="space-y-2">
-      <p className="text-xs text-muted">
-        Vous êtes en prison (tentative {payload.jailTurns + 1}/3). Faites un double, payez la caution,
-        ou utilisez une carte.
+      <p className="text-xs text-ink-soft">
+        En prison (tentative {payload.jailTurns + 1}/3). Faites un double, payez la caution, ou
+        utilisez une carte.
       </p>
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => sendAction({ type: 'ROLL_DICE' })}>Tenter un double</Button>
+        <Button onClick={() => sendAction({ type: 'ROLL_DICE' }, actor)}>Tenter un double</Button>
         <Button
           tone="ghost"
           disabled={!payload.canPayBail}
-          onClick={() => sendAction({ type: 'PAY_BAIL' })}
+          onClick={() => sendAction({ type: 'PAY_BAIL' }, actor)}
         >
           Payer {euros(payload.bail)}
         </Button>
         {payload.hasJailCard && (
-          <Button tone="ghost" onClick={() => sendAction({ type: 'USE_JAIL_CARD' })}>
+          <Button tone="ghost" onClick={() => sendAction({ type: 'USE_JAIL_CARD' }, actor)}>
             Utiliser ma carte
           </Button>
         )}
@@ -102,29 +123,28 @@ function Roll({ me, payload }) {
   );
 }
 
-function BuyOrAuction({ payload }) {
+function BuyOrAuction({ payload, actor }) {
   return (
     <div className="space-y-3">
       <PropertyCard spaceId={payload.spaceId} />
       <div className="flex flex-wrap gap-2">
-        <Button
-          disabled={!payload.canAfford}
-          onClick={() => sendAction({ type: 'BUY_PROPERTY' })}
-        >
-          Acheter pour {euros(payload.price)}
+        <Button disabled={!payload.canAfford} onClick={() => sendAction({ type: 'BUY_PROPERTY' }, actor)}>
+          Acheter — {euros(payload.price)}
         </Button>
-        <Button tone="ghost" onClick={() => sendAction({ type: 'DECLINE_PROPERTY' })}>
-          Refuser (mise aux enchères)
+        <Button tone="ghost" onClick={() => sendAction({ type: 'DECLINE_PROPERTY' }, actor)}>
+          Refuser (enchère)
         </Button>
       </div>
       {!payload.canAfford && (
-        <p className="text-xs text-rose-300">Fonds insuffisants : la propriété partira aux enchères.</p>
+        <p className="text-xs text-[var(--color-accent)]">
+          Fonds insuffisants : la propriété partira aux enchères.
+        </p>
       )}
     </div>
   );
 }
 
-function Auction({ state, me }) {
+function Auction({ state, me, actor }) {
   const auction = state.auction;
   const [amount, setAmount] = useState(auction ? auction.highestBid + 10 : 10);
   if (!auction) return null;
@@ -133,9 +153,8 @@ function Auction({ state, me }) {
   return (
     <div className="space-y-3">
       <PropertyCard spaceId={auction.spaceId} />
-      <p className="text-xs text-muted">
-        Enchère en cours :{' '}
-        <span className="tabular text-gold-soft">{euros(auction.highestBid)}</span>
+      <p className="text-xs text-ink-soft">
+        Enchère en cours : <span className="tabular font-semibold">{euros(auction.highestBid)}</span>
         {highest && <> — meilleure offre de {highest.name}</>}
       </p>
       <div className="flex flex-wrap items-center gap-2">
@@ -145,15 +164,15 @@ function Auction({ state, me }) {
           max={me?.cash ?? 0}
           value={amount}
           onChange={(e) => setAmount(Number(e.target.value))}
-          className="tabular w-28 rounded-md border border-white/10 bg-night px-2 py-2 text-sm"
+          className="tabular w-28 rounded border border-black/20 bg-white px-2 py-2 text-sm"
         />
         <Button
           disabled={amount <= auction.highestBid || amount > (me?.cash ?? 0)}
-          onClick={() => sendAction({ type: 'AUCTION_BID', amount })}
+          onClick={() => sendAction({ type: 'AUCTION_BID', amount }, actor)}
         >
           Miser
         </Button>
-        <Button tone="ghost" onClick={() => sendAction({ type: 'AUCTION_PASS' })}>
+        <Button tone="ghost" onClick={() => sendAction({ type: 'AUCTION_PASS' }, actor)}>
           Passer
         </Button>
       </div>
@@ -161,13 +180,13 @@ function Auction({ state, me }) {
   );
 }
 
-function CardChoice({ payload }) {
+function CardChoice({ payload, actor }) {
   return (
     <div className="flex flex-wrap gap-2">
       {payload.options.map((option) => (
         <Button
           key={option.index}
-          onClick={() => sendAction({ type: 'CARD_CHOICE', optionIndex: option.index })}
+          onClick={() => sendAction({ type: 'CARD_CHOICE', optionIndex: option.index }, actor)}
         >
           {option.label}
         </Button>
@@ -176,20 +195,20 @@ function CardChoice({ payload }) {
   );
 }
 
-function Debt({ state, payload }) {
+function Debt({ state, payload, actor }) {
   const creditor = state.players.find((p) => p.id === payload.creditorId);
   return (
     <div className="space-y-2">
       <p className="text-sm">
-        Vous devez <span className="tabular text-rose-300">{euros(payload.amount)}</span>
-        {creditor ? ` à ${creditor.name}` : ' à la banque'} ({payload.reason}).
+        Dette de <span className="tabular font-semibold text-[var(--color-accent)]">{euros(payload.amount)}</span>
+        {creditor ? ` envers ${creditor.name}` : ' envers la banque'} ({payload.reason}).
       </p>
-      <p className="text-xs text-muted">
+      <p className="text-xs text-ink-soft">
         {payload.canPay
           ? 'Hypothéquez ou revendez des constructions ci-dessous pour réunir la somme.'
-          : "Vous ne pouvez plus réunir cette somme : il ne reste que la faillite."}
+          : "Impossible de réunir cette somme : il ne reste que la faillite."}
       </p>
-      <Button tone="danger" onClick={() => sendAction({ type: 'DECLARE_BANKRUPTCY' })}>
+      <Button tone="danger" onClick={() => sendAction({ type: 'DECLARE_BANKRUPTCY' }, actor)}>
         Déclarer faillite
       </Button>
     </div>
@@ -203,38 +222,49 @@ function Manage({ state, me }) {
 
   return (
     <div className="space-y-1.5">
-      <h3 className="text-[11px] uppercase tracking-widest text-muted">Mes biens</h3>
-      <div className="scroll-thin max-h-56 space-y-1 overflow-y-auto pr-1">
+      <h3 className="font-condensed text-[11px] uppercase tracking-[0.2em] text-ink-soft">
+        Les biens de {me.name}
+      </h3>
+      <div className="scroll-thin max-h-52 space-y-1 overflow-y-auto pr-1">
         {owned
           .sort((a, b) => a.spaceId - b.spaceId)
           .map((prop) => {
             const space = board[prop.spaceId];
             const level = prop.hotel ? 5 : prop.houses;
+            const btn = 'rounded border border-black/15 bg-white px-1.5 py-0.5 hover:bg-black/5';
             return (
               <div
                 key={prop.spaceId}
-                className="flex items-center gap-1.5 rounded bg-white/5 px-2 py-1 text-[11px]"
+                className="flex items-center gap-1.5 rounded border border-black/10 bg-white/70 px-2 py-1 text-[11px]"
               >
+                {space.group && (
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-sm border border-black/25"
+                    style={{ backgroundColor: groups[space.group].color }}
+                  />
+                )}
                 <span className="truncate">{space.shortName}</span>
                 {level > 0 && (
-                  <span className="text-emerald-400">{prop.hotel ? '▮' : '▪'.repeat(prop.houses)}</span>
+                  <span className={prop.hotel ? 'text-[var(--color-hotel)]' : 'text-[var(--color-house)]'}>
+                    {prop.hotel ? '▮' : '▪'.repeat(prop.houses)}
+                  </span>
                 )}
-                {prop.mortgaged && <span className="text-amber-400/80">hypo.</span>}
+                {prop.mortgaged && <span className="text-[var(--color-accent)]">hyp.</span>}
                 <span className="ml-auto flex gap-1">
                   {space.type === 'property' && !prop.mortgaged && (
                     <>
                       <button
-                        className="rounded bg-white/10 px-1.5 py-0.5 hover:bg-white/20"
+                        className={btn}
                         title="Construire"
-                        onClick={() => sendAction({ type: 'BUILD_HOUSE', spaceId: prop.spaceId })}
+                        onClick={() => sendAction({ type: 'BUILD_HOUSE', spaceId: prop.spaceId }, me.id)}
                       >
                         +
                       </button>
                       {level > 0 && (
                         <button
-                          className="rounded bg-white/10 px-1.5 py-0.5 hover:bg-white/20"
+                          className={btn}
                           title="Revendre une construction"
-                          onClick={() => sendAction({ type: 'SELL_BUILDING', spaceId: prop.spaceId })}
+                          onClick={() => sendAction({ type: 'SELL_BUILDING', spaceId: prop.spaceId }, me.id)}
                         >
                           −
                         </button>
@@ -243,20 +273,20 @@ function Manage({ state, me }) {
                   )}
                   {prop.mortgaged ? (
                     <button
-                      className="rounded bg-white/10 px-1.5 py-0.5 hover:bg-white/20"
+                      className={btn}
                       title={`Lever l'hypothèque (${euros(Math.ceil(space.mortgage * 1.1))})`}
-                      onClick={() => sendAction({ type: 'UNMORTGAGE', spaceId: prop.spaceId })}
+                      onClick={() => sendAction({ type: 'UNMORTGAGE', spaceId: prop.spaceId }, me.id)}
                     >
                       lever
                     </button>
                   ) : (
                     level === 0 && (
                       <button
-                        className="rounded bg-white/10 px-1.5 py-0.5 hover:bg-white/20"
+                        className={btn}
                         title={`Hypothéquer (${euros(space.mortgage)})`}
-                        onClick={() => sendAction({ type: 'MORTGAGE', spaceId: prop.spaceId })}
+                        onClick={() => sendAction({ type: 'MORTGAGE', spaceId: prop.spaceId }, me.id)}
                       >
-                        hypo.
+                        hyp.
                       </button>
                     )
                   )}
@@ -269,49 +299,63 @@ function Manage({ state, me }) {
   );
 }
 
-export default function Actions({ state, me, onOpenTrade }) {
+export default function Actions({ state, me, mine, onOpenTrade }) {
   if (!me) return null;
   const { pending } = state;
-  const mine = pending.playerIds?.includes(me.id);
-  const current = state.players[state.currentPlayerIndex];
+  const actor = me.id;
+  const mineTurn = pending.playerIds?.includes(me.id);
+  const waitingFor = state.players.find((p) => p.id === pending.playerIds?.[0]);
+  const hotSeat = mine.length > 1;
 
   if (state.phase === 'finished') {
     const winner = state.players.find((p) => p.id === state.winnerId);
     return (
-      <div className="gilt-soft rounded-lg bg-night-soft/80 p-4 text-center">
-        <p className="font-display text-2xl text-gold-soft">Partie terminée</p>
+      <div className="panel rounded-lg p-4 text-center">
+        <p className="font-condensed text-2xl uppercase tracking-widest">Partie terminée</p>
         <p className="mt-1 text-sm">{winner ? `${winner.name} remporte la partie !` : 'Match nul.'}</p>
       </div>
     );
   }
 
   return (
-    <div className="gilt-soft space-y-3 rounded-lg bg-night-soft/80 p-4">
-      {!mine && (
-        <p className="text-sm text-muted">
+    <div className="panel space-y-3 rounded-lg p-4">
+      {/* En mode partagé, on rappelle clairement à qui la souris doit passer. */}
+      {hotSeat && mineTurn && (
+        <div className="flex items-center gap-2 rounded border border-[var(--color-gold)]/50 bg-[var(--color-gold)]/10 px-2 py-1.5">
+          <TokenIcon token={me.token} color={me.color} className="h-5 w-5" />
+          <span className="font-condensed text-sm uppercase">À {me.name} de jouer</span>
+        </div>
+      )}
+
+      {!mineTurn && (
+        <p className="text-sm text-ink-soft">
           {pending.kind === 'auction_bid'
-            ? 'Enchère en cours…'
-            : `En attente de ${state.players.find((p) => p.id === pending.playerIds?.[0])?.name ?? current?.name}…`}
+            ? `Enchère : au tour de ${waitingFor?.name ?? '…'}`
+            : `En attente de ${waitingFor?.name ?? '…'}`}
         </p>
       )}
 
-      {mine && pending.kind === 'roll' && <Roll me={me} payload={pending.payload} />}
-      {mine && pending.kind === 'buy_or_auction' && <BuyOrAuction payload={pending.payload} />}
-      {pending.kind === 'auction_bid' && mine && <Auction state={state} me={me} />}
-      {mine && pending.kind === 'card_choice' && <CardChoice payload={pending.payload} />}
-      {mine && pending.kind === 'pay_debt' && <Debt state={state} payload={pending.payload} />}
-      {mine && pending.kind === 'end_turn' && (
+      {mineTurn && pending.kind === 'roll' && <Roll payload={pending.payload} actor={actor} />}
+      {mineTurn && pending.kind === 'buy_or_auction' && (
+        <BuyOrAuction payload={pending.payload} actor={actor} />
+      )}
+      {mineTurn && pending.kind === 'auction_bid' && <Auction state={state} me={me} actor={actor} />}
+      {mineTurn && pending.kind === 'card_choice' && <CardChoice payload={pending.payload} actor={actor} />}
+      {mineTurn && pending.kind === 'pay_debt' && (
+        <Debt state={state} payload={pending.payload} actor={actor} />
+      )}
+      {mineTurn && pending.kind === 'end_turn' && (
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => sendAction({ type: 'END_TURN' })}>
-            {state.dice?.extraRoll ? 'Rejouer (double)' : 'Finir mon tour'}
+          <Button onClick={() => sendAction({ type: 'END_TURN' }, actor)}>
+            {state.dice?.extraRoll ? 'Rejouer (double)' : 'Finir le tour'}
           </Button>
           <Button tone="ghost" onClick={onOpenTrade}>
-            Proposer un échange
+            Échanger
           </Button>
         </div>
       )}
 
-      {!mine && state.phase === 'playing' && (
+      {!mineTurn && state.phase === 'playing' && (
         <Button tone="ghost" onClick={onOpenTrade}>
           Proposer un échange
         </Button>

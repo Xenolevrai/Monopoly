@@ -4,7 +4,8 @@ Version numérique du Monopoly classique (édition française, plateau parisien)
 jouable à 2-6 depuis un navigateur, sur le même wifi ou à distance.
 
 **Le jeu est complet et jouable** : plateau, règles, temps réel, lobby, échanges,
-chat, reconnexion. 66 tests automatisés.
+chat, reconnexion. On peut jouer **à plusieurs sur le même ordinateur**, avec
+d'autres joueuses **à distance** dans la même partie. 71 tests automatisés.
 
 ![Une partie en cours](docs/captures/partie.png)
 
@@ -14,7 +15,7 @@ chat, reconnexion. 66 tests automatisés.
 npm install
 npm run build   # compile l'interface
 npm start       # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
-npm test        # 66 tests : données, règles, parties simulées, temps réel
+npm test        # 71 tests : données, règles, parties simulées, temps réel
 ```
 
 Node 22+. Le serveur affiche aussi l'adresse locale (`http://192.168.x.x:3000`) à
@@ -55,18 +56,26 @@ charges, avec deux ajustements pensés pour un groupe non technique :
 
 ## Direction artistique
 
-Piste retenue : **« Salon de Minuit »** — fond bleu nuit, plateau ardoise à filet
-doré, bandeaux de couleur lumineux, typo Cormorant dorée en titres. Détails et
-alternative dans `docs/ART_DIRECTION.md`.
+**« Plateau de table »** : carton vert pâle, cases crème cernées d'un filet noir,
+bandeaux de couleur pleins, textes condensés en capitales orientés vers le centre
+comme sur le plateau papier, six pions dessinés en SVG. Détails dans
+`docs/ART_DIRECTION.md`.
 
 ## Jouer ensemble
 
-1. Une personne lance `npm start` sur son ordinateur.
-2. Elle partage l'adresse affichée (`http://192.168.x.x:3000`) aux autres, sur le
-   même wifi. À distance, un tunnel (ngrok, Cloudflare Tunnel) sur le port 3000
-   fait la même chose.
-3. Elle crée une partie et dicte le code à six lettres ; les autres le saisissent.
+1. Une personne lance `npm start` sur son ordinateur et ouvre `http://localhost:3000`.
+2. Elle crée une partie, choisit son pion, et **ajoute autant de joueuses qu'elle
+   veut sur ce même ordinateur** (bouton « + Ajouter une joueuse sur cet
+   ordinateur »). On se passe simplement la souris : le jeu annonce à chaque tour
+   à qui c'est.
+3. Pour les joueuses à distance, elle partage l'adresse affichée au démarrage
+   (`http://192.168.x.x:3000`) si tout le monde est sur le même wifi, ou un tunnel
+   (ngrok, Cloudflare Tunnel) sur le port 3000 sinon, et dicte le code à six
+   lettres.
 4. L'hôte lance la partie quand tout le monde est là.
+
+Les deux modes se mélangent : trois personnes autour d'un portable et deux autres
+à distance, dans la même partie.
 
 Fermer un onglet par erreur ne fait rien perdre : rouvrir la page reprend la
 partie au même point. Si le serveur redémarre, les parties de moins de 24 h sont
@@ -74,6 +83,6 @@ rechargées depuis le disque.
 
 ## Pistes si l'envie vient
 
-- Direction artistique « Papier & Encre » en variante (tout est en variables CSS)
 - Sauvegarde longue durée en SQLite plutôt qu'en fichiers JSON
 - Statistiques de fin de partie (patrimoine, loyers encaissés)
+- Variante sombre : tout passe par des variables CSS dans `client/src/styles.css`

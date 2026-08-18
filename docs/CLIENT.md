@@ -1,6 +1,6 @@
 # Le client
 
-React + Vite + Tailwind, direction artistique **« Salon de Minuit »**.
+React + Vite + Tailwind, direction artistique **« Plateau de table »** (voir `ART_DIRECTION.md`).
 
 ```bash
 npm run build      # produit client/dist, servi par le serveur de jeu
@@ -25,6 +25,19 @@ npm run dev:client # Vite sur 5173, avec proxy vers le serveur sur 3000
 | `components/TradeDialog.jsx` | construction et réponse aux échanges |
 | `components/Feed.jsx` | journal de partie et chat, en deux onglets |
 | `components/Dice.jsx` | deux dés animés |
+| `components/TokenIcon.jsx` | les six pions dessinés en SVG |
+| `components/SpaceIcons.jsx` | pictogrammes des cases (gare, ampoule, coffre…) |
+
+## Plusieurs joueuses sur un écran
+
+`useGame` renvoie `mine` (les joueuses de ce poste) et `me` (celle qui agit au
+clic). `me` est choisie automatiquement : celle du poste à qui le jeu demande
+quelque chose, sinon celle sélectionnée à la main dans le panneau des joueuses.
+
+Quand plusieurs personnes partagent l'écran, un bandeau rappelle à qui passer la
+souris, et les joueuses locales portent une étiquette « ici ». Pour agir hors de
+son tour (hypothéquer, répondre à un échange), il suffit de cliquer sur son nom
+dans le panneau.
 
 ## Principes
 
@@ -56,7 +69,7 @@ pas de toucher aux composants.
 
 ## Polices
 
-Cormorant Garamond et Inter sont **embarquées dans le build** (paquets
+Oswald, Inter et Cormorant Garamond sont **embarquées dans le build** (paquets
 `@fontsource`), pas chargées depuis Google Fonts : une soirée sur un wifi sans
 internet garde la même typographie, et aucune requête ne part vers l'extérieur.
 
