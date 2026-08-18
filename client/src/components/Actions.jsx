@@ -195,22 +195,35 @@ function CardChoice({ payload, actor }) {
   );
 }
 
-function Debt({ state, payload, actor }) {
+function Debt({ state, payload, actor, onOpenTrade, onOpenSettlement }) {
   const creditor = state.players.find((p) => p.id === payload.creditorId);
   return (
     <div className="space-y-2">
       <p className="text-sm">
-        Dette de <span className="tabular font-semibold text-[var(--color-accent)]">{euros(payload.amount)}</span>
+        Dette de{' '}
+        <span className="tabular font-semibold text-[var(--color-accent)]">{euros(payload.amount)}</span>
         {creditor ? ` envers ${creditor.name}` : ' envers la banque'} ({payload.reason}).
       </p>
       <p className="text-xs text-ink-soft">
-        {payload.canPay
-          ? 'Hypothéquez ou revendez des constructions ci-dessous pour réunir la somme.'
-          : "Impossible de réunir cette somme : il ne reste que la faillite."}
+        Plusieurs portes de sortie : hypothéquer ou revendre ci-dessous, négocier avec les autres
+        joueuses{creditor ? `, ou proposer un arrangement à ${creditor.name}` : ''}.
       </p>
-      <Button tone="danger" onClick={() => sendAction({ type: 'DECLARE_BANKRUPTCY' }, actor)}>
-        Déclarer faillite
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        {creditor && (
+          <Button onClick={onOpenSettlement}>Proposer un arrangement à {creditor.name}</Button>
+        )}
+        <Button tone="ghost" onClick={onOpenTrade}>
+          Négocier avec une autre
+        </Button>
+        <Button tone="danger" onClick={() => sendAction({ type: 'DECLARE_BANKRUPTCY' }, actor)}>
+          Déclarer faillite
+        </Button>
+      </div>
+      {!payload.canPay && !creditor && (
+        <p className="text-xs text-[var(--color-accent)]">
+          La banque n'accepte pas d'arrangement : sans fonds suffisants, c'est la faillite.
+        </p>
+      )}
     </div>
   );
 }
@@ -299,13 +312,17 @@ function Manage({ state, me }) {
   );
 }
 
-export default function Actions({ state, me, mine, onOpenTrade }) {
+export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement }) {
   if (!me) return null;
   const { pending } = state;
   const actor = me.id;
   const mineTurn = pending.playerIds?.includes(me.id);
   const waitingFor = state.players.find((p) => p.id === pending.playerIds?.[0]);
   const hotSeat = mine.length > 1;
+  const localIds = mine.map((p) => p.id);
+  const pendingOffers = state.trades.filter(
+    (t) => t.status === 'pending' && localIds.includes(t.toPlayerId),
+  ).length;
 
   if (state.phase === 'finished') {
     const winner = state.players.find((p) => p.id === state.winnerId);
@@ -327,6 +344,18 @@ export default function Actions({ state, me, mine, onOpenTrade }) {
         </div>
       )}
 
+      {pendingOffers > 0 && (
+        <button
+          type="button"
+          onClick={onOpenTrade}
+          className="flex w-full items-center gap-2 rounded border border-[var(--color-accent)]/50 bg-[var(--color-accent)]/10 px-2 py-1.5 text-left"
+        >
+          <span className="font-condensed text-sm uppercase text-[var(--color-accent)]">
+            {pendingOffers} offre{pendingOffers > 1 ? 's' : ''} en attente de votre réponse
+          </span>
+        </button>
+      )}
+
       {!mineTurn && (
         <p className="text-sm text-ink-soft">
           {pending.kind === 'auction_bid'
@@ -342,7 +371,13 @@ export default function Actions({ state, me, mine, onOpenTrade }) {
       {mineTurn && pending.kind === 'auction_bid' && <Auction state={state} me={me} actor={actor} />}
       {mineTurn && pending.kind === 'card_choice' && <CardChoice payload={pending.payload} actor={actor} />}
       {mineTurn && pending.kind === 'pay_debt' && (
-        <Debt state={state} payload={pending.payload} actor={actor} />
+        <Debt
+          state={state}
+          payload={pending.payload}
+          actor={actor}
+          onOpenTrade={onOpenTrade}
+          onOpenSettlement={onOpenSettlement}
+        />
       )}
       {mineTurn && pending.kind === 'end_turn' && (
         <div className="flex flex-wrap gap-2">
@@ -355,9 +390,9 @@ export default function Actions({ state, me, mine, onOpenTrade }) {
         </div>
       )}
 
-      {!mineTurn && state.phase === 'playing' && (
+      {(!mineTurn || pending.kind !== 'end_turn') && state.phase === 'playing' && pending.kind !== 'pay_debt' && (
         <Button tone="ghost" onClick={onOpenTrade}>
-          Proposer un échange
+          Négocier{pendingOffers > 0 ? ` (${pendingOffers} offre${pendingOffers > 1 ? 's' : ''})` : ''}
         </Button>
       )}
 

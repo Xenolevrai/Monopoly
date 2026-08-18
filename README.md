@@ -5,7 +5,7 @@ jouable à 2-6 depuis un navigateur, sur le même wifi ou à distance.
 
 **Le jeu est complet et jouable** : plateau, règles, temps réel, lobby, échanges,
 chat, reconnexion. On peut jouer **à plusieurs sur le même ordinateur**, avec
-d'autres joueuses **à distance** dans la même partie. 71 tests automatisés.
+d'autres joueuses **à distance** dans la même partie. 76 tests automatisés.
 
 ![Une partie en cours](docs/captures/partie.png)
 
@@ -13,9 +13,9 @@ d'autres joueuses **à distance** dans la même partie. 71 tests automatisés.
 
 ```bash
 npm install
-npm run build   # compile l'interface
+npm run build   # compile l'interface — à refaire après chaque `git pull`
 npm start       # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
-npm test        # 71 tests : données, règles, parties simulées, temps réel
+npm run check   # lint + 76 tests : données, règles, parties simulées, temps réel
 ```
 
 Node 22+. Le serveur affiche aussi l'adresse locale (`http://192.168.x.x:3000`) à
@@ -80,6 +80,22 @@ Les deux modes se mélangent : trois personnes autour d'un portable et deux autr
 Fermer un onglet par erreur ne fait rien perdre : rouvrir la page reprend la
 partie au même point. Si le serveur redémarre, les parties de moins de 24 h sont
 rechargées depuis le disque.
+
+## Négocier plutôt que payer
+
+Un loyer trop cher n'oblige jamais à payer sur-le-champ. Face à une dette, on peut :
+
+- hypothéquer ou revendre ses constructions ;
+- **négocier avec n'importe qui** pour réunir des fonds — la dette se solde toute
+  seule dès que l'argent rentre ;
+- **proposer un arrangement à sa créancière** : des propriétés, de l'argent, une
+  carte de prison. Si elle accepte, **la dette est effacée**, quel que soit le
+  montant cédé. C'est aux deux de juger si le marché est bon ;
+- déclarer faillite, en dernier recours.
+
+Une proposition se répond **à tout moment**, sans attendre son tour. Sur un écran
+partagé, les offres adressées à n'importe quelle joueuse du poste sont visibles
+et répondables tout de suite.
 
 ## Pistes si l'envie vient
 

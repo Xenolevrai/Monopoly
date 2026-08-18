@@ -208,7 +208,9 @@ function applyAction(game, state, rng, player, action) {
 
     // — Échanges ————————————————————————————————————————
     case 'PROPOSE_TRADE':
-      return proposeTrade(state, playerId, action.toPlayerId, action.give, action.receive);
+      return proposeTrade(state, playerId, action.toPlayerId, action.give, action.receive, {
+        settlesDebt: action.settlesDebt,
+      });
 
     case 'RESPOND_TRADE':
       return respondToTrade(state, playerId, action.tradeId, action.accept);

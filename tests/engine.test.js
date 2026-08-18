@@ -493,3 +493,131 @@ test('le chat accepte les messages et coupe les messages vides', () => {
   assert.equal(game.state.chat.at(-1).text, 'bien joué !');
   assert.equal(dispatch(game, 'p1', { type: 'CHAT', text: '   ' }).ok, false);
 });
+
+// ————————————————————————————————————— Arrangements sur dette
+
+test('un arrangement accepté efface la dette sans payer le montant', () => {
+  const game = newGame(['Julie', 'Sophie']);
+  give(game, 'p1', [6, 8, 9], { houses: 4 }); // groupe bleu ciel bien bâti
+  setCash(game, 'p0', 10);
+  give(game, 'p0', [1, 3]);
+  forceDice(game, [2, 4]);
+  act(game, 'p0', { type: 'ROLL_DICE' });
+
+  assert.equal(game.state.debt.amount, 400, 'loyer largement au-dessus de ses moyens');
+
+  // Julie propose ses deux terrains marron plutôt que de payer.
+  act(game, 'p0', {
+    type: 'PROPOSE_TRADE',
+    toPlayerId: 'p1',
+    give: { spaceIds: [1, 3] },
+    receive: {},
+    settlesDebt: true,
+  });
+  const tradeId = game.state.trades.at(-1).id;
+  assert.equal(game.state.trades.at(-1).settlesDebt, true);
+  assert.equal(game.state.trades.at(-1).debtAmount, 400);
+
+  act(game, 'p1', { type: 'RESPOND_TRADE', tradeId, accept: true });
+
+  assert.equal(game.state.debt, null, 'la dette est effacée');
+  assert.equal(playerById(game.state, 'p0').bankrupt, false, 'Julie reste en jeu');
+  assert.equal(playerById(game.state, 'p0').cash, 10, "elle n'a pas payé le loyer");
+  assert.equal(game.state.properties[1].ownerId, 'p1');
+  assert.equal(game.state.properties[3].ownerId, 'p1');
+  assert.equal(game.state.pending.kind, 'end_turn', 'la partie reprend son cours');
+});
+
+test('un arrangement refusé laisse la dette en place', () => {
+  const game = newGame(['Julie', 'Sophie']);
+  give(game, 'p1', [6, 8, 9], { houses: 4 });
+  setCash(game, 'p0', 10);
+  give(game, 'p0', [1]);
+  forceDice(game, [2, 4]);
+  act(game, 'p0', { type: 'ROLL_DICE' });
+
+  act(game, 'p0', {
+    type: 'PROPOSE_TRADE',
+    toPlayerId: 'p1',
+    give: { spaceIds: [1] },
+    receive: {},
+    settlesDebt: true,
+  });
+  act(game, 'p1', { type: 'RESPOND_TRADE', tradeId: game.state.trades.at(-1).id, accept: false });
+
+  assert.equal(game.state.debt.amount, 400, 'la dette est toujours là');
+  assert.equal(game.state.pending.kind, 'pay_debt');
+  assert.equal(game.state.properties[1].ownerId, 'p0', 'rien n\'a changé de main');
+});
+
+test('on ne peut proposer un arrangement qu\'à sa créancière et avec une dette', () => {
+  const game = newGame(['Julie', 'Sophie', 'Marc']);
+  give(game, 'p0', [1]);
+
+  // Sans dette.
+  const sansDette = dispatch(game, 'p0', {
+    type: 'PROPOSE_TRADE',
+    toPlayerId: 'p1',
+    give: { spaceIds: [1] },
+    receive: {},
+    settlesDebt: true,
+  });
+  assert.equal(sansDette.ok, false);
+  assert.match(sansDette.error, /dette/i);
+
+  // Avec une dette, mais adressé à la mauvaise personne.
+  give(game, 'p1', [6, 8, 9], { houses: 4 });
+  setCash(game, 'p0', 10);
+  forceDice(game, [2, 4]);
+  act(game, 'p0', { type: 'ROLL_DICE' });
+  const mauvaiseCible = dispatch(game, 'p0', {
+    type: 'PROPOSE_TRADE',
+    toPlayerId: 'p2',
+    give: { spaceIds: [1] },
+    receive: {},
+    settlesDebt: true,
+  });
+  assert.equal(mauvaiseCible.ok, false);
+  assert.match(mauvaiseCible.error, /créancière/i);
+});
+
+test('une joueuse endettée peut négocier avec une tierce pour réunir des fonds', () => {
+  const game = newGame(['Julie', 'Sophie', 'Marc']);
+  give(game, 'p1', [6, 8, 9]); // groupe complet, loyer doublé = 12 €
+  setCash(game, 'p0', 5);
+  give(game, 'p0', [1]);
+  setCash(game, 'p2', 500);
+  forceDice(game, [2, 4]);
+  act(game, 'p0', { type: 'ROLL_DICE' });
+  assert.equal(game.state.pending.kind, 'pay_debt');
+
+  // Julie vend un terrain à Marc, qui n'a rien à voir avec la dette.
+  act(game, 'p0', {
+    type: 'PROPOSE_TRADE',
+    toPlayerId: 'p2',
+    give: { spaceIds: [1] },
+    receive: { cash: 100 },
+  });
+  act(game, 'p2', { type: 'RESPOND_TRADE', tradeId: game.state.trades.at(-1).id, accept: true });
+
+  assert.equal(game.state.debt, null, 'la dette se règle toute seule dès que les fonds arrivent');
+  assert.equal(game.state.properties[1].ownerId, 'p2');
+});
+
+test('une offre se répond hors de son tour', () => {
+  const game = newGame(['Julie', 'Sophie']);
+  give(game, 'p1', [6]);
+  // C'est le tour de Julie ; Sophie propose quand même un échange.
+  act(game, 'p1', {
+    type: 'PROPOSE_TRADE',
+    toPlayerId: 'p0',
+    give: { spaceIds: [6] },
+    receive: { cash: 150 },
+  });
+  // Et Julie répond immédiatement, sans avoir fini son tour.
+  act(game, 'p0', { type: 'RESPOND_TRADE', tradeId: game.state.trades.at(-1).id, accept: true });
+
+  assert.equal(game.state.properties[6].ownerId, 'p0');
+  assert.equal(playerById(game.state, 'p0').cash, 1350);
+  assert.equal(game.state.pending.kind, 'roll', 'le tour de Julie continue normalement');
+});

@@ -14,7 +14,7 @@ import { Server } from 'socket.io';
 
 import { registerSocketHandlers, lobbyInfo } from './sockets.js';
 import { restoreRooms, purgeStaleRooms, getRoom, roomCount } from './rooms.js';
-import { board, groups, rules } from '../shared/index.js';
+import { board, groups } from '../shared/index.js';
 
 const PORT = Number(process.env.PORT ?? 3000);
 const HOST = process.env.HOST ?? '0.0.0.0';

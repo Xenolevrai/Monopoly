@@ -9,13 +9,18 @@
     "dev": "node --watch server/index.js",
     "dev:client": "npm run dev --workspace client",
     "build": "npm run build --workspace client",
-    "test": "node --test"
+    "test": "node --test",
+    "lint": "eslint .",
+    "check": "npm run lint && npm test"
   },
   "dependencies": {
     "express": "^5.2.1",
     "socket.io": "^4.8.3"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.1",
+    "globals": "^17.11.0",
     "socket.io-client": "^4.8.3"
   },
   "workspaces": [

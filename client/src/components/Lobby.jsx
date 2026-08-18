@@ -171,7 +171,7 @@ function AddLocalPlayer({ taken, onCancel }) {
   );
 }
 
-export function WaitingRoom({ state, me, mine, onLeave }) {
+export function WaitingRoom({ state, mine, onLeave }) {
   const localIds = new Set(mine.map((p) => p.id));
   const isHost = localIds.has(state.hostId);
   const [copied, setCopied] = useState(false);

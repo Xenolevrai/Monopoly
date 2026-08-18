@@ -13,7 +13,7 @@ import { Server } from 'socket.io';
 import { io as ioClient } from 'socket.io-client';
 
 import { registerSocketHandlers } from '../server/sockets.js';
-import { resetRooms, restoreRooms, getRoom } from '../server/rooms.js';
+import { resetRooms } from '../server/rooms.js';
 
 /** Démarre un serveur Socket.io sur un port libre. */
 async function startServer() {

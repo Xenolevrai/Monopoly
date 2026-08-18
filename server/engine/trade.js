@@ -38,12 +38,29 @@ function validateSide(state, playerId, side) {
   return null;
 }
 
-/** Propose un échange. L'autre joueuse répond par accept/refuse. */
-export function proposeTrade(state, fromPlayerId, toPlayerId, give, receive) {
+/**
+ * Propose un échange. L'autre joueuse répond quand elle veut — il n'y a pas
+ * besoin d'attendre son tour.
+ *
+ * `settlesDebt` marque un **arrangement** : la débitrice propose des biens (ou de
+ * l'argent) à sa créancière pour solder la dette en cours. Si l'arrangement est
+ * accepté, la dette est effacée, quel que soit le montant cédé — c'est aux deux
+ * joueuses de juger si le marché est bon.
+ */
+export function proposeTrade(state, fromPlayerId, toPlayerId, give, receive, options = {}) {
   if (fromPlayerId === toPlayerId) return { ok: false, error: 'Échange avec soi-même impossible.' };
   const from = playerById(state, fromPlayerId);
   const to = playerById(state, toPlayerId);
   if (!from || !to || from.bankrupt || to.bankrupt) return { ok: false, error: 'Joueuse indisponible.' };
+
+  const settlesDebt = Boolean(options.settlesDebt);
+  if (settlesDebt) {
+    const debt = state.debt;
+    if (!debt || debt.debtorId !== fromPlayerId)
+      return { ok: false, error: "Vous n'avez pas de dette à solder." };
+    if (debt.creditorId !== toPlayerId)
+      return { ok: false, error: 'Un arrangement se négocie avec la créancière.' };
+  }
 
   const giveSide = normalize(give ?? emptySide);
   const receiveSide = normalize(receive ?? emptySide);
@@ -56,10 +73,19 @@ export function proposeTrade(state, fromPlayerId, toPlayerId, give, receive) {
     toPlayerId,
     give: giveSide,
     receive: receiveSide,
+    settlesDebt,
+    debtAmount: settlesDebt ? state.debt.amount : null,
     status: 'pending',
   };
   state.trades.push(trade);
-  log(state, 'trade', `${from.name} propose un échange à ${to.name}.`, { tradeId: trade.id, trade });
+  log(
+    state,
+    'trade',
+    settlesDebt
+      ? `${from.name} propose un arrangement à ${to.name} pour solder ${euros(state.debt.amount)}.`
+      : `${from.name} propose un échange à ${to.name}.`,
+    { tradeId: trade.id, trade },
+  );
   return { ok: true, trade };
 }
 
@@ -75,8 +101,22 @@ export function respondToTrade(state, playerId, tradeId, accept) {
 
   if (!accept) {
     trade.status = 'declined';
-    log(state, 'trade', `${to.name} refuse l'échange proposé par ${from.name}.`, { tradeId });
+    log(
+      state,
+      'trade',
+      trade.settlesDebt
+        ? `${to.name} refuse l'arrangement : ${from.name} doit toujours sa dette.`
+        : `${to.name} refuse l'échange proposé par ${from.name}.`,
+      { tradeId },
+    );
     return { ok: true, accepted: false };
+  }
+
+  // Un arrangement n'a de sens que tant que la dette existe.
+  if (trade.settlesDebt && state.debt?.debtorId !== trade.fromPlayerId) {
+    trade.status = 'cancelled';
+    log(state, 'trade', "L'arrangement n'a plus lieu d'être : la dette est réglée.", { tradeId });
+    return { ok: false, error: "Cette dette n'est plus en cours." };
   }
 
   // Revalidation : l'état a pu changer depuis la proposition.
@@ -89,6 +129,19 @@ export function respondToTrade(state, playerId, tradeId, accept) {
 
   executeTrade(state, trade);
   trade.status = 'accepted';
+
+  if (trade.settlesDebt && state.debt) {
+    const amount = state.debt.amount;
+    state.debt = null;
+    state.pending = { kind: null, playerIds: [] };
+    log(
+      state,
+      'debt',
+      `${to.name} accepte l'arrangement : la dette de ${euros(amount)} de ${from.name} est soldée.`,
+      { playerId: trade.fromPlayerId, creditorId: trade.toPlayerId, amount },
+    );
+  }
+
   return { ok: true, accepted: true };
 }
 

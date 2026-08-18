@@ -23,6 +23,32 @@ export function gridPosition(id) {
   return { col: SIZE, row: 1 + (id - 30), side: 'right' };
 }
 
+/**
+ * Centre d'une case, en pourcentage du plateau.
+ *
+ * La grille vaut `1.55fr` pour les coins et `1fr` pour les autres : on refait le
+ * même calcul ici pour poser les pions dans une couche flottante au-dessus du
+ * plateau. C'est ce qui permet de les déplacer en glissant plutôt qu'en sautant
+ * d'une case à l'autre.
+ */
+const CORNER_SPAN = 1.55;
+const TOTAL_SPAN = CORNER_SPAN * 2 + 9;
+
+/** Bord gauche (en %) et largeur (en %) de la colonne/ligne `index` (1 à 11). */
+function track(index) {
+  const before = index === 1 ? 0 : CORNER_SPAN + (index - 2);
+  const size = index === 1 || index === SIZE ? CORNER_SPAN : 1;
+  return { start: (before / TOTAL_SPAN) * 100, size: (size / TOTAL_SPAN) * 100 };
+}
+
+/** @returns {{ x: number, y: number, w: number, h: number }} en % du plateau */
+export function spaceRect(id) {
+  const { col, row } = gridPosition(id);
+  const c = track(col);
+  const r = track(row);
+  return { x: c.start + c.size / 2, y: r.start + r.size / 2, w: c.size, h: r.size };
+}
+
 /** Couleur du groupe d'une case, ou null. */
 export function groupColor(space) {
   return space.group ? groups[space.group]?.color ?? null : null;

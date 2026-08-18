@@ -6,6 +6,7 @@ import Players from './components/Players.jsx';
 import Actions from './components/Actions.jsx';
 import Feed from './components/Feed.jsx';
 import TradeDialog from './components/TradeDialog.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 import { PropertyCard } from './components/Actions.jsx';
 import cards from '../../shared/data/cards.json';
 
@@ -16,6 +17,7 @@ const ALL_CARDS = Object.fromEntries(
 export default function App() {
   const { state, me, mine, error, connected, setError, leave, focusOn } = useGame();
   const [tradeOpen, setTradeOpen] = useState(false);
+  const [settleOpen, setSettleOpen] = useState(false);
   const [inspected, setInspected] = useState(null);
 
   // Les erreurs sont passagères : elles s'effacent d'elles-mêmes.
@@ -33,7 +35,7 @@ export default function App() {
   }, [state?.trades?.length]);
 
   if (!state) return <Home error={error} />;
-  if (state.phase === 'lobby') return <WaitingRoom state={state} me={me} mine={mine} onLeave={leave} />;
+  if (state.phase === 'lobby') return <WaitingRoom state={state} mine={mine} onLeave={leave} />;
 
   const drawnCard = state.drawnCardId ? ALL_CARDS[state.drawnCardId] : null;
 
@@ -52,21 +54,46 @@ export default function App() {
 
       <div className="mx-auto flex max-w-[1500px] flex-col gap-4 xl:h-[calc(100dvh-2.5rem)] xl:flex-row">
         <div className="flex min-h-0 flex-1 items-start justify-center">
-          <Board state={state} drawnCard={drawnCard} onSelectSpace={setInspected} />
+          <ErrorBoundary zone="Le plateau">
+            <Board state={state} drawnCard={drawnCard} onSelectSpace={setInspected} />
+          </ErrorBoundary>
         </div>
 
         {/* La colonne défile toute seule : le plateau, lui, ne bouge jamais. */}
         <aside className="scroll-thin flex w-full shrink-0 flex-col gap-4 xl:h-full xl:w-[380px] xl:overflow-y-auto">
-          <Actions state={state} me={me} mine={mine} onOpenTrade={() => setTradeOpen(true)} />
-          <Players state={state} me={me} mine={mine} onFocus={focusOn} />
+          <ErrorBoundary zone="La barre d'action">
+            <Actions
+              state={state}
+              me={me}
+              mine={mine}
+              onOpenTrade={() => setTradeOpen(true)}
+              onOpenSettlement={() => setSettleOpen(true)}
+            />
+          </ErrorBoundary>
+          <ErrorBoundary zone="Le panneau des joueuses">
+            <Players state={state} me={me} mine={mine} onFocus={focusOn} />
+          </ErrorBoundary>
           <div className="h-72 shrink-0">
-            <Feed state={state} actor={me?.id} />
+            <ErrorBoundary zone="Le journal">
+              <Feed state={state} actor={me?.id} />
+            </ErrorBoundary>
           </div>
         </aside>
       </div>
 
-      {tradeOpen && me && (
-        <TradeDialog state={state} me={me} onClose={() => setTradeOpen(false)} />
+      {(tradeOpen || settleOpen) && me && (
+        <ErrorBoundary zone="La fenêtre d'échange">
+          <TradeDialog
+            state={state}
+            me={me}
+            mine={mine}
+            settleMode={settleOpen}
+            onClose={() => {
+              setTradeOpen(false);
+              setSettleOpen(false);
+            }}
+          />
+        </ErrorBoundary>
       )}
 
       {inspected != null && (
