@@ -33,7 +33,7 @@ server/
   index.js  serveur HTTP + API, sert le client compilé
   sockets.js passerelle Socket.io ↔ moteur
   rooms.js  registre des parties, codes, sauvegarde sur disque
-client/     interface React + Vite + Tailwind (« Salon de Minuit »)
+client/     interface React + Vite + Tailwind (« Plateau de table »)
   src/components/  plateau, joueuses, actions, échanges, journal et chat
   src/lib/         connexion temps réel, état, données du plateau
 tests/      data / engine / simulation / server
