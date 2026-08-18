@@ -37,14 +37,16 @@ export function addPlayer(game, { id, name, token }) {
   if (state.players.length >= rules.maxPlayers) return { ok: false, error: 'La partie est complète.' };
   if (state.players.some((p) => p.name.toLowerCase() === name.toLowerCase()))
     return { ok: false, error: 'Ce pseudo est déjà pris.' };
-  if (state.players.some((p) => p.token === token)) return { ok: false, error: 'Ce pion est déjà choisi.' };
 
-  // Un pion par joueuse : on prend celui demandé, sinon le premier encore libre.
+  // Un pion par joueuse. Si celui demandé est déjà sur la table, on en donne un
+  // autre plutôt que de refuser l'entrée : depuis un autre ordinateur, on ne
+  // peut pas savoir qui a pris quoi avant d'être arrivée.
   const taken = new Set(state.players.map((p) => p.token));
   const tokenDef =
     rules.tokens.find((t) => t.id === token && !taken.has(t.id)) ??
     rules.tokens.find((t) => !taken.has(t.id));
   if (!tokenDef) return { ok: false, error: 'Tous les pions sont déjà pris.' };
+  const swapped = token && tokenDef.id !== token;
   const player = createPlayer({
     id,
     name,
@@ -53,8 +55,15 @@ export function addPlayer(game, { id, name, token }) {
     order: state.players.length,
   });
   state.players.push(player);
-  log(state, 'lobby', `${name} rejoint la partie.`, { playerId: id });
-  return { ok: true, player };
+  log(
+    state,
+    'lobby',
+    swapped
+      ? `${name} rejoint la partie — le pion demandé était pris, elle joue « ${tokenDef.label} ».`
+      : `${name} rejoint la partie.`,
+    { playerId: id, token: tokenDef.id, swapped },
+  );
+  return { ok: true, player, swapped };
 }
 
 /** Retire une joueuse (uniquement avant le début de la partie). */

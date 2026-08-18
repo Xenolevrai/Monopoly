@@ -241,10 +241,35 @@ function AddLocalPlayer({ taken, onCancel }) {
 }
 
 /** Barre discrète en jeu : code, tour, et arrêt de la partie. */
-export function GameMenu({ state, mine }) {
+export function GameMenu({ state, mine, onLeave, onShowRecap }) {
   const [confirming, setConfirming] = useState(false);
 
-  if (state.phase !== 'playing' || !mine.length) return null;
+  if (!mine.length) return null;
+
+  // Partie terminée : on ne propose plus que de revoir le compte ou de partir.
+  if (state.phase === 'finished') {
+    return (
+      <div className="panel flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-xs">
+        <span className="font-condensed uppercase text-[var(--color-accent)]">Partie terminée</span>
+        <button
+          type="button"
+          onClick={onShowRecap}
+          className="rounded border border-black/15 bg-white px-2 py-1 font-condensed uppercase hover:bg-black/5"
+        >
+          Revoir le compte final
+        </button>
+        <button
+          type="button"
+          onClick={onLeave}
+          className="ml-auto rounded bg-[var(--color-accent)] px-2 py-1 font-condensed uppercase text-white hover:bg-[var(--color-accent-deep)]"
+        >
+          Quitter et rejouer
+        </button>
+      </div>
+    );
+  }
+
+  if (state.phase !== 'playing') return null;
 
   return (
     <div className="panel flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-xs">

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { newGame, forceDice, act, give, setCash, place, dispatch, playerById } from './helpers.js';
-import { rentFor, maxRaisable } from '../server/engine/queries.js';
+import { rentFor, maxRaisable, netWorth } from '../server/engine/queries.js';
 import { applyCardAction, drawCard, applyRevealedCard, returnJailCard } from '../server/engine/cards.js';
 
 // ————————————————————————————————————— Tour de jeu
@@ -750,4 +750,31 @@ test('on ne peut pas arrêter une partie qui n\'a pas commencé', async () => {
   const result = endGame(game, 'p0');
   assert.equal(result.ok, false);
   assert.match(result.error, /pas en cours/i);
+});
+
+test('le patrimoine compte les gares et compagnies sans se casser', () => {
+  const game = newGame(['Julie', 'Sophie']);
+  setCash(game, 'p0', 100);
+  give(game, 'p0', [5]); // Gare Montparnasse : 200 €, aucun coût de maison
+  give(game, 'p0', [12]); // Compagnie d'Électricité : 150 €
+  give(game, 'p0', [1, 3], { houses: 2 }); // 2 × (60 € + 2 × 50 €)
+
+  const worth = netWorth(game.state, 'p0');
+  assert.ok(Number.isFinite(worth), 'un patrimoine ne doit jamais valoir NaN');
+  assert.equal(worth, 100 + 200 + 150 + 60 + 100 + 60 + 100);
+});
+
+test('le récapitulatif chiffre tout le monde, faillies comprises', async () => {
+  const { endGame } = await import('../server/engine/index.js');
+  const game = newGame(['Julie', 'Sophie']);
+  give(game, 'p0', [5, 15]);
+  playerById(game.state, 'p1').bankrupt = true;
+
+  endGame(game, 'p0');
+  const standings = game.state.standings;
+  assert.equal(standings.length, 2, 'les deux figurent au tableau');
+  assert.ok(standings.every((entry) => Number.isFinite(entry.worth)));
+  assert.equal(standings[0].name, 'Julie');
+  assert.equal(standings[0].properties, 2);
+  assert.equal(standings.at(-1).bankrupt, true, 'la faillie ferme la marche');
 });

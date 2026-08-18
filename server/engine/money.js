@@ -205,13 +205,28 @@ export function refreshDebtPending(state) {
 }
 
 /**
- * Classement final par patrimoine : liquide, propriétés et constructions.
- * Sert quand on décide d'arrêter la partie avant la faillite générale.
+ * Le récapitulatif de fin de partie.
+ *
+ * Toutes les joueuses y figurent — celles qui ont fait faillite comprises, en bas
+ * du tableau : une partie se raconte en entier. Le classement se fait au
+ * patrimoine (liquide + propriétés + constructions), avec le détail de chaque
+ * poste pour que le résultat se lise sans discussion.
  */
 export function finishGame(state, reason = 'la partie est arrêtée') {
-  const standings = activePlayers(state)
-    .map((player) => ({ playerId: player.id, name: player.name, worth: netWorth(state, player.id) }))
-    .sort((a, b) => b.worth - a.worth);
+  const standings = state.players
+    .map((player) => {
+      const owned = propertiesOf(state, player.id);
+      return {
+        playerId: player.id,
+        name: player.name,
+        bankrupt: player.bankrupt,
+        cash: player.cash,
+        properties: owned.length,
+        buildings: owned.reduce((n, prop) => n + (prop.hotel ? 5 : prop.houses), 0),
+        worth: player.bankrupt ? 0 : netWorth(state, player.id),
+      };
+    })
+    .sort((a, b) => Number(a.bankrupt) - Number(b.bankrupt) || b.worth - a.worth);
 
   state.phase = 'finished';
   state.standings = standings;
@@ -221,7 +236,14 @@ export function finishGame(state, reason = 'la partie est arrêtée') {
 
   log(state, 'victory', `Fin de partie (${reason}).`, { standings });
   standings.forEach((entry, index) => {
-    log(state, 'victory', `${index + 1}. ${entry.name} — ${euros(entry.worth)} de patrimoine.`, entry);
+    log(
+      state,
+      'victory',
+      entry.bankrupt
+        ? `${entry.name} avait fait faillite.`
+        : `${index + 1}. ${entry.name} — ${euros(entry.worth)} de patrimoine.`,
+      entry,
+    );
   });
   return { ok: true, standings };
 }
@@ -243,11 +265,7 @@ export function returnBuildingsToBank(state, prop) {
 export function checkGameOver(state) {
   const alive = activePlayers(state);
   if (alive.length > 1) return false;
-  state.phase = 'finished';
-  state.winnerId = alive[0]?.id ?? null;
-  state.standings = alive.map((p) => ({ playerId: p.id, name: p.name, worth: netWorth(state, p.id) }));
-  state.pending = { kind: null, playerIds: [] };
-  if (alive[0]) log(state, 'victory', `${alive[0].name} remporte la partie !`, { playerId: alive[0].id });
+  finishGame(state, alive[0] ? `${alive[0].name} reste seule en jeu` : 'plus personne en jeu');
   return true;
 }
 

@@ -9,6 +9,7 @@ import Actions from './components/Actions.jsx';
 import Feed from './components/Feed.jsx';
 import TradeDialog from './components/TradeDialog.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
+import GameOver from './components/GameOver.jsx';
 import { PropertyCard } from './components/Actions.jsx';
 import cards from '../../shared/data/cards.json';
 
@@ -23,9 +24,15 @@ export default function App() {
   const [settleOpen, setSettleOpen] = useState(false);
   const [inspected, setInspected] = useState(null);
   const aside = useRef(null);
+  const [recapClosed, setRecapClosed] = useState(false);
 
   // Quand une nouvelle décision arrive, la colonne remonte : sans ça, le panneau
   // reste caché sous la liste des biens et on croit qu'il ne se passe rien.
+  const finished = state?.phase === 'finished';
+  useEffect(() => {
+    if (finished) setRecapClosed(false);
+  }, [finished]);
+
   const pendingKind = state?.pending?.kind ?? null;
   useEffect(() => {
     if (pendingKind) aside.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -90,7 +97,12 @@ export default function App() {
           className="scroll-thin flex w-full shrink-0 flex-col gap-4 xl:h-full xl:w-[380px] xl:overflow-y-auto"
         >
           <ErrorBoundary zone="Le menu de partie">
-            <GameMenu state={state} mine={mine} />
+            <GameMenu
+              state={state}
+              mine={mine}
+              onLeave={leave}
+              onShowRecap={() => setRecapClosed(false)}
+            />
           </ErrorBoundary>
           <ErrorBoundary zone="La barre d'action">
             <Actions
@@ -111,6 +123,12 @@ export default function App() {
           </div>
         </aside>
       </div>
+
+      {finished && !recapClosed && (
+        <ErrorBoundary zone="Le récapitulatif">
+          <GameOver state={state} onLeave={leave} onClose={() => setRecapClosed(true)} />
+        </ErrorBoundary>
+      )}
 
       {(tradeOpen || settleOpen) && me && (
         <ErrorBoundary zone="La fenêtre d'échange">

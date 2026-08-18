@@ -182,7 +182,9 @@ export function netWorth(state, playerId) {
   for (const prop of propertiesOf(state, playerId)) {
     const space = getSpace(prop.spaceId);
     total += prop.mortgaged ? space.mortgage : space.price;
-    total += buildingLevel(prop) * space.houseCost;
+    // Les gares et compagnies n'ont pas de coût de maison : sans ce garde-fou,
+    // `0 * undefined` donnait NaN et emportait tout le patrimoine avec lui.
+    total += buildingLevel(prop) * (space.houseCost ?? 0);
   }
   return total;
 }

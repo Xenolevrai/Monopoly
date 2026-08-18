@@ -87,9 +87,12 @@ rien dans le moteur ne solde une dette sans qu'on le lui demande.
 
 ## Arrêter la partie quand on veut
 
-`endGame` (réservé à l'hôte) clôt la partie sans attendre la faillite générale et
-établit le classement au **patrimoine** : liquide + prix des propriétés + valeur
-des constructions. Une partie qui s'arrête à 2 h du matin a donc un vainqueur.
+`endGame` (ouvert à toutes) clôt la partie sans attendre la faillite générale.
+`finishGame` établit alors le récapitulatif : toutes les joueuses y figurent,
+faillites comprises en bas de tableau, avec le détail de chaque poste — liquide,
+nombre de propriétés, constructions — et le total au **patrimoine**. La victoire
+par élimination passe par le même chemin, pour que la fin de partie se lise
+toujours pareil. Une partie qui s'arrête à 2 h du matin a donc un vainqueur.
 
 ## Ce qui a été tranché en chemin
 
@@ -112,7 +115,7 @@ des constructions. Une partie qui s'arrête à 2 h du matin a donc un vainqueur.
 npm test
 ```
 
-84 tests, trois familles :
+87 tests, trois familles :
 
 - `tests/data.test.js` — les données collent au jeu officiel ;
 - `tests/engine.test.js` — 40 scénarios de règles (loyers doublés, répartition des

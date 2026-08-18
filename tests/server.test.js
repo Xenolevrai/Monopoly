@@ -424,7 +424,7 @@ test('un poste ne peut pas jouer pour une joueuse qui n\'est pas la sienne', asy
   assert.match(error.message, /pas sur ce poste/i);
 });
 
-test('deux joueuses du même poste ne peuvent pas prendre le même pion', async (t) => {
+test('deux joueuses ne partagent jamais le même pion', async (t) => {
   const server = await startServer();
   const poste = connect(server.url);
   t.after(async () => {
@@ -435,9 +435,12 @@ test('deux joueuses du même poste ne peuvent pas prendre le même pion', async 
   poste.socket.emit('game:create', { name: 'Julie', token: 'chat' });
   await poste.once('game:joined');
 
+  // Le pion est déjà pris : plutôt que de refuser Marc, on lui en donne un autre.
   poste.socket.emit('game:add-local', { name: 'Marc', token: 'chat' });
-  const error = await poste.once('game:error');
-  assert.match(error.message, /pion/i);
+  await poste.once('game:joined', (p) => p.playerIds.length === 2);
+  const state = await poste.waitState((s) => s.players.length === 2);
+  assert.equal(state.players[0].token, 'chat');
+  assert.notEqual(state.players[1].token, 'chat');
 });
 
 test('retirer une joueuse du poste libère sa place et son pion', async (t) => {
@@ -491,4 +494,25 @@ test('la reconnexion ramène toutes les joueuses du poste', async (t) => {
 
   const state = await poste.waitState((s) => s.players.length === 3 && s.players.every((p) => p.connected));
   assert.equal(state.players.length, 3);
+});
+
+test('deux joueuses qui gardent le pion par défaut entrent quand même', async (t) => {
+  const server = await startServer();
+  const host = connect(server.url);
+  const guest = connect(server.url);
+  t.after(async () => {
+    host.close();
+    guest.close();
+    await server.close();
+  });
+
+  // Personne ne touche au sélecteur : les deux demandent le même pion.
+  host.socket.emit('game:create', { name: 'Julie', token: 'chapeau' });
+  const { code } = await host.once('game:joined');
+  guest.socket.emit('game:join', { code, name: 'Sophie', token: 'chapeau' });
+  await guest.once('game:joined');
+
+  const lobby = await host.once('game:state', (s) => s.players.length === 2);
+  assert.equal(lobby.players.length, 2, 'Sophie entre malgré tout');
+  assert.notEqual(lobby.players[0].token, lobby.players[1].token, 'et reçoit un autre pion');
 });

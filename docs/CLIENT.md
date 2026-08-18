@@ -27,6 +27,7 @@ npm run dev:client # Vite sur 5173, avec proxy vers le serveur sur 3000
 | `components/Dice.jsx` | deux dés animés |
 | `components/Pawns.jsx` | les pions, couche flottante au-dessus du plateau |
 | `components/Money.jsx` | l'argent en billets : liasses et choix des coupures |
+| `components/GameOver.jsx` | le compte final, au milieu de l'écran |
 | `lib/useCinematic.js` | la mise en scène d'un tour (dés puis pion) |
 | `components/TokenIcon.jsx` | les six pions dessinés en SVG |
 | `components/SpaceIcons.jsx` | pictogrammes des cases (gare, ampoule, coffre…) |

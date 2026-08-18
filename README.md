@@ -5,7 +5,7 @@ jouable à 2-6 depuis un navigateur, sur le même wifi ou à distance.
 
 **Le jeu est complet et jouable** : plateau, règles, temps réel, lobby, échanges,
 chat, reconnexion. On peut jouer **à plusieurs sur le même ordinateur**, avec
-d'autres joueuses **à distance** dans la même partie. 84 tests automatisés.
+d'autres joueuses **à distance** dans la même partie. 87 tests automatisés.
 
 ![Une partie en cours](docs/captures/partie.png)
 
@@ -15,7 +15,7 @@ d'autres joueuses **à distance** dans la même partie. 84 tests automatisés.
 npm install
 npm run build   # compile l'interface — à refaire après chaque `git pull`
 npm start       # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
-npm run check   # lint + 84 tests : données, règles, parties simulées, temps réel
+npm run check   # lint + 87 tests : données, règles, parties simulées, temps réel
 ```
 
 Node 22+. Le serveur affiche aussi l'adresse locale (`http://192.168.x.x:3000`) à
@@ -86,8 +86,11 @@ cours avec leurs pions et le tour atteint : on tape son pseudo, on clique dessus
 et on repart où l'on s'était arrêtées. Rien n'est effacé avant un mois sans jouer.
 
 Et si l'envie de finir n'y est plus, **n'importe qui** peut terminer la partie
-depuis la barre du haut : le classement se fait alors au patrimoine (liquide +
-propriétés + constructions).
+depuis la barre du haut. Le **compte final** s'ouvre alors au milieu de l'écran,
+chez tout le monde en même temps : le podium, le détail de chacune (liquide,
+propriétés, constructions), les éliminées en bas de tableau. De là, un bouton
+ramène à l'accueil pour en relancer une — ou on referme pour regarder le plateau
+une dernière fois, le compte reste accessible depuis la barre du haut.
 
 ## Conçu pour se jouer en se parlant
 
