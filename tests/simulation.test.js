@@ -103,8 +103,9 @@ function pickAction(state, playerId, rng) {
   }
 }
 
-/** Face à une dette : revendre, hypothéquer, ou déclarer faillite. */
+/** Face à une dette : payer si on peut, sinon liquider, sinon faire faillite. */
 function raiseFundsOrFold(state, player) {
+  if (player.cash >= state.debt.amount) return { type: 'PAY_DEBT' };
   if (maxRaisable(state, player.id) < state.debt.amount) return { type: 'DECLARE_BANKRUPTCY' };
 
   const owned = Object.values(state.properties).filter((p) => p.ownerId === player.id);
@@ -134,7 +135,9 @@ function playGame(seed, playerCount = 4, maxSteps = 4000) {
     // impossible) : on tolère le refus, mais pas le blocage.
     if (
       !result.ok &&
-      ['ROLL_DICE', 'END_TURN', 'DECLARE_BANKRUPTCY', 'DRAW_CARD', 'ACKNOWLEDGE_CARD'].includes(action.type)
+      ['ROLL_DICE', 'END_TURN', 'DECLARE_BANKRUPTCY', 'DRAW_CARD', 'ACKNOWLEDGE_CARD', 'PAY_DEBT'].includes(
+        action.type,
+      )
     ) {
       assert.fail(`étape ${steps} : action essentielle refusée (${action.type} → ${result.error})`);
     }

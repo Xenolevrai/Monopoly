@@ -134,5 +134,6 @@ function resolveOwnable(state, player, space, ctx) {
     spaceId: space.id,
     amount: rent,
   });
-  charge(state, player.id, rent, `loyer de ${space.name}`, owner.id);
+  // Un loyer se règle, se négocie, ou mène à la faillite : jamais un prélèvement d'office.
+  charge(state, player.id, rent, `loyer de ${space.name}`, owner.id, { negotiable: true });
 }

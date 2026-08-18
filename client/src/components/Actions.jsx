@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { board, euros, groups } from '../lib/board.js';
 import { sendAction } from '../lib/socket.js';
 import TokenIcon from './TokenIcon.jsx';
+import { BillStack } from './Money.jsx';
 
 function Button({ children, onClick, tone = 'primary', disabled, className = '' }) {
   const tones = {
@@ -195,30 +196,49 @@ function CardChoice({ payload, actor }) {
   );
 }
 
-function Debt({ state, payload, actor, onOpenTrade, onOpenSettlement }) {
+function Debt({ state, me, payload, actor, onOpenTrade, onOpenSettlement }) {
   const creditor = state.players.find((p) => p.id === payload.creditorId);
+  const hasCash = me.cash >= payload.amount;
+
   return (
     <div className="space-y-2">
       <p className="text-sm">
-        Dette de{' '}
+        {creditor ? 'Loyer' : 'À payer'} :{' '}
         <span className="tabular font-semibold text-[var(--color-accent)]">{euros(payload.amount)}</span>
-        {creditor ? ` envers ${creditor.name}` : ' envers la banque'} ({payload.reason}).
+        {creditor ? ` pour ${creditor.name}` : ' à la banque'} ({payload.reason}).
       </p>
-      <p className="text-xs text-ink-soft">
-        Plusieurs portes de sortie : hypothéquer ou revendre ci-dessous, négocier avec les autres
-        joueuses{creditor ? `, ou proposer un arrangement à ${creditor.name}` : ''}.
-      </p>
+
+      {/* Ce qu'on pose sur la table si l'on paie comptant. */}
+      {hasCash && (
+        <div className="rounded border border-black/10 bg-white p-2">
+          <p className="mb-1 text-[11px] text-ink-soft">Les billets à sortir</p>
+          <BillStack amount={payload.amount} />
+        </div>
+      )}
+
       <div className="flex flex-wrap gap-2">
+        <Button disabled={!hasCash} onClick={() => sendAction({ type: 'PAY_DEBT' }, actor)}>
+          Payer {euros(payload.amount)}
+        </Button>
         {creditor && (
-          <Button onClick={onOpenSettlement}>Proposer un arrangement à {creditor.name}</Button>
+          <Button tone="ghost" onClick={onOpenSettlement}>
+            S'arranger avec {creditor.name}
+          </Button>
         )}
         <Button tone="ghost" onClick={onOpenTrade}>
-          Négocier avec une autre
+          Négocier ailleurs
         </Button>
         <Button tone="danger" onClick={() => sendAction({ type: 'DECLARE_BANKRUPTCY' }, actor)}>
-          Déclarer faillite
+          Faillite
         </Button>
       </div>
+
+      <p className="text-xs text-ink-soft">
+        {creditor
+          ? `Rien n'est prélevé d'office : vous pouvez payer, proposer à ${creditor.name} des terrains ou un mélange des deux, ou vendre quelque chose d'abord.`
+          : 'Hypothéquez ou revendez ci-dessous pour réunir la somme.'}
+      </p>
+
       {!payload.canPay && !creditor && (
         <p className="text-xs text-[var(--color-accent)]">
           La banque n'accepte pas d'arrangement : sans fonds suffisants, c'est la faillite.
@@ -326,10 +346,36 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
 
   if (state.phase === 'finished') {
     const winner = state.players.find((p) => p.id === state.winnerId);
+    const standings = state.standings ?? [];
     return (
-      <div className="panel rounded-lg p-4 text-center">
-        <p className="font-condensed text-2xl uppercase tracking-widest">Partie terminée</p>
-        <p className="mt-1 text-sm">{winner ? `${winner.name} remporte la partie !` : 'Match nul.'}</p>
+      <div className="panel space-y-2 rounded-lg p-4">
+        <p className="text-center font-condensed text-2xl uppercase tracking-widest">Partie terminée</p>
+        <p className="text-center text-sm">
+          {winner ? `${winner.name} l'emporte !` : 'Match nul.'}
+        </p>
+        {standings.length > 0 && (
+          <ol className="space-y-1 pt-1">
+            {standings.map((entry, index) => {
+              const player = state.players.find((p) => p.id === entry.playerId);
+              return (
+                <li
+                  key={entry.playerId}
+                  className="flex items-center gap-2 rounded border border-black/10 bg-white px-2 py-1 text-sm"
+                >
+                  <span className="font-condensed text-ink-soft">{index + 1}.</span>
+                  {player && <TokenIcon token={player.token} color={player.color} className="h-4 w-4" />}
+                  <span className="font-condensed uppercase">{entry.name}</span>
+                  <span className="tabular ml-auto font-semibold text-[var(--color-money)]">
+                    {euros(entry.worth)}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+        <p className="text-center text-[11px] text-ink-soft">
+          Classement au patrimoine : liquide, propriétés et constructions.
+        </p>
       </div>
     );
   }
@@ -388,6 +434,7 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
       {mineTurn && pending.kind === 'pay_debt' && (
         <Debt
           state={state}
+          me={me}
           payload={pending.payload}
           actor={actor}
           onOpenTrade={onOpenTrade}

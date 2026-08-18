@@ -36,6 +36,7 @@ Client → serveur :
 | `game:rejoin` | `{ code, playerIds }` | reconnexion silencieuse après un rafraîchissement |
 | `game:settings` | `{ settings }` | règles maison (hôte, lobby uniquement) |
 | `game:start` | — | lance la partie (hôte) |
+| `game:end` | — | arrête la partie et compte les points (hôte) |
 | `game:action` | `{ type, … }` | toute action de jeu, transmise au moteur |
 | `game:leave` | — | quitte la partie |
 
@@ -48,7 +49,8 @@ Serveur → client :
 | `game:error` | `{ message }` — refus lisible, en français |
 
 API HTTP : `GET /api/health`, `GET /api/board` (plateau + pions + règles maison),
-`GET /api/game/:code` (vérifier un code avant de saisir son pseudo).
+`GET /api/games` (les parties reprenables), `GET /api/game/:code` (vérifier un
+code avant de saisir son pseudo).
 
 ## Un poste, plusieurs joueuses
 
@@ -86,9 +88,12 @@ et si c'était l'hôte, la première joueuse restante reprend la main.
 
 L'état est recopié sur disque après chaque mutation, avec 400 ms de délai pour
 regrouper les rafales (un tour de jeu génère une dizaine de mutations). Au
-redémarrage, les parties de moins de 24 h sont relues, tout le monde marqué
-« à reconnecter ». Les parties inactives depuis plus de 24 h sont purgées toutes
-les heures.
+redémarrage, les parties sont relues, tout le monde marqué « à reconnecter ».
+
+**Une partie se reprend un autre jour** : on ne jette que ce qui n'a plus été
+touché depuis un mois. L'écran d'accueil liste les parties en cours (`/api/games`)
+avec leurs pions, le tour atteint et la dernière fois qu'on y a joué — on reprend
+la sienne d'un clic, sans avoir noté le code.
 
 Le générateur aléatoire repart d'une graine neuve après un redémarrage : seul
 l'état de la partie est restauré, pas la suite des jets à venir — ce qui n'a

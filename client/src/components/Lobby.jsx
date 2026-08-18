@@ -1,5 +1,5 @@
 /** Accueil (créer / rejoindre) puis salon d'attente avec le code à partager. */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { socket } from '../lib/socket.js';
 import rules from '../../../shared/data/rules.json';
 import TokenIcon from './TokenIcon.jsx';
@@ -57,6 +57,59 @@ function TokenPicker({ value, onChange, taken = [] }) {
   );
 }
 
+/**
+ * Les parties laissées en plan sur ce serveur. On reprend la sienne d'un clic,
+ * sans avoir noté le code la semaine dernière.
+ */
+function ResumeList({ onResume }) {
+  const [games, setGames] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/games')
+      .then((r) => r.json())
+      .then((data) => setGames(data.games ?? []))
+      .catch(() => setGames([]));
+  }, []);
+
+  if (!games.length) return null;
+
+  const when = (at) => {
+    if (!at) return '';
+    const days = Math.floor((Date.now() - at) / 86400000);
+    if (days === 0) return "aujourd'hui";
+    if (days === 1) return 'hier';
+    return `il y a ${days} jours`;
+  };
+
+  return (
+    <div className="space-y-2">
+      <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
+        Reprendre une partie
+      </p>
+      {games.slice(0, 4).map((game) => (
+        <button
+          key={game.code}
+          type="button"
+          onClick={() => onResume(game)}
+          className="flex w-full items-center gap-2 rounded border border-black/12 bg-white/70 px-3 py-2 text-left hover:bg-white"
+        >
+          <span className="tabular font-condensed text-lg tracking-[0.15em]">{game.code}</span>
+          <span className="flex -space-x-1">
+            {game.players.map((p) => (
+              <TokenIcon key={p.id} token={p.token} color={p.color} className="h-5 w-5" title={p.name} />
+            ))}
+          </span>
+          <span className="ml-auto text-right text-[11px] text-ink-soft">
+            {game.players.map((p) => p.name).join(', ')}
+            <br />
+            tour {game.turnCount} · {when(game.lastPlayed)}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function Home({ error }) {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
@@ -64,6 +117,16 @@ export function Home({ error }) {
 
   const create = () => socket.emit('game:create', { name, token });
   const join = () => socket.emit('game:join', { code: code.toUpperCase(), name, token });
+
+  /** Reprendre une partie sauvegardée : on se remet dans la peau de sa joueuse. */
+  const resume = (game) => {
+    const known = game.players.find((p) => p.name.toLowerCase() === name.trim().toLowerCase());
+    if (known) {
+      socket.emit('game:rejoin', { code: game.code, playerIds: [known.id] });
+    } else {
+      setCode(game.code);
+    }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
@@ -121,6 +184,12 @@ export function Home({ error }) {
           </button>
         </div>
 
+        <ResumeList onResume={resume} />
+
+        <p className="text-center text-[11px] text-ink-soft">
+          Une partie interrompue se retrouve ici : tapez votre pseudo puis cliquez dessus.
+        </p>
+
         {error && <p className="text-center text-sm text-[var(--color-accent)]">{error}</p>}
       </div>
     </div>
@@ -167,6 +236,52 @@ function AddLocalPlayer({ taken, onCancel }) {
           Annuler
         </button>
       </div>
+    </div>
+  );
+}
+
+/** Barre discrète en jeu : quitter, ou arrêter la partie (hôte). */
+export function GameMenu({ state, mine }) {
+  const [confirming, setConfirming] = useState(false);
+  const isHost = mine.some((p) => p.id === state.hostId);
+
+  if (state.phase !== 'playing') return null;
+
+  return (
+    <div className="panel flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-xs">
+      <span className="tabular font-condensed tracking-[0.15em]">{state.code}</span>
+      <span className="text-ink-soft">tour {state.turnCount}</span>
+      <span className="ml-auto text-ink-soft">
+        La partie est sauvegardée : fermez tout, elle vous attendra.
+      </span>
+      {isHost &&
+        (confirming ? (
+          <span className="flex items-center gap-1.5">
+            <span className="text-ink-soft">Arrêter et compter les points ?</span>
+            <button
+              type="button"
+              onClick={() => socket.emit('game:end')}
+              className="rounded bg-[var(--color-accent)] px-2 py-1 font-condensed uppercase text-white hover:bg-[var(--color-accent-deep)]"
+            >
+              Oui, terminer
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirming(false)}
+              className="rounded border border-black/15 bg-white px-2 py-1 font-condensed uppercase hover:bg-black/5"
+            >
+              Non
+            </button>
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setConfirming(true)}
+            className="rounded border border-black/15 bg-white px-2 py-1 font-condensed uppercase hover:bg-black/5"
+          >
+            Terminer la partie
+          </button>
+        ))}
     </div>
   );
 }

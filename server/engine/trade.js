@@ -8,7 +8,7 @@
 import { getSpace } from '../../shared/index.js';
 import { log, euros } from './log.js';
 import { playerById, buildingLevel } from './queries.js';
-import { settleDebt } from './money.js';
+import { refreshDebtPending } from './money.js';
 
 let tradeCounter = 0;
 
@@ -188,6 +188,7 @@ function executeTrade(state, trade) {
     { tradeId: trade.id, trade },
   );
 
-  // Un échange peut avoir renfloué une joueuse endettée.
-  settleDebt(state);
+  // Un échange peut avoir renfloué une joueuse endettée : le panneau de dette
+  // se met à jour, mais c'est elle qui décide quand payer.
+  refreshDebtPending(state);
 }

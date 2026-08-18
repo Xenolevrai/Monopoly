@@ -38,8 +38,8 @@ Une seule règle gouverne tout : **une action n'est acceptée que si elle
 correspond à ce que `state.pending` réclame, et qu'elle vient d'une joueuse
 listée dans `pending.playerIds`.**
 
-`pending.kind` vaut `roll`, `buy_or_auction`, `auction_bid`, `card_choice`,
-`pay_debt`, `end_turn`, ou `null`. Deux exceptions volontaires :
+`pending.kind` vaut `roll`, `buy_or_auction`, `draw_card`, `card_reveal`,
+`auction_bid`, `card_choice`, `pay_debt`, `end_turn`, ou `null`. Deux exceptions volontaires :
 
 - **hypothéquer et revendre** sont possibles à tout moment — il faut pouvoir
   réunir des fonds pendant le tour d'une autre (carte « anniversaire ») ;
@@ -59,8 +59,8 @@ pending: roll
        ├─ en prison        → double = sortie / 3ᵉ échec = caution d'office
        └─ déplacement → résolution de la case
             ├─ propriété libre      → pending: buy_or_auction
-            ├─ propriété d'une autre → loyer (→ pending: pay_debt si insuffisant)
-            ├─ Chance / Caisse      → effet (peut relancer une résolution)
+            ├─ propriété d'une autre → pending: pay_debt (payer, s'arranger, ou faillite)
+            ├─ Chance / Caisse      → pending: draw_card puis card_reveal
             ├─ taxe / Allez en prison / Parc gratuit
             └─ rien                 → pending: end_turn
   └─ END_TURN
@@ -68,11 +68,35 @@ pending: roll
        └─ sinon      → joueuse suivante
 ```
 
+## Un loyer ne se prélève pas tout seul
+
+C'est le choix de conception le plus visible. Une somme due **à la banque** part
+tout de suite si les fonds sont là : on ne négocie pas avec la banque. Une somme
+due **à une autre joueuse** — un loyer — n'est jamais prélevée d'office. Elle
+devient une dette, et la débitrice choisit :
+
+- payer comptant (`PAY_DEBT`) ;
+- proposer un **arrangement** à la propriétaire : des terrains, de l'argent, un
+  mélange des deux. Si elle accepte, la dette est effacée quel que soit le montant
+  cédé — c'est aux deux de juger si le marché est bon ;
+- négocier ailleurs pour réunir des fonds, hypothéquer, revendre ;
+- déclarer faillite.
+
+Techniquement, `charge(..., { negotiable: true })` marque cette différence, et
+rien dans le moteur ne solde une dette sans qu'on le lui demande.
+
+## Arrêter la partie quand on veut
+
+`endGame` (réservé à l'hôte) clôt la partie sans attendre la faillite générale et
+établit le classement au **patrimoine** : liquide + prix des propriétés + valeur
+des constructions. Une partie qui s'arrête à 2 h du matin a donc un vainqueur.
+
 ## Ce qui a été tranché en chemin
 
-- **Dette** : un paiement impossible ne descend jamais le solde sous zéro. Il
-  crée une `debt` qui gèle la partie jusqu'à règlement ou faillite. Après chaque
-  hypothèque, revente ou échange, le moteur retente le règlement tout seul.
+- **Dette** : le solde ne descend jamais sous zéro. Une somme due crée une `debt`
+  qui gèle la partie jusqu'à son règlement, son arrangement, ou la faillite. Une
+  hypothèque ou un échange met à jour ce que la joueuse peut réunir, mais ne paie
+  jamais à sa place.
 - **Enchère à deux joueuses** : la dernière en lice garde la main tant qu'elle n'a
   pas misé — sinon elle n'aurait jamais l'occasion de faire sa première mise.
 - **Revente d'un hôtel** quand la banque n'a plus 4 maisons : l'hôtel est rasé
@@ -88,7 +112,7 @@ pending: roll
 npm test
 ```
 
-56 tests, trois familles :
+82 tests, trois familles :
 
 - `tests/data.test.js` — les données collent au jeu officiel ;
 - `tests/engine.test.js` — 40 scénarios de règles (loyers doublés, répartition des

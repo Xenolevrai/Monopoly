@@ -8,7 +8,7 @@
  */
 import { getSpace, cards } from '../../shared/index.js';
 import { log, euros } from './log.js';
-import { playerById, propertiesOf, maxRaisable, activePlayers } from './queries.js';
+import { playerById, propertiesOf, maxRaisable, activePlayers, netWorth } from './queries.js';
 
 /** Crédite une joueuse. */
 export function credit(state, playerId, amount, reason) {
@@ -23,25 +23,35 @@ export function credit(state, playerId, amount, reason) {
 }
 
 /**
- * Fait payer une joueuse. Si elle n'a pas assez de liquide, la dette est
- * enregistrée et le jeu se met en attente de règlement.
+ * Fait payer une joueuse.
+ *
+ * Par défaut, si les fonds sont là, la somme part tout de suite : une taxe, une
+ * caution ou les 10 € d'un anniversaire ne se négocient pas, et un clic de plus
+ * n'apporterait rien.
+ *
+ * `negotiable` change ce régime, et c'est le cas d'un **loyer** : la somme n'est
+ * jamais prélevée d'office. Elle devient une dette à régler, ce qui laisse le
+ * choix de payer, de proposer un arrangement au propriétaire, ou de vendre
+ * quelque chose d'abord. C'est le moment où l'on discute autour de la table.
+ *
  * @param {string|null} creditorId - null = la banque
+ * @param {{ negotiable?: boolean }} [options]
  * @returns {{ paid: boolean, shortfall: number }}
  */
-export function charge(state, playerId, amount, reason, creditorId = null) {
+export function charge(state, playerId, amount, reason, creditorId = null, options = {}) {
   if (amount <= 0) return { paid: true, shortfall: 0 };
   const player = playerById(state, playerId);
 
-  if (player.cash >= amount) {
+  if (!options.negotiable && player.cash >= amount) {
     player.cash -= amount;
     if (creditorId) {
       playerById(state, creditorId).cash += amount;
-      log(state, 'payment', `${player.name} paie ${euros(amount)} à ${playerById(state, creditorId).name} (${reason}).`, {
-        playerId,
-        creditorId,
-        amount,
-        reason,
-      });
+      log(
+        state,
+        'payment',
+        `${player.name} paie ${euros(amount)} à ${playerById(state, creditorId).name} (${reason}).`,
+        { playerId, creditorId, amount, reason },
+      );
     } else {
       if (state.settings.freeParkingPot && isTaxLike(reason)) state.freeParkingPot += amount;
       log(state, 'payment', `${player.name} paie ${euros(amount)} à la banque (${reason}).`, {
@@ -54,8 +64,8 @@ export function charge(state, playerId, amount, reason, creditorId = null) {
     return { paid: true, shortfall: 0 };
   }
 
-  // Paiement impossible en l'état : on ouvre une dette, qui prend la priorité sur
-  // tout le reste jusqu'à son règlement ou la faillite.
+  // Somme due : on ouvre une dette, qui prend la priorité sur tout le reste
+  // jusqu'à son règlement, son arrangement, ou la faillite.
   state.debt = { debtorId: playerId, creditorId, amount, reason };
   state.pending = {
     kind: 'pay_debt',
@@ -70,10 +80,10 @@ export function charge(state, playerId, amount, reason, creditorId = null) {
   log(
     state,
     'debt',
-    `${player.name} doit ${euros(amount)}${creditorId ? ` à ${playerById(state, creditorId).name}` : ' à la banque'} et ne peut pas payer immédiatement (${reason}).`,
+    `${player.name} doit ${euros(amount)}${creditorId ? ` à ${playerById(state, creditorId).name}` : ' à la banque'} (${reason}).`,
     { playerId, creditorId, amount, reason },
   );
-  return { paid: false, shortfall: amount - player.cash };
+  return { paid: false, shortfall: Math.max(0, amount - player.cash) };
 }
 
 function isTaxLike(reason = '') {
@@ -81,8 +91,8 @@ function isTaxLike(reason = '') {
 }
 
 /**
- * Tente de régler la dette courante si la joueuse a désormais assez de liquide.
- * Appelée après chaque hypothèque, revente ou échange.
+ * Règle la dette courante en liquide. C'est une décision : le moteur ne prélève
+ * jamais tout seul l'argent d'une joueuse pour un loyer.
  * @returns {boolean} true si la dette a été soldée
  */
 export function settleDebt(state) {
@@ -176,6 +186,46 @@ function returnJailCardsToDecks(state, count) {
   }
 }
 
+/**
+ * Remet à jour ce qui est affiché pendant une dette (montant réunissable),
+ * après une hypothèque, une revente ou un échange.
+ */
+export function refreshDebtPending(state) {
+  const debt = state.debt;
+  if (!debt || state.pending.kind !== 'pay_debt') return;
+  const debtor = playerById(state, debt.debtorId);
+  state.pending = {
+    ...state.pending,
+    payload: {
+      ...state.pending.payload,
+      canPay: maxRaisable(state, debt.debtorId) >= debt.amount,
+      hasCash: debtor.cash >= debt.amount,
+    },
+  };
+}
+
+/**
+ * Classement final par patrimoine : liquide, propriétés et constructions.
+ * Sert quand on décide d'arrêter la partie avant la faillite générale.
+ */
+export function finishGame(state, reason = 'la partie est arrêtée') {
+  const standings = activePlayers(state)
+    .map((player) => ({ playerId: player.id, name: player.name, worth: netWorth(state, player.id) }))
+    .sort((a, b) => b.worth - a.worth);
+
+  state.phase = 'finished';
+  state.standings = standings;
+  state.winnerId = standings[0]?.playerId ?? null;
+  state.pending = { kind: null, playerIds: [] };
+  state.debt = null;
+
+  log(state, 'victory', `Fin de partie (${reason}).`, { standings });
+  standings.forEach((entry, index) => {
+    log(state, 'victory', `${index + 1}. ${entry.name} — ${euros(entry.worth)} de patrimoine.`, entry);
+  });
+  return { ok: true, standings };
+}
+
 /** Rend les maisons/hôtels d'une propriété au stock de la banque. */
 export function returnBuildingsToBank(state, prop) {
   if (prop.hotel) {
@@ -195,6 +245,7 @@ export function checkGameOver(state) {
   if (alive.length > 1) return false;
   state.phase = 'finished';
   state.winnerId = alive[0]?.id ?? null;
+  state.standings = alive.map((p) => ({ playerId: p.id, name: p.name, worth: netWorth(state, p.id) }));
   state.pending = { kind: null, playerIds: [] };
   if (alive[0]) log(state, 'victory', `${alive[0].name} remporte la partie !`, { playerId: alive[0].id });
   return true;

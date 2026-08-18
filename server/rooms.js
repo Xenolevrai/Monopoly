@@ -16,7 +16,9 @@ import { createRng } from './engine/rng.js';
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODE_LENGTH = 6;
 const SAVE_DEBOUNCE_MS = 400;
-const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+// Une partie commencée un soir doit pouvoir se finir des jours plus tard : on ne
+// jette que ce qui n'a plus été touché depuis un mois.
+const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 const DATA_DIR = process.env.MONOPOLY_DATA_DIR ?? path.join(process.cwd(), 'server', 'data');
 
@@ -122,7 +124,31 @@ export async function restoreRooms() {
   return restored;
 }
 
-/** Supprime les parties inactives depuis plus de 24 h. */
+/**
+ * Les parties reprenables, les plus récemment jouées d'abord.
+ * Sert à retrouver sa partie de la semaine dernière sans avoir noté le code.
+ */
+export function listRooms() {
+  return [...games.values()]
+    .map((room) => ({
+      code: room.state.code,
+      phase: room.state.phase,
+      turnCount: room.state.turnCount,
+      lastPlayed: room.state.log.at(-1)?.at ?? room.savedAt,
+      players: room.state.players.map((p) => ({
+        id: p.id,
+        name: p.name,
+        token: p.token,
+        color: p.color,
+        cash: p.cash,
+        bankrupt: p.bankrupt,
+      })),
+    }))
+    .filter((room) => room.phase !== 'finished')
+    .sort((a, b) => (b.lastPlayed ?? 0) - (a.lastPlayed ?? 0));
+}
+
+/** Supprime les parties inactives depuis plus d'un mois. */
 export async function purgeStaleRooms() {
   const now = Date.now();
   for (const [code, room] of games) {

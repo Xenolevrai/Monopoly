@@ -15,7 +15,7 @@ import { createRng } from './rng.js';
 import { log } from './log.js';
 import { playerById, currentPlayer, activePlayers } from './queries.js';
 import { buildDecks, drawCard, applyRevealedCard, resolveCardChoice, resumeCollection } from './cards.js';
-import { declareBankruptcy, checkGameOver } from './money.js';
+import { declareBankruptcy, checkGameOver, settleDebt, finishGame } from './money.js';
 import { buyProperty, mortgage, unmortgage, buildHouse, sellBuilding } from './property.js';
 import { startAuction, placeBid, passBid, startQueuedAuction } from './auction.js';
 import { proposeTrade, respondToTrade, cancelTrade } from './trade.js';
@@ -98,6 +98,17 @@ export function startGame(game, hostId) {
   state.turnCount = 1;
   startTurn(state);
   return { ok: true };
+}
+
+/**
+ * Arrête la partie d'un commun accord, sans attendre la faillite générale.
+ * Le classement se fait au patrimoine : liquide + propriétés + constructions.
+ */
+export function endGame(game, hostId) {
+  const { state } = game;
+  if (state.phase !== 'playing') return { ok: false, error: "La partie n'est pas en cours." };
+  if (hostId !== state.hostId) return { ok: false, error: "Seule l'hôte peut arrêter la partie." };
+  return finishGame(state, 'décision des joueuses');
 }
 
 /** Modifie une règle maison depuis le lobby. */
@@ -229,6 +240,14 @@ function applyAction(game, state, rng, player, action) {
 
     case 'CANCEL_TRADE':
       return cancelTrade(state, playerId, action.tradeId);
+
+    // — Régler une dette ————————————————————————————————————
+    case 'PAY_DEBT': {
+      if (state.debt?.debtorId !== playerId) return refuse("Vous n'avez rien à régler.");
+      if (player.cash < state.debt.amount) return refuse('Fonds insuffisants pour régler cette somme.');
+      settleDebt(state);
+      return { ok: true };
+    }
 
     // — Faillite ————————————————————————————————————————
     case 'DECLARE_BANKRUPTCY': {

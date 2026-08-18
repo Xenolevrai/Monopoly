@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useGame } from './lib/useGame.js';
 import { useCinematic } from './lib/useCinematic.js';
 import { sendAction } from './lib/socket.js';
-import { Home, WaitingRoom } from './components/Lobby.jsx';
+import { Home, WaitingRoom, GameMenu } from './components/Lobby.jsx';
 import Board from './components/Board.jsx';
 import Players from './components/Players.jsx';
 import Actions from './components/Actions.jsx';
@@ -22,6 +22,14 @@ export default function App() {
   const [tradeOpen, setTradeOpen] = useState(false);
   const [settleOpen, setSettleOpen] = useState(false);
   const [inspected, setInspected] = useState(null);
+  const aside = useRef(null);
+
+  // Quand une nouvelle décision arrive, la colonne remonte : sans ça, le panneau
+  // reste caché sous la liste des biens et on croit qu'il ne se passe rien.
+  const pendingKind = state?.pending?.kind ?? null;
+  useEffect(() => {
+    if (pendingKind) aside.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [pendingKind]);
 
   // Les erreurs sont passagères : elles s'effacent d'elles-mêmes.
   useEffect(() => {
@@ -77,7 +85,13 @@ export default function App() {
         </div>
 
         {/* La colonne défile toute seule : le plateau, lui, ne bouge jamais. */}
-        <aside className="scroll-thin flex w-full shrink-0 flex-col gap-4 xl:h-full xl:w-[380px] xl:overflow-y-auto">
+        <aside
+          ref={aside}
+          className="scroll-thin flex w-full shrink-0 flex-col gap-4 xl:h-full xl:w-[380px] xl:overflow-y-auto"
+        >
+          <ErrorBoundary zone="Le menu de partie">
+            <GameMenu state={state} mine={mine} />
+          </ErrorBoundary>
           <ErrorBoundary zone="La barre d'action">
             <Actions
               state={state}

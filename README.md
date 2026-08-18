@@ -5,7 +5,7 @@ jouable à 2-6 depuis un navigateur, sur le même wifi ou à distance.
 
 **Le jeu est complet et jouable** : plateau, règles, temps réel, lobby, échanges,
 chat, reconnexion. On peut jouer **à plusieurs sur le même ordinateur**, avec
-d'autres joueuses **à distance** dans la même partie. 78 tests automatisés.
+d'autres joueuses **à distance** dans la même partie. 82 tests automatisés.
 
 ![Une partie en cours](docs/captures/partie.png)
 
@@ -15,7 +15,7 @@ d'autres joueuses **à distance** dans la même partie. 78 tests automatisés.
 npm install
 npm run build   # compile l'interface — à refaire après chaque `git pull`
 npm start       # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
-npm run check   # lint + 78 tests : données, règles, parties simulées, temps réel
+npm run check   # lint + 82 tests : données, règles, parties simulées, temps réel
 ```
 
 Node 22+. Le serveur affiche aussi l'adresse locale (`http://192.168.x.x:3000`) à
@@ -78,8 +78,16 @@ Les deux modes se mélangent : trois personnes autour d'un portable et deux autr
 à distance, dans la même partie.
 
 Fermer un onglet par erreur ne fait rien perdre : rouvrir la page reprend la
-partie au même point. Si le serveur redémarre, les parties de moins de 24 h sont
-rechargées depuis le disque.
+partie au même point.
+
+**On peut s'arrêter et reprendre un autre jour.** La partie est sauvegardée à
+chaque coup et survit à l'extinction du PC. L'écran d'accueil liste les parties en
+cours avec leurs pions et le tour atteint : on tape son pseudo, on clique dessus,
+et on repart où l'on s'était arrêtées. Rien n'est effacé avant un mois sans jouer.
+
+Et si l'envie de finir n'y est plus, l'hôte peut **terminer la partie** depuis la
+barre du haut : le classement se fait alors au patrimoine (liquide + propriétés +
+constructions).
 
 ## Le rythme d'une vraie partie
 
@@ -92,14 +100,16 @@ rechargées depuis le disque.
 
 ## Négocier plutôt que payer
 
-Un loyer trop cher n'oblige jamais à payer sur-le-champ. Face à une dette, on peut :
+**Un loyer n'est jamais prélevé d'office.** Quand on tombe chez quelqu'un, la
+somme devient une dette, et on choisit :
 
+- payer comptant — les billets à sortir sont affichés ;
 - hypothéquer ou revendre ses constructions ;
 - **négocier avec n'importe qui** pour réunir des fonds — la dette se solde toute
   seule dès que l'argent rentre ;
-- **proposer un arrangement à sa créancière** : des propriétés, de l'argent, une
-  carte de prison. Si elle accepte, **la dette est effacée**, quel que soit le
-  montant cédé. C'est aux deux de juger si le marché est bon ;
+- **proposer un arrangement à la propriétaire** : un terrain, deux terrains, un
+  peu d'argent, un mélange des deux. Si elle accepte, **la dette est effacée**,
+  quel que soit le montant cédé. C'est aux deux de juger si le marché est bon ;
 - déclarer faillite, en dernier recours.
 
 Une proposition se répond **à tout moment**, sans attendre son tour. Sur un écran

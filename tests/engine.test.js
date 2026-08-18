@@ -122,14 +122,22 @@ test('le loyer des compagnies se calcule sur le jet de dés', () => {
   assert.equal(rentFor(game.state, 12, { diceTotal: 7 }), 70, 'deux compagnies → dés × 10');
 });
 
-test('atterrir chez une autre joueuse transfère le loyer', () => {
+test('un loyer se règle sur décision, jamais d\'office', () => {
   const game = newGame();
   give(game, 'p1', [6]);
   forceDice(game, [2, 4]);
   act(game, 'p0', { type: 'ROLL_DICE' });
 
+  // Rien n'a bougé : la somme est due, mais c'est à Julie de décider quoi faire.
+  assert.equal(game.state.pending.kind, 'pay_debt');
+  assert.equal(game.state.debt.amount, 6);
+  assert.equal(playerById(game.state, 'p0').cash, 1500);
+
+  act(game, 'p0', { type: 'PAY_DEBT' });
   assert.equal(playerById(game.state, 'p0').cash, 1494);
   assert.equal(playerById(game.state, 'p1').cash, 1506);
+  assert.equal(game.state.debt, null);
+  assert.equal(game.state.pending.kind, 'end_turn');
 });
 
 // ————————————————————————————————————— Construction
@@ -316,8 +324,12 @@ test('une dette impayable met la partie en attente puis se solde par une hypoth�
   assert.equal(game.state.pending.payload.canPay, true);
 
   act(game, 'p0', { type: 'MORTGAGE', spaceId: 1 });
+  assert.equal(game.state.debt.amount, 12, 'la dette reste tant qu\'on n\'a pas payé');
+  assert.equal(playerById(game.state, 'p0').cash, 35, '5 + 30');
+
+  act(game, 'p0', { type: 'PAY_DEBT' });
   assert.equal(game.state.debt, null);
-  assert.equal(playerById(game.state, 'p0').cash, 23, '5 + 30 − 12');
+  assert.equal(playerById(game.state, 'p0').cash, 23, '35 − 12');
   assert.equal(game.state.pending.kind, 'end_turn');
 });
 
@@ -603,8 +615,10 @@ test('une joueuse endettée peut négocier avec une tierce pour réunir des fond
     receive: { cash: 100 },
   });
   act(game, 'p2', { type: 'RESPOND_TRADE', tradeId: game.state.trades.at(-1).id, accept: true });
+  assert.equal(game.state.pending.payload.canPay, true, 'elle a désormais de quoi payer');
 
-  assert.equal(game.state.debt, null, 'la dette se règle toute seule dès que les fonds arrivent');
+  act(game, 'p0', { type: 'PAY_DEBT' });
+  assert.equal(game.state.debt, null);
   assert.equal(game.state.properties[1].ownerId, 'p2');
 });
 
@@ -653,4 +667,85 @@ test('on ne peut pas piocher à la place d\'une autre', () => {
   const refus = dispatch(game, 'p1', { type: 'DRAW_CARD' });
   assert.equal(refus.ok, false);
   assert.match(refus.error, /carte/i);
+});
+
+// ————————————————————————————————————— Régler un loyer autrement
+
+test('un loyer se paie en billets, en biens, ou pas du tout', () => {
+  const game = newGame(['Julie', 'Sophie']);
+  give(game, 'p1', [6, 8, 9], { houses: 3 }); // loyer salé
+  give(game, 'p0', [1, 3]);
+  forceDice(game, [2, 4]);
+  act(game, 'p0', { type: 'ROLL_DICE' });
+
+  const du = game.state.debt.amount;
+  assert.ok(du > 0);
+  assert.equal(playerById(game.state, 'p0').cash, 1500, 'rien n\'est prélevé d\'office');
+
+  // Julie préfère céder ses deux terrains marron plutôt que sortir l'argent.
+  act(game, 'p0', {
+    type: 'PROPOSE_TRADE',
+    toPlayerId: 'p1',
+    give: { spaceIds: [1, 3] },
+    receive: {},
+    settlesDebt: true,
+  });
+  act(game, 'p1', { type: 'RESPOND_TRADE', tradeId: game.state.trades.at(-1).id, accept: true });
+
+  assert.equal(game.state.debt, null);
+  assert.equal(playerById(game.state, 'p0').cash, 1500, 'elle n\'a pas payé un centime');
+  assert.equal(game.state.properties[1].ownerId, 'p1');
+});
+
+test('un arrangement peut mêler terrains et billets', () => {
+  const game = newGame(['Julie', 'Sophie']);
+  give(game, 'p1', [6, 8, 9], { houses: 3 });
+  give(game, 'p0', [1]);
+  forceDice(game, [2, 4]);
+  act(game, 'p0', { type: 'ROLL_DICE' });
+
+  act(game, 'p0', {
+    type: 'PROPOSE_TRADE',
+    toPlayerId: 'p1',
+    give: { cash: 200, spaceIds: [1] },
+    receive: {},
+    settlesDebt: true,
+  });
+  act(game, 'p1', { type: 'RESPOND_TRADE', tradeId: game.state.trades.at(-1).id, accept: true });
+
+  assert.equal(game.state.debt, null);
+  assert.equal(playerById(game.state, 'p0').cash, 1300, '200 € seulement, plus le terrain');
+  assert.equal(game.state.properties[1].ownerId, 'p1');
+});
+
+// ————————————————————————————————————— Arrêter la partie quand on veut
+
+test('l\'hôte peut arrêter la partie et le classement se fait au patrimoine', async () => {
+  const { endGame } = await import('../server/engine/index.js');
+  const game = newGame(['Julie', 'Sophie', 'Marc']);
+  game.state.hostId = 'p0';
+  setCash(game, 'p0', 100);
+  setCash(game, 'p1', 700);
+  setCash(game, 'p2', 300);
+  // 750 € de terrains : Julie totalise 850 et passe devant les 700 € de Sophie.
+  give(game, 'p0', [37, 39]);
+
+  const result = endGame(game, 'p0');
+  assert.equal(result.ok, true);
+  assert.equal(game.state.phase, 'finished');
+  assert.equal(game.state.winnerId, 'p0');
+  assert.deepEqual(
+    game.state.standings.map((s) => s.name),
+    ['Julie', 'Sophie', 'Marc'],
+  );
+  assert.equal(game.state.standings[0].worth, 850);
+});
+
+test('seule l\'hôte peut arrêter la partie', async () => {
+  const { endGame } = await import('../server/engine/index.js');
+  const game = newGame(['Julie', 'Sophie']);
+  game.state.hostId = 'p0';
+  const result = endGame(game, 'p1');
+  assert.equal(result.ok, false);
+  assert.match(result.error, /hôte/i);
 });

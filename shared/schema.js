@@ -109,6 +109,7 @@
  * @property {LogEntry[]} log
  * @property {ChatMessage[]} chat
  * @property {Object} settings        - copie de rules.houseRules, modifiable au lobby
+ * @property {{playerId: string, name: string, worth: number}[]} standings - classement final
  * @property {string|null} winnerId
  * @property {number} version         - incrémenté à chaque mutation (détection de désync)
  */
@@ -157,6 +158,7 @@ export function createGameState(code, hostId) {
     log: [],
     chat: [],
     settings: { ...rules.houseRules },
+    standings: [],
     winnerId: null,
     version: 0,
   };

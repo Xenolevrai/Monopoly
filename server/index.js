@@ -13,7 +13,7 @@ import express from 'express';
 import { Server } from 'socket.io';
 
 import { registerSocketHandlers, lobbyInfo } from './sockets.js';
-import { restoreRooms, purgeStaleRooms, getRoom, roomCount } from './rooms.js';
+import { restoreRooms, purgeStaleRooms, getRoom, roomCount, listRooms } from './rooms.js';
 import { board, groups } from '../shared/index.js';
 
 const PORT = Number(process.env.PORT ?? 3000);
@@ -30,6 +30,9 @@ app.get('/api/health', (req, res) => res.json({ ok: true, games: roomCount() }))
 
 /** Données du plateau : le client les charge une fois au démarrage. */
 app.get('/api/board', (req, res) => res.json({ board, groups, rules: lobbyInfo() }));
+
+/** Les parties en cours, pour reprendre une soirée interrompue. */
+app.get('/api/games', (req, res) => res.json({ games: listRooms() }));
 
 /** Vérifie un code avant d'afficher l'écran de saisie du pseudo. */
 app.get('/api/game/:code', (req, res) => {

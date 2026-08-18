@@ -16,6 +16,7 @@ import {
   reconnectPlayer,
   removePlayer,
   startGame,
+  endGame,
   updateSettings,
   playerById,
 } from './engine/index.js';
@@ -139,6 +140,15 @@ export function registerSocketHandlers(io) {
       if (!room) return fail("Vous n'êtes dans aucune partie.");
       const host = session.playerIds.find((id) => id === room.state.hostId) ?? session.playerIds[0];
       const result = updateSettings(room, host, settings ?? {});
+      if (!result.ok) return fail(result.error);
+      broadcast(io, room);
+    });
+
+    socket.on('game:end', () => {
+      const room = currentRoom();
+      if (!room) return fail("Vous n'êtes dans aucune partie.");
+      const host = session.playerIds.find((id) => id === room.state.hostId) ?? session.playerIds[0];
+      const result = endGame(room, host);
       if (!result.ok) return fail(result.error);
       broadcast(io, room);
     });

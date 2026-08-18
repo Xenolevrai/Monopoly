@@ -8,7 +8,7 @@ import {
   unmortgageCost,
   buildingLevel,
 } from './queries.js';
-import { credit, settleDebt } from './money.js';
+import { credit, refreshDebtPending } from './money.js';
 
 /** Achat à la banque au prix affiché. */
 export function buyProperty(state, playerId, spaceId, price = null) {
@@ -42,7 +42,7 @@ export function mortgage(state, playerId, spaceId) {
 
   prop.mortgaged = true;
   credit(state, playerId, space.mortgage, `hypothèque de ${space.name}`);
-  settleDebt(state);
+  refreshDebtPending(state);
   return { ok: true, amount: space.mortgage };
 }
 
@@ -139,7 +139,7 @@ export function sellBuilding(state, playerId, spaceId) {
   }
 
   playerById(state, playerId).cash += check.refund;
-  settleDebt(state);
+  refreshDebtPending(state);
   return { ok: true, refund: check.refund };
 }
 
