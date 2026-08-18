@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useGame } from './lib/useGame.js';
+import { useCinematic } from './lib/useCinematic.js';
+import { sendAction } from './lib/socket.js';
 import { Home, WaitingRoom } from './components/Lobby.jsx';
 import Board from './components/Board.jsx';
 import Players from './components/Players.jsx';
@@ -16,6 +18,7 @@ const ALL_CARDS = Object.fromEntries(
 
 export default function App() {
   const { state, me, mine, error, connected, setError, leave, focusOn } = useGame();
+  const { rolling } = useCinematic(state);
   const [tradeOpen, setTradeOpen] = useState(false);
   const [settleOpen, setSettleOpen] = useState(false);
   const [inspected, setInspected] = useState(null);
@@ -37,7 +40,11 @@ export default function App() {
   if (!state) return <Home error={error} />;
   if (state.phase === 'lobby') return <WaitingRoom state={state} mine={mine} onLeave={leave} />;
 
-  const drawnCard = state.drawnCardId ? ALL_CARDS[state.drawnCardId] : null;
+  // La carte n'est montrée que le temps de la piocher et de la valider.
+  const revealed = state.pending?.kind === 'card_reveal';
+  const drawnCard = revealed && state.drawnCardId ? ALL_CARDS[state.drawnCardId] : null;
+  const myTurnToDraw = state.pending?.kind === 'draw_card' && me && state.pending.playerIds.includes(me.id);
+  const revealedIsMine = revealed && me && state.pending.playerIds.includes(me.id);
 
   return (
     <div className="min-h-screen p-3 lg:p-5">
@@ -55,7 +62,17 @@ export default function App() {
       <div className="mx-auto flex max-w-[1500px] flex-col gap-4 xl:h-[calc(100dvh-2.5rem)] xl:flex-row">
         <div className="flex min-h-0 flex-1 items-start justify-center">
           <ErrorBoundary zone="Le plateau">
-            <Board state={state} drawnCard={drawnCard} onSelectSpace={setInspected} />
+            <Board
+              state={state}
+              drawnCard={drawnCard}
+              onSelectSpace={setInspected}
+              rolling={rolling}
+              canDraw={Boolean(myTurnToDraw)}
+              deckToDraw={state.pending?.payload?.deck ?? null}
+              onDraw={() => sendAction({ type: 'DRAW_CARD' }, me?.id)}
+              revealed={Boolean(revealedIsMine)}
+              onAcknowledge={() => sendAction({ type: 'ACKNOWLEDGE_CARD' }, me?.id)}
+            />
           </ErrorBoundary>
         </div>
 

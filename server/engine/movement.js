@@ -9,7 +9,6 @@ import { getSpace, board, rules } from '../../shared/index.js';
 import { log, euros } from './log.js';
 import { playerById, rentFor } from './queries.js';
 import { credit, charge } from './money.js';
-import { drawCard } from './cards.js';
 
 /** Avance de `steps` cases, en encaissant le salaire si on passe par Départ. */
 export function advance(state, playerId, steps) {
@@ -71,7 +70,13 @@ export function resolveLanding(state, playerId, ctx = {}) {
 
     case 'chance':
     case 'community_chest':
-      drawCard(state, playerId, space.type, ctx);
+      // On ne pioche pas à la place de la joueuse : elle doit tirer la carte
+      // elle-même, comme on prend une carte sur le tas.
+      state.pending = {
+        kind: 'draw_card',
+        playerIds: [playerId],
+        payload: { deck: space.type, diceTotal: ctx.diceTotal ?? 0 },
+      };
       return;
 
     case 'free_parking':

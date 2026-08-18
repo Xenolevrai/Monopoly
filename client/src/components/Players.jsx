@@ -1,6 +1,7 @@
 /** Panneau des joueuses : solde, propriétés par couleur, état (prison, absente). */
 import { propertiesByGroup, euros } from '../lib/board.js';
 import TokenIcon from './TokenIcon.jsx';
+import { BillStack } from './Money.jsx';
 
 function PropertyChip({ item, groupColor }) {
   const { space, houses, hotel, mortgaged } = item;
@@ -51,6 +52,10 @@ function PlayerCard({ player, state, isLocal, isActingHere, isCurrent, onFocus }
           {euros(player.cash)}
         </span>
       </button>
+
+      <div className="mt-1.5">
+        <BillStack amount={player.cash} />
+      </div>
 
       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-ink-soft">
         {player.bankrupt && <span className="text-[var(--color-accent)]">éliminée</span>}

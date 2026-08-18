@@ -14,7 +14,7 @@ import { createGameState, createPlayer } from '../../shared/schema.js';
 import { createRng } from './rng.js';
 import { log } from './log.js';
 import { playerById, currentPlayer, activePlayers } from './queries.js';
-import { buildDecks, resolveCardChoice, resumeCollection } from './cards.js';
+import { buildDecks, drawCard, applyRevealedCard, resolveCardChoice, resumeCollection } from './cards.js';
 import { declareBankruptcy, checkGameOver } from './money.js';
 import { buyProperty, mortgage, unmortgage, buildHouse, sellBuilding } from './property.js';
 import { startAuction, placeBid, passBid, startQueuedAuction } from './auction.js';
@@ -182,6 +182,18 @@ function applyAction(game, state, rng, player, action) {
       return passBid(state, playerId);
 
     // — Cartes ——————————————————————————————————————————
+    case 'DRAW_CARD': {
+      if (pending.kind !== 'draw_card' || !isMine) return refuse('Aucune carte à piocher.');
+      const card = drawCard(state, playerId, pending.payload.deck, {
+        diceTotal: pending.payload.diceTotal,
+      });
+      return card ? { ok: true } : refuse('La pile est vide.');
+    }
+
+    case 'ACKNOWLEDGE_CARD':
+      if (pending.kind !== 'card_reveal' || !isMine) return refuse('Aucune carte à appliquer.');
+      return applyRevealedCard(state, playerId);
+
     case 'CARD_CHOICE':
       if (pending.kind !== 'card_choice' || !isMine) return refuse('Aucun choix de carte en attente.');
       return resolveCardChoice(state, playerId, action.optionIndex, {

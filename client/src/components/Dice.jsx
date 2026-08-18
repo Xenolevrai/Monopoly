@@ -4,7 +4,7 @@
  * Le tirage vient du serveur — l'animation ne fait que le mettre en scène, donc
  * tout le monde voit le même résultat au même moment.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const PIPS = {
   1: [4],
@@ -15,7 +15,6 @@ const PIPS = {
   6: [0, 2, 3, 5, 6, 8],
 };
 
-const ROLL_MS = 900; // durée du lancer
 const TUMBLE_MS = 70; // à quelle vitesse les faces défilent
 
 function Die({ value, rolling, delay = 0 }) {
@@ -34,43 +33,26 @@ function Die({ value, rolling, delay = 0 }) {
   );
 }
 
-export default function Dice({ values }) {
-  const [rolling, setRolling] = useState(false);
-  const [shown, setShown] = useState(values ?? null);
+/**
+ * @param {{ values: number[]|null, rolling: boolean }} props
+ * `rolling` est piloté par la cinématique du tour : le pion ne part qu'une fois
+ * les dés immobilisés.
+ */
+export default function Dice({ values, rolling = false }) {
   const [tumble, setTumble] = useState([1, 1]);
-  const key = values?.join('-') ?? '';
-  // Vrai seulement si des dés étaient déjà posés au montage (reconnexion en
-  // pleine partie) : on ne rejoue pas l'animation d'un jet qui date.
-  const first = useRef(values != null);
+  const shown = values;
 
+  // Les faces défilent tant que les dés roulent.
   useEffect(() => {
-    if (!values) return;
-    // Au tout premier affichage (reconnexion en pleine partie), pas d'animation :
-    // on n'a pas envie de relancer les dés d'un jet qui date.
-    if (first.current) {
-      first.current = false;
-      setShown(values);
-      return;
-    }
-
-    setRolling(true);
+    if (!rolling) return;
     const tumbler = setInterval(
       () => setTumble([1 + Math.floor(Math.random() * 6), 1 + Math.floor(Math.random() * 6)]),
       TUMBLE_MS,
     );
-    const done = setTimeout(() => {
-      clearInterval(tumbler);
-      setRolling(false);
-      setShown(values);
-    }, ROLL_MS);
+    return () => clearInterval(tumbler);
+  }, [rolling]);
 
-    return () => {
-      clearInterval(tumbler);
-      clearTimeout(done);
-    };
-  }, [key]);
-
-  if (!shown && !values) return <div className="h-12" />;
+  if (!shown) return <div className="h-12" />;
 
   const faces = rolling ? tumble : (shown ?? [1, 1]);
   const total = shown ? shown.reduce((a, b) => a + b, 0) : null;

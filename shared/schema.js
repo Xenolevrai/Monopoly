@@ -69,7 +69,7 @@
  *
  * @typedef {Object} Pending
  * Ce que le moteur attend maintenant. Une seule décision en cours à la fois.
- * @property {'roll'|'buy_or_auction'|'pay_debt'|'card_choice'|'auction_bid'|'end_turn'|null} kind
+ * @property {'roll'|'buy_or_auction'|'draw_card'|'card_reveal'|'pay_debt'|'card_choice'|'auction_bid'|'end_turn'|null} kind
  * @property {string[]} playerIds     - qui doit répondre
  * @property {Object} [payload]       - données propres au type (spaceId, montant, options de carte…)
  *

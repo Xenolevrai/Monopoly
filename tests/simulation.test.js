@@ -75,6 +75,12 @@ function pickAction(state, playerId, rng) {
         : { type: 'AUCTION_PASS' };
     }
 
+    case 'draw_card':
+      return { type: 'DRAW_CARD' };
+
+    case 'card_reveal':
+      return { type: 'ACKNOWLEDGE_CARD' };
+
     case 'card_choice':
       return { type: 'CARD_CHOICE', optionIndex: rng.int(payload.options.length) };
 
@@ -126,7 +132,10 @@ function playGame(seed, playerCount = 4, maxSteps = 4000) {
     const result = dispatch(game, playerId, action);
     // Une action peut être légitimement refusée (mise trop basse, construction
     // impossible) : on tolère le refus, mais pas le blocage.
-    if (!result.ok && ['ROLL_DICE', 'END_TURN', 'DECLARE_BANKRUPTCY'].includes(action.type)) {
+    if (
+      !result.ok &&
+      ['ROLL_DICE', 'END_TURN', 'DECLARE_BANKRUPTCY', 'DRAW_CARD', 'ACKNOWLEDGE_CARD'].includes(action.type)
+    ) {
       assert.fail(`étape ${steps} : action essentielle refusée (${action.type} → ${result.error})`);
     }
     checkInvariants(game.state, steps);

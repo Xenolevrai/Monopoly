@@ -32,14 +32,19 @@ export function buildDecks(state, rng) {
 }
 
 /**
- * Pioche une carte et applique son effet.
+ * Retourne la carte du dessus du tas et la montre — sans appliquer son effet.
+ *
+ * Le jeu se met alors en attente : on lit la carte, puis on la valide. C'est le
+ * geste du plateau, où l'on tire la carte, on la lit à voix haute, et seulement
+ * ensuite on fait ce qu'elle dit.
+ *
  * @param {'chance'|'community_chest'} deck
  */
 export function drawCard(state, playerId, deck, ctx = {}) {
   const queue = state.decks[deck];
   if (!queue.length) return null;
 
-  const cardId = queue.shift();
+  const cardId = queue[0];
   const card = CARD_INDEX[cardId];
   const player = playerById(state, playerId);
   state.drawnCardId = cardId;
@@ -49,15 +54,35 @@ export function drawCard(state, playerId, deck, ctx = {}) {
     cardId,
   });
 
+  state.pending = {
+    kind: 'card_reveal',
+    playerIds: [playerId],
+    payload: { cardId, deck, text: card.text, diceTotal: ctx.diceTotal ?? 0 },
+  };
+  return card;
+}
+
+/**
+ * Applique la carte qui vient d'être retournée, et la remet sous la pile.
+ * Les cartes « libérée de prison » restent en main jusqu'à leur usage.
+ */
+export function applyRevealedCard(state, playerId) {
+  const payload = state.pending?.payload;
+  const card = payload && CARD_INDEX[payload.cardId];
+  if (!card) return { ok: false, error: 'Aucune carte à appliquer.' };
+
+  const queue = state.decks[payload.deck];
+  if (queue[0] === card.id) queue.shift();
+
   if (card.keepable) {
-    // La carte quitte la pile : elle y reviendra quand elle sera utilisée.
-    player.getOutOfJailCards += 1;
+    playerById(state, playerId).getOutOfJailCards += 1;
   } else {
-    queue.push(cardId); // remise sous la pile
+    queue.push(card.id); // remise sous la pile
   }
 
-  applyCardAction(state, playerId, card.action, ctx);
-  return card;
+  state.pending = { kind: null, playerIds: [] };
+  applyCardAction(state, playerId, card.action, { diceTotal: payload.diceTotal ?? 0 });
+  return { ok: true, card };
 }
 
 /** Remet une carte « libérée de prison » sous sa pile après usage. */

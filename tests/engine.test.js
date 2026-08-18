@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { newGame, forceDice, act, give, setCash, place, dispatch, playerById } from './helpers.js';
 import { rentFor, maxRaisable } from '../server/engine/queries.js';
-import { applyCardAction, drawCard, returnJailCard } from '../server/engine/cards.js';
+import { applyCardAction, drawCard, applyRevealedCard, returnJailCard } from '../server/engine/cards.js';
 
 // ————————————————————————————————————— Tour de jeu
 
@@ -399,6 +399,8 @@ test('une carte « libérée de prison » est conservée puis rendue à la pile'
   const game = newGame();
   game.state.decks.chance = ['chance-13', 'chance-03'];
   drawCard(game.state, 'p0', 'chance');
+  assert.equal(game.state.pending.kind, 'card_reveal', 'la carte est retournée, pas encore appliquée');
+  applyRevealedCard(game.state, 'p0');
 
   assert.equal(playerById(game.state, 'p0').getOutOfJailCards, 1);
   assert.equal(game.state.decks.chance.includes('chance-13'), false, 'la carte quitte la pile');
@@ -412,6 +414,8 @@ test('les cartes non conservables retournent sous la pile', () => {
   const game = newGame();
   game.state.decks.chance = ['chance-03', 'chance-09'];
   drawCard(game.state, 'p0', 'chance');
+  assert.deepEqual(game.state.decks.chance, ['chance-03', 'chance-09'], 'la carte reste sur le tas tant qu\'on ne l\'a pas validée');
+  applyRevealedCard(game.state, 'p0');
   assert.deepEqual(game.state.decks.chance, ['chance-09', 'chance-03']);
 });
 
@@ -620,4 +624,33 @@ test('une offre se répond hors de son tour', () => {
   assert.equal(game.state.properties[6].ownerId, 'p0');
   assert.equal(playerById(game.state, 'p0').cash, 1350);
   assert.equal(game.state.pending.kind, 'roll', 'le tour de Julie continue normalement');
+});
+
+test('on pioche la carte soi-même, puis on la valide', () => {
+  const game = newGame(['Julie', 'Sophie']);
+  place(game, 'p0', 5);
+  forceDice(game, [1, 1]); // case 7 : Chance
+  act(game, 'p0', { type: 'ROLL_DICE' });
+
+  assert.equal(game.state.pending.kind, 'draw_card', 'le tas attend d\'être pioché');
+  assert.equal(game.state.pending.payload.deck, 'chance');
+
+  act(game, 'p0', { type: 'DRAW_CARD' });
+  assert.equal(game.state.pending.kind, 'card_reveal');
+  assert.ok(game.state.pending.payload.text.length > 0, 'le texte de la carte est lisible');
+
+  const avant = playerById(game.state, 'p0').cash;
+  act(game, 'p0', { type: 'ACKNOWLEDGE_CARD' });
+  assert.notEqual(game.state.pending.kind, 'card_reveal', 'la carte a été appliquée');
+  assert.ok(typeof playerById(game.state, 'p0').cash === 'number' && avant >= 0);
+});
+
+test('on ne peut pas piocher à la place d\'une autre', () => {
+  const game = newGame(['Julie', 'Sophie']);
+  place(game, 'p0', 5);
+  forceDice(game, [1, 1]);
+  act(game, 'p0', { type: 'ROLL_DICE' });
+  const refus = dispatch(game, 'p1', { type: 'DRAW_CARD' });
+  assert.equal(refus.ok, false);
+  assert.match(refus.error, /carte/i);
 });

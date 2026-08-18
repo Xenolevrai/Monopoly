@@ -5,7 +5,7 @@ jouable à 2-6 depuis un navigateur, sur le même wifi ou à distance.
 
 **Le jeu est complet et jouable** : plateau, règles, temps réel, lobby, échanges,
 chat, reconnexion. On peut jouer **à plusieurs sur le même ordinateur**, avec
-d'autres joueuses **à distance** dans la même partie. 76 tests automatisés.
+d'autres joueuses **à distance** dans la même partie. 78 tests automatisés.
 
 ![Une partie en cours](docs/captures/partie.png)
 
@@ -15,7 +15,7 @@ d'autres joueuses **à distance** dans la même partie. 76 tests automatisés.
 npm install
 npm run build   # compile l'interface — à refaire après chaque `git pull`
 npm start       # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
-npm run check   # lint + 76 tests : données, règles, parties simulées, temps réel
+npm run check   # lint + 78 tests : données, règles, parties simulées, temps réel
 ```
 
 Node 22+. Le serveur affiche aussi l'adresse locale (`http://192.168.x.x:3000`) à
@@ -80,6 +80,15 @@ Les deux modes se mélangent : trois personnes autour d'un portable et deux autr
 Fermer un onglet par erreur ne fait rien perdre : rouvrir la page reprend la
 partie au même point. Si le serveur redémarre, les parties de moins de 24 h sont
 rechargées depuis le disque.
+
+## Le rythme d'une vraie partie
+
+- Les dés roulent d'abord, **le pion ne part qu'ensuite**, case par case.
+- Les deux tas de cartes sont posés au centre : quand on tombe sur Chance ou
+  Caisse de Communauté, **on pioche soi-même**, on lit la carte retournée en
+  grand, puis on l'applique.
+- L'argent s'affiche **en billets**, et on compose ses paiements en posant les
+  coupures qu'on veut donner.
 
 ## Négocier plutôt que payer
 

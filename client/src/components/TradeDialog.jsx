@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { board, euros, groups } from '../lib/board.js';
 import { sendAction } from '../lib/socket.js';
 import TokenIcon from './TokenIcon.jsx';
+import { BillPicker } from './Money.jsx';
 
 function Side({ title, player, state, value, onChange }) {
   const owned = Object.values(state.properties)
@@ -29,18 +30,14 @@ function Side({ title, player, state, value, onChange }) {
         {title} — <span style={{ color: player.color }}>{player.name}</span>
       </p>
 
-      <label className="flex items-center gap-2 text-xs">
-        <span className="text-ink-soft">Argent</span>
-        <input
-          type="number"
-          min={0}
-          max={player.cash}
+      <div className="space-y-1">
+        <p className="text-[11px] text-ink-soft">Billets posés sur la table</p>
+        <BillPicker
           value={value.cash}
-          onChange={(e) => onChange({ ...value, cash: Math.max(0, Number(e.target.value)) })}
-          className="tabular w-24 rounded border border-black/20 bg-white px-2 py-1"
+          max={player.cash}
+          onChange={(cash) => onChange({ ...value, cash })}
         />
-        <span className="tabular text-ink-soft">/ {euros(player.cash)}</span>
-      </label>
+      </div>
 
       {player.getOutOfJailCards > 0 && (
         <label className="flex items-center gap-2 text-xs">

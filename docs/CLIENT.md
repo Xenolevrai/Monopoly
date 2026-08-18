@@ -25,6 +25,9 @@ npm run dev:client # Vite sur 5173, avec proxy vers le serveur sur 3000
 | `components/TradeDialog.jsx` | construction et réponse aux échanges |
 | `components/Feed.jsx` | journal de partie et chat, en deux onglets |
 | `components/Dice.jsx` | deux dés animés |
+| `components/Pawns.jsx` | les pions, couche flottante au-dessus du plateau |
+| `components/Money.jsx` | l'argent en billets : liasses et choix des coupures |
+| `lib/useCinematic.js` | la mise en scène d'un tour (dés puis pion) |
 | `components/TokenIcon.jsx` | les six pions dessinés en SVG |
 | `components/SpaceIcons.jsx` | pictogrammes des cases (gare, ampoule, coffre…) |
 
@@ -52,6 +55,34 @@ loyers affichés sont ceux que le serveur applique, sans recopie.
 **Une seule feuille de style pour l'ambiance.** Toutes les couleurs passent par des
 variables dans `styles.css` : basculer sur la piste « Papier & Encre » ne demande
 pas de toucher aux composants.
+
+## La mise en scène d'un tour
+
+Le serveur envoie tout d'un coup : le jet, le déplacement, la case résolue. Sans
+mise en scène, tout arrive en même temps et on ne voit rien passer. `useCinematic`
+découpe l'arrivée en deux temps, comme sur une vraie table :
+
+1. **les dés roulent** (1,1 s) — le pion ne bouge pas encore ;
+2. **les dés se posent** — le pion part alors case par case (260 ms par case).
+
+La détection se fait *pendant le rendu*, pas dans un effet : le rendu qui apporte
+le résultat des dés est exactement celui où le pion doit déjà être retenu. Le
+faire après coup laissait le pion partir avec un train d'avance.
+
+## Les cartes se piochent à la main
+
+Tomber sur Chance ou Caisse de Communauté ne déclenche plus rien tout seul. Les
+deux tas sont posés au centre du plateau ; celui qui vous concerne se soulève et
+devient cliquable. On pioche, la carte se retourne en grand, on la lit, puis on
+clique « J'applique » — et seulement là l'effet se produit. Côté moteur, deux
+temps d'arrêt : `draw_card` puis `card_reveal`.
+
+## L'argent en billets
+
+Un solde « 1 500 € » ne dit rien ; une liasse, si. Les montants sont décomposés
+dans les coupures du jeu (500, 100, 50, 20, 10, 5, 1) sous chaque joueuse. Dans un
+échange, on compose la somme **en posant des billets** sur la table plutôt qu'en
+tapant un nombre.
 
 ## Détails d'interface
 

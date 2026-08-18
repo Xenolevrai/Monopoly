@@ -365,6 +365,21 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
       )}
 
       {mineTurn && pending.kind === 'roll' && <Roll payload={pending.payload} actor={actor} />}
+      {mineTurn && pending.kind === 'draw_card' && (
+        <div className="space-y-2">
+          <p className="text-sm">
+            {pending.payload.deck === 'chance' ? 'Case Chance' : 'Caisse de Communauté'} : piochez la
+            carte du dessus du tas, au centre du plateau.
+          </p>
+          <Button onClick={() => sendAction({ type: 'DRAW_CARD' }, actor)}>Piocher une carte</Button>
+        </div>
+      )}
+      {mineTurn && pending.kind === 'card_reveal' && (
+        <div className="space-y-2">
+          <p className="text-sm">« {pending.payload.text} »</p>
+          <Button onClick={() => sendAction({ type: 'ACKNOWLEDGE_CARD' }, actor)}>J'applique</Button>
+        </div>
+      )}
       {mineTurn && pending.kind === 'buy_or_auction' && (
         <BuyOrAuction payload={pending.payload} actor={actor} />
       )}

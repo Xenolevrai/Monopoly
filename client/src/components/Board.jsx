@@ -127,16 +127,70 @@ function Space({ space, state, active, onSelect }) {
   );
 }
 
-/** Le centre du plateau : titre, dés, dernière carte piochée. */
-function Center({ state, drawnCard }) {
+/**
+ * Les deux tas de cartes, posés au centre comme sur le plateau.
+ * Quand c'est à nous de piocher, le tas concerné s'anime et devient cliquable.
+ */
+function CardPiles({ canDraw, deckToDraw, onDraw }) {
+  const piles = [
+    { id: 'chance', label: 'Chance', color: 'var(--color-accent)', tilt: -4 },
+    { id: 'community_chest', label: 'Caisse de Communauté', color: '#2f5c8f', tilt: 3 },
+  ];
+
+  return (
+    <div className="flex items-start gap-6">
+      {piles.map((pile) => {
+        const mine = canDraw && deckToDraw === pile.id;
+        return (
+          <button
+            key={pile.id}
+            type="button"
+            disabled={!mine}
+            onClick={() => mine && onDraw(pile.id)}
+            className={`relative block ${mine ? 'cursor-pointer pile-ready' : 'cursor-default'}`}
+            style={{ transform: `rotate(${pile.tilt}deg)` }}
+            title={mine ? `Piocher une carte ${pile.label}` : pile.label}
+          >
+            {/* Les cartes du dessous, pour l'épaisseur du tas. */}
+            <span className="absolute left-1 top-1 h-full w-full rounded border-2 border-ink/60 bg-white/70" />
+            <span className="absolute left-0.5 top-0.5 h-full w-full rounded border-2 border-ink/70 bg-white/85" />
+            <span
+              className="relative flex h-[74px] w-[54px] flex-col items-center justify-center gap-1 rounded border-2 border-ink text-center"
+              style={{ backgroundColor: pile.color }}
+            >
+              <span className="font-condensed text-[26px] leading-none text-white">
+                {pile.id === 'chance' ? '?' : '▤'}
+              </span>
+              <span className="px-1 font-condensed text-[7px] uppercase leading-tight text-white/95">
+                {pile.label}
+              </span>
+            </span>
+            {mine && (
+              <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap font-condensed text-[10px] uppercase text-[var(--color-accent)]">
+                Piochez !
+              </span>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Le centre du plateau : titre, tas de cartes, dés, carte retournée. */
+function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, revealed, onAcknowledge }) {
   const current = state.players[state.currentPlayerIndex];
   return (
     <div
       style={{ gridColumn: '2 / 11', gridRow: '2 / 11' }}
       className="relative flex flex-col items-center justify-center gap-4 p-4"
     >
-      {/* Le cartouche du titre, posé en diagonale comme sur le plateau. */}
-      <div className="-rotate-[45deg]">
+      {/* Le cartouche du titre, posé en diagonale comme sur le plateau.
+          Il s'efface quand une carte est retournée, pour ne pas dépasser derrière. */}
+      <div
+        className="-rotate-[45deg] transition-opacity duration-200"
+        style={{ opacity: drawnCard ? 0 : 1 }}
+      >
         <div className="border-y-2 border-ink bg-[var(--color-accent)] px-8 py-1.5 shadow-[0_3px_0_rgba(0,0,0,.35)]">
           <p className="font-condensed text-3xl uppercase tracking-[0.18em] text-[#f7f4ea]">Monopoly</p>
         </div>
@@ -145,13 +199,17 @@ function Center({ state, drawnCard }) {
         </p>
       </div>
 
+      <div className="absolute top-4 left-1/2 -translate-x-1/2">
+        <CardPiles canDraw={canDraw} deckToDraw={deckToDraw} onDraw={onDraw} />
+      </div>
+
       <div className="absolute bottom-5 left-1/2 flex w-full -translate-x-1/2 flex-col items-center gap-3 px-4">
         {state.phase === 'playing' && current && (
           <p className="font-condensed text-xs uppercase tracking-widest text-ink-soft">
             Au tour de <span style={{ color: current.color }}>{current.name}</span>
           </p>
         )}
-        <Dice values={state.dice?.values} />
+        <Dice values={state.dice?.values} rolling={rolling} />
         {state.settings?.freeParkingPot && state.freeParkingPot > 0 && (
           <p className="tabular text-[11px] text-ink-soft">
             Cagnotte du Parc Gratuit :{' '}
@@ -162,27 +220,46 @@ function Center({ state, drawnCard }) {
 
       {drawnCard && (
         <div
-          className={`card-in absolute left-1/2 top-6 w-[min(62%,270px)] -translate-x-1/2 border-2 p-3 text-center shadow-[0_10px_24px_-12px_rgba(0,0,0,.7)] ${
+          className={`card-flip absolute left-1/2 top-1/2 w-[min(70%,320px)] -translate-x-1/2 -translate-y-1/2 border-[3px] p-4 text-center shadow-[0_18px_40px_-16px_rgba(0,0,0,.8)] ${
             drawnCard.deck === 'chance'
               ? 'border-[var(--color-accent)] bg-[#fdf6f0]'
               : 'border-[#2f5c8f] bg-[#f2f6fb]'
           }`}
         >
           <p
-            className={`mb-1 font-condensed text-sm uppercase tracking-[0.2em] ${
+            className={`mb-2 font-condensed text-base uppercase tracking-[0.2em] ${
               drawnCard.deck === 'chance' ? 'text-[var(--color-accent)]' : 'text-[#2f5c8f]'
             }`}
           >
             {drawnCard.deck === 'chance' ? 'Chance' : 'Caisse de Communauté'}
           </p>
-          <p className="text-xs leading-snug text-ink">{drawnCard.text}</p>
+          <p className="text-sm leading-snug text-ink">{drawnCard.text}</p>
+          {revealed && (
+            <button
+              type="button"
+              onClick={onAcknowledge}
+              className="mt-3 w-full rounded bg-[var(--color-accent)] py-2 font-condensed text-sm uppercase tracking-wide text-white hover:bg-[var(--color-accent-deep)]"
+            >
+              J'applique
+            </button>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-export default function Board({ state, onSelectSpace, drawnCard }) {
+export default function Board({
+  state,
+  onSelectSpace,
+  drawnCard,
+  rolling = false,
+  canDraw = false,
+  deckToDraw = null,
+  onDraw,
+  revealed = false,
+  onAcknowledge,
+}) {
   const activeSpace = state.players[state.currentPlayerIndex]?.position;
 
   return (
@@ -204,8 +281,17 @@ export default function Board({ state, onSelectSpace, drawnCard }) {
             onSelect={onSelectSpace}
           />
         ))}
-        <Center state={state} drawnCard={drawnCard} />
-        <Pawns players={state.players} />
+        <Center
+          state={state}
+          drawnCard={drawnCard}
+          rolling={rolling}
+          canDraw={canDraw}
+          deckToDraw={deckToDraw}
+          onDraw={onDraw}
+          revealed={revealed}
+          onAcknowledge={onAcknowledge}
+        />
+        <Pawns players={state.players} hold={rolling} />
       </div>
     </div>
   );
