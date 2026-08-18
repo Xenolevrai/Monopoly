@@ -222,7 +222,7 @@ test('un code inconnu est refusé proprement', async (t) => {
   assert.match(error.message, /Aucune partie/);
 });
 
-test('seule l\'hôte peut lancer la partie', async (t) => {
+test('n\'importe quelle joueuse peut lancer la partie', async (t) => {
   const server = await startServer();
   const host = connect(server.url);
   const guest = connect(server.url);
@@ -237,12 +237,57 @@ test('seule l\'hôte peut lancer la partie', async (t) => {
   guest.socket.emit('game:join', { code, name: 'Sophie' });
   await guest.once('game:joined');
 
+  // Sophie n'a pas créé la partie, et elle peut quand même la lancer : le
+  // groupe se met d'accord en vocal, la première qui a la souris clique.
   guest.socket.emit('game:start');
-  const error = await guest.once('game:error');
-  assert.match(error.message, /hôte/);
+  const playing = await guest.once('game:state', (s) => s.phase === 'playing');
+  assert.equal(playing.players.length, 2);
 });
 
-test('si l\'hôte quitte le lobby, une autre joueuse reprend la main', async (t) => {
+test('n\'importe quelle joueuse peut arrêter la partie', async (t) => {
+  const server = await startServer();
+  const host = connect(server.url);
+  const guest = connect(server.url);
+  t.after(async () => {
+    host.close();
+    guest.close();
+    await server.close();
+  });
+
+  host.socket.emit('game:create', { name: 'Julie' });
+  const { code } = await host.once('game:joined');
+  guest.socket.emit('game:join', { code, name: 'Sophie' });
+  await guest.once('game:joined');
+  host.socket.emit('game:start');
+  await guest.once('game:state', (s) => s.phase === 'playing');
+
+  guest.socket.emit('game:end');
+  const finished = await host.once('game:state', (s) => s.phase === 'finished');
+  assert.equal(finished.standings.length, 2, 'le classement est établi');
+  assert.ok(finished.winnerId);
+});
+
+test('les règles maison se changent par n\'importe qui dans le salon', async (t) => {
+  const server = await startServer();
+  const host = connect(server.url);
+  const guest = connect(server.url);
+  t.after(async () => {
+    host.close();
+    guest.close();
+    await server.close();
+  });
+
+  host.socket.emit('game:create', { name: 'Julie' });
+  const { code } = await host.once('game:joined');
+  guest.socket.emit('game:join', { code, name: 'Sophie' });
+  await guest.once('game:joined');
+
+  guest.socket.emit('game:settings', { settings: { freeParkingPot: true } });
+  const state = await host.once('game:state', (s) => s.settings.freeParkingPot === true);
+  assert.equal(state.settings.freeParkingPot, true);
+});
+
+test('le départ de la créatrice ne bloque pas le salon', async (t) => {
   const server = await startServer();
   const host = connect(server.url);
   const guest = connect(server.url);
@@ -263,7 +308,7 @@ test('si l\'hôte quitte le lobby, une autre joueuse reprend la main', async (t)
 
   host.close();
   const afterLeave = await guest.once('game:state', (s) => s.players.length === 2);
-  assert.equal(afterLeave.hostId, afterLeave.players[0].id, 'Sophie devient hôte');
+  assert.equal(afterLeave.players.length, 2, 'les deux autres restent dans le salon');
 
   guest.socket.emit('game:start');
   const playing = await guest.once('game:state', (s) => s.phase === 'playing');

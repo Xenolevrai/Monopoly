@@ -240,12 +240,11 @@ function AddLocalPlayer({ taken, onCancel }) {
   );
 }
 
-/** Barre discrète en jeu : quitter, ou arrêter la partie (hôte). */
+/** Barre discrète en jeu : code, tour, et arrêt de la partie. */
 export function GameMenu({ state, mine }) {
   const [confirming, setConfirming] = useState(false);
-  const isHost = mine.some((p) => p.id === state.hostId);
 
-  if (state.phase !== 'playing') return null;
+  if (state.phase !== 'playing' || !mine.length) return null;
 
   return (
     <div className="panel flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-xs">
@@ -254,10 +253,9 @@ export function GameMenu({ state, mine }) {
       <span className="ml-auto text-ink-soft">
         La partie est sauvegardée : fermez tout, elle vous attendra.
       </span>
-      {isHost &&
-        (confirming ? (
+      {confirming ? (
           <span className="flex items-center gap-1.5">
-            <span className="text-ink-soft">Arrêter et compter les points ?</span>
+            <span className="text-ink-soft">Tout le monde est d'accord ?</span>
             <button
               type="button"
               onClick={() => socket.emit('game:end')}
@@ -273,22 +271,21 @@ export function GameMenu({ state, mine }) {
               Non
             </button>
           </span>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setConfirming(true)}
-            className="rounded border border-black/15 bg-white px-2 py-1 font-condensed uppercase hover:bg-black/5"
-          >
-            Terminer la partie
-          </button>
-        ))}
+      ) : (
+        <button
+          type="button"
+          onClick={() => setConfirming(true)}
+          className="rounded border border-black/15 bg-white px-2 py-1 font-condensed uppercase hover:bg-black/5"
+        >
+          Terminer la partie
+        </button>
+      )}
     </div>
   );
 }
 
 export function WaitingRoom({ state, mine, onLeave }) {
   const localIds = new Set(mine.map((p) => p.id));
-  const isHost = localIds.has(state.hostId);
   const [copied, setCopied] = useState(false);
   const [adding, setAdding] = useState(false);
   const taken = state.players.map((p) => p.token);
@@ -338,11 +335,6 @@ export function WaitingRoom({ state, mine, onLeave }) {
             >
               <TokenIcon token={player.token} color={player.color} className="h-6 w-6" />
               <span className="font-condensed text-[15px] uppercase">{player.name}</span>
-              {player.id === state.hostId && (
-                <span className="font-condensed text-[10px] uppercase tracking-widest text-[var(--color-accent)]">
-                  hôte
-                </span>
-              )}
               {localIds.has(player.id) && (
                 <span className="rounded bg-[var(--color-gold)]/20 px-1 font-condensed text-[10px] uppercase text-[#6b5216]">
                   sur cet écran
@@ -389,7 +381,6 @@ export function WaitingRoom({ state, mine, onLeave }) {
               <input
                 type="checkbox"
                 checked={Boolean(state.settings[key])}
-                disabled={!isHost}
                 onChange={() => toggle(key)}
                 className="accent-[var(--color-accent)]"
               />
@@ -398,20 +389,21 @@ export function WaitingRoom({ state, mine, onLeave }) {
           ))}
         </div>
 
-        {isHost ? (
-          <button
-            type="button"
-            disabled={state.players.length < rules.minPlayers}
-            onClick={() => socket.emit('game:start')}
-            className="w-full rounded bg-[var(--color-accent)] py-2.5 font-condensed text-base uppercase tracking-wide text-white transition-colors hover:bg-[var(--color-accent-deep)] disabled:bg-black/15 disabled:text-black/40"
-          >
-            {state.players.length < rules.minPlayers
-              ? `Il faut au moins ${rules.minPlayers} joueuses`
-              : 'Lancer la partie'}
-          </button>
-        ) : (
-          <p className="text-center text-sm text-ink-soft">En attente que l'hôte lance la partie…</p>
-        )}
+        {/* Tout le monde peut lancer : on se met d'accord de vive voix, la première
+            qui a la souris clique. */}
+        <button
+          type="button"
+          disabled={state.players.length < rules.minPlayers}
+          onClick={() => socket.emit('game:start')}
+          className="w-full rounded bg-[var(--color-accent)] py-2.5 font-condensed text-base uppercase tracking-wide text-white transition-colors hover:bg-[var(--color-accent-deep)] disabled:bg-black/15 disabled:text-black/40"
+        >
+          {state.players.length < rules.minPlayers
+            ? `Il faut au moins ${rules.minPlayers} joueuses`
+            : 'Lancer la partie'}
+        </button>
+        <p className="text-center text-[11px] text-ink-soft">
+          Quand tout le monde est là, n'importe qui peut lancer.
+        </p>
 
         <button onClick={onLeave} className="w-full text-center text-xs text-ink-soft hover:text-ink">
           Quitter

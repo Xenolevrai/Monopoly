@@ -67,12 +67,9 @@ export function removePlayer(game, playerId) {
   }
   state.players = state.players.filter((p) => p.id !== playerId);
   state.players.forEach((p, i) => (p.order = i));
-  // Si l'hôte s'en va avant le début, la première joueuse restante reprend la main :
-  // sans ça, plus personne ne pourrait lancer la partie.
-  if (state.hostId === playerId && state.players.length) {
-    state.hostId = state.players[0].id;
-    log(state, 'lobby', `${state.players[0].name} devient l'hôte de la partie.`, { playerId: state.hostId });
-  }
+  // `hostId` ne donne aucun pouvoir — toutes les commandes sont ouvertes — mais
+  // il désigne qui a ouvert la partie : on le reporte si cette personne s'en va.
+  if (state.hostId === playerId && state.players.length) state.hostId = state.players[0].id;
   return { ok: true };
 }
 
@@ -84,14 +81,22 @@ export function reconnectPlayer(game, playerId) {
   return { ok: true, player };
 }
 
-/** Lance la partie : ordre de jeu, piles mélangées, premier tour. */
-export function startGame(game, hostId) {
+/**
+ * Lance la partie : ordre de jeu, piles mélangées, premier tour.
+ *
+ * N'importe quelle joueuse du salon peut le faire. On joue en se parlant : la
+ * décision est prise de vive voix bien avant le clic, et réserver le bouton à
+ * une seule personne ne protégerait de rien — ça bloquerait juste celle qui a la
+ * souris. Le journal note qui a lancé.
+ */
+export function startGame(game, playerId) {
   const { state, rng } = game;
   if (state.phase !== 'lobby') return { ok: false, error: 'La partie a déjà commencé.' };
-  if (hostId !== state.hostId) return { ok: false, error: "Seule l'hôte peut lancer la partie." };
+  if (!playerById(state, playerId)) return { ok: false, error: 'Joueuse inconnue.' };
   if (state.players.length < rules.minPlayers)
     return { ok: false, error: `Il faut au moins ${rules.minPlayers} joueuses.` };
 
+  log(state, 'setup', `${playerById(state, playerId).name} lance la partie.`, { playerId });
   buildDecks(state, rng);
   determineTurnOrder(state, rng);
   state.phase = 'playing';
@@ -103,19 +108,23 @@ export function startGame(game, hostId) {
 /**
  * Arrête la partie d'un commun accord, sans attendre la faillite générale.
  * Le classement se fait au patrimoine : liquide + propriétés + constructions.
+ *
+ * Ouvert à toutes : l'accord se prend à l'oral, et celle qui clique n'est pas
+ * forcément celle qui a créé la partie.
  */
-export function endGame(game, hostId) {
+export function endGame(game, playerId) {
   const { state } = game;
   if (state.phase !== 'playing') return { ok: false, error: "La partie n'est pas en cours." };
-  if (hostId !== state.hostId) return { ok: false, error: "Seule l'hôte peut arrêter la partie." };
-  return finishGame(state, 'décision des joueuses');
+  const player = playerById(state, playerId);
+  if (!player) return { ok: false, error: 'Joueuse inconnue.' };
+  return finishGame(state, `${player.name} arrête la partie`);
 }
 
-/** Modifie une règle maison depuis le lobby. */
-export function updateSettings(game, hostId, settings) {
+/** Modifie une règle maison depuis le salon. Toutes les joueuses y ont accès. */
+export function updateSettings(game, playerId, settings) {
   const { state } = game;
   if (state.phase !== 'lobby') return { ok: false, error: 'Réglages verrouillés une fois la partie lancée.' };
-  if (hostId !== state.hostId) return { ok: false, error: "Seule l'hôte peut changer les réglages." };
+  if (!playerById(state, playerId)) return { ok: false, error: 'Joueuse inconnue.' };
   state.settings = { ...state.settings, ...settings };
   return { ok: true };
 }

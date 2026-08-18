@@ -34,9 +34,9 @@ Client → serveur :
 | `game:add-local` | `{ name, token }` | ajoute une joueuse **sur ce même ordinateur** |
 | `game:remove-local` | `{ playerId }` | retire une joueuse de ce poste (lobby) |
 | `game:rejoin` | `{ code, playerIds }` | reconnexion silencieuse après un rafraîchissement |
-| `game:settings` | `{ settings }` | règles maison (hôte, lobby uniquement) |
-| `game:start` | — | lance la partie (hôte) |
-| `game:end` | — | arrête la partie et compte les points (hôte) |
+| `game:settings` | `{ settings }` | règles maison (salon, ouvert à toutes) |
+| `game:start` | — | lance la partie (ouvert à toutes) |
+| `game:end` | — | arrête la partie et compte les points (ouvert à toutes) |
 | `game:action` | `{ type, … }` | toute action de jeu, transmise au moteur |
 | `game:leave` | — | quitte la partie |
 
@@ -65,6 +65,17 @@ refuse.
 
 Les deux modes se mélangent librement : trois personnes autour d'un portable et
 deux autres à distance, dans la même partie.
+
+## Aucune commande réservée
+
+Le groupe joue en se parlant. Lancer la partie, changer les règles maison,
+l'arrêter : toutes ces commandes sont ouvertes à n'importe quelle joueuse, et le
+journal note qui a cliqué. Réserver un bouton à « l'hôte » ne protégerait de rien
+entre amies — ça bloquerait juste celle qui n'a pas la souris. `hostId` ne
+désigne plus qu'un fait : qui a ouvert la partie.
+
+Les seuls verrous conservés sont ceux qui protègent le déroulé du jeu : on ne
+lance pas les dés à la place d'une autre, on n'achète pas pendant son tour.
 
 ## Codes de partie
 

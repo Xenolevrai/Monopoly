@@ -138,8 +138,7 @@ export function registerSocketHandlers(io) {
     socket.on('game:settings', ({ settings } = {}) => {
       const room = currentRoom();
       if (!room) return fail("Vous n'êtes dans aucune partie.");
-      const host = session.playerIds.find((id) => id === room.state.hostId) ?? session.playerIds[0];
-      const result = updateSettings(room, host, settings ?? {});
+      const result = updateSettings(room, session.playerIds[0], settings ?? {});
       if (!result.ok) return fail(result.error);
       broadcast(io, room);
     });
@@ -147,8 +146,7 @@ export function registerSocketHandlers(io) {
     socket.on('game:end', () => {
       const room = currentRoom();
       if (!room) return fail("Vous n'êtes dans aucune partie.");
-      const host = session.playerIds.find((id) => id === room.state.hostId) ?? session.playerIds[0];
-      const result = endGame(room, host);
+      const result = endGame(room, session.playerIds[0]);
       if (!result.ok) return fail(result.error);
       broadcast(io, room);
     });
@@ -156,8 +154,7 @@ export function registerSocketHandlers(io) {
     socket.on('game:start', () => {
       const room = currentRoom();
       if (!room) return fail("Vous n'êtes dans aucune partie.");
-      const host = session.playerIds.find((id) => id === room.state.hostId) ?? session.playerIds[0];
-      const result = startGame(room, host);
+      const result = startGame(room, session.playerIds[0]);
       if (!result.ok) return fail(result.error);
       broadcast(io, room);
     });

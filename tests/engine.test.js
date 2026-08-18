@@ -720,7 +720,7 @@ test('un arrangement peut mêler terrains et billets', () => {
 
 // ————————————————————————————————————— Arrêter la partie quand on veut
 
-test('l\'hôte peut arrêter la partie et le classement se fait au patrimoine', async () => {
+test('n\'importe quelle joueuse peut arrêter la partie, classée au patrimoine', async () => {
   const { endGame } = await import('../server/engine/index.js');
   const game = newGame(['Julie', 'Sophie', 'Marc']);
   game.state.hostId = 'p0';
@@ -730,7 +730,9 @@ test('l\'hôte peut arrêter la partie et le classement se fait au patrimoine', 
   // 750 € de terrains : Julie totalise 850 et passe devant les 700 € de Sophie.
   give(game, 'p0', [37, 39]);
 
-  const result = endGame(game, 'p0');
+  // Ce n'est pas la créatrice de la partie qui clique : en vocal, c'est celle
+  // qui a la souris au moment où le groupe décide d'arrêter.
+  const result = endGame(game, 'p2');
   assert.equal(result.ok, true);
   assert.equal(game.state.phase, 'finished');
   assert.equal(game.state.winnerId, 'p0');
@@ -741,11 +743,11 @@ test('l\'hôte peut arrêter la partie et le classement se fait au patrimoine', 
   assert.equal(game.state.standings[0].worth, 850);
 });
 
-test('seule l\'hôte peut arrêter la partie', async () => {
-  const { endGame } = await import('../server/engine/index.js');
-  const game = newGame(['Julie', 'Sophie']);
-  game.state.hostId = 'p0';
-  const result = endGame(game, 'p1');
+test('on ne peut pas arrêter une partie qui n\'a pas commencé', async () => {
+  const { endGame, createGame, addPlayer } = await import('../server/engine/index.js');
+  const game = createGame('TEST02', 'p0');
+  addPlayer(game, { id: 'p0', name: 'Julie', token: null });
+  const result = endGame(game, 'p0');
   assert.equal(result.ok, false);
-  assert.match(result.error, /hôte/i);
+  assert.match(result.error, /pas en cours/i);
 });

@@ -112,7 +112,7 @@ des constructions. Une partie qui s'arrête à 2 h du matin a donc un vainqueur.
 npm test
 ```
 
-82 tests, trois familles :
+84 tests, trois familles :
 
 - `tests/data.test.js` — les données collent au jeu officiel ;
 - `tests/engine.test.js` — 40 scénarios de règles (loyers doublés, répartition des

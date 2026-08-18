@@ -5,7 +5,7 @@ jouable à 2-6 depuis un navigateur, sur le même wifi ou à distance.
 
 **Le jeu est complet et jouable** : plateau, règles, temps réel, lobby, échanges,
 chat, reconnexion. On peut jouer **à plusieurs sur le même ordinateur**, avec
-d'autres joueuses **à distance** dans la même partie. 82 tests automatisés.
+d'autres joueuses **à distance** dans la même partie. 84 tests automatisés.
 
 ![Une partie en cours](docs/captures/partie.png)
 
@@ -15,7 +15,7 @@ d'autres joueuses **à distance** dans la même partie. 82 tests automatisés.
 npm install
 npm run build   # compile l'interface — à refaire après chaque `git pull`
 npm start       # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
-npm run check   # lint + 82 tests : données, règles, parties simulées, temps réel
+npm run check   # lint + 84 tests : données, règles, parties simulées, temps réel
 ```
 
 Node 22+. Le serveur affiche aussi l'adresse locale (`http://192.168.x.x:3000`) à
@@ -72,7 +72,7 @@ comme sur le plateau papier, six pions dessinés en SVG. Détails dans
    (`http://192.168.x.x:3000`) si tout le monde est sur le même wifi, ou un tunnel
    (ngrok, Cloudflare Tunnel) sur le port 3000 sinon, et dicte le code à six
    lettres.
-4. L'hôte lance la partie quand tout le monde est là.
+4. Quand tout le monde est là, **n'importe qui** lance la partie.
 
 Les deux modes se mélangent : trois personnes autour d'un portable et deux autres
 à distance, dans la même partie.
@@ -85,9 +85,26 @@ chaque coup et survit à l'extinction du PC. L'écran d'accueil liste les partie
 cours avec leurs pions et le tour atteint : on tape son pseudo, on clique dessus,
 et on repart où l'on s'était arrêtées. Rien n'est effacé avant un mois sans jouer.
 
-Et si l'envie de finir n'y est plus, l'hôte peut **terminer la partie** depuis la
-barre du haut : le classement se fait alors au patrimoine (liquide + propriétés +
-constructions).
+Et si l'envie de finir n'y est plus, **n'importe qui** peut terminer la partie
+depuis la barre du haut : le classement se fait alors au patrimoine (liquide +
+propriétés + constructions).
+
+## Conçu pour se jouer en se parlant
+
+On joue en vocal, ou dans la même pièce. Le jeu n'essaie donc pas de remplacer la
+conversation ni de départager qui a le droit de faire quoi :
+
+- **aucune commande réservée à une seule personne** — lancer la partie, changer
+  les règles maison, arrêter la partie : la première qui a la souris clique, une
+  fois que le groupe s'est mis d'accord à l'oral ;
+- **le journal note qui a fait quoi**, ce qui suffit largement entre amies ;
+- **les négociations se règlent de vive voix**, l'écran ne sert qu'à exécuter
+  l'accord : on saisit l'échange, l'autre accepte d'un clic, à tout moment ;
+- le **chat** reste là pour noter un montant ou un accord, sans être le canal
+  principal.
+
+Le seul verrou conservé est celui qui protège le jeu lui-même : on ne peut pas
+lancer les dés à la place d'une autre, ni acheter pendant son tour.
 
 ## Le rythme d'une vraie partie
 
@@ -105,8 +122,7 @@ somme devient une dette, et on choisit :
 
 - payer comptant — les billets à sortir sont affichés ;
 - hypothéquer ou revendre ses constructions ;
-- **négocier avec n'importe qui** pour réunir des fonds — la dette se solde toute
-  seule dès que l'argent rentre ;
+- **négocier avec n'importe qui** pour réunir des fonds, puis payer ;
 - **proposer un arrangement à la propriétaire** : un terrain, deux terrains, un
   peu d'argent, un mélange des deux. Si elle accepte, **la dette est effacée**,
   quel que soit le montant cédé. C'est aux deux de juger si le marché est bon ;
