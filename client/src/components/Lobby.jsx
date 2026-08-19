@@ -5,6 +5,7 @@ import { getEdition, listEditions, DEFAULT_EDITION, DEFAULT_LOCALE, LOCALES } fr
 import { translator } from '../lib/i18n.js';
 import TokenIcon from './TokenIcon.jsx';
 import Rules from './Rules.jsx';
+import Calculator from './Calculator.jsx';
 
 /**
  * Le bandeau titre prend les couleurs de l'édition choisie : on voit à quoi on
@@ -537,6 +538,7 @@ export function GameMenu({ state, mine, onLeave, onShowRecap }) {
       <span className="tabular font-condensed tracking-[0.15em]">{state.code}</span>
       <span className="text-ink-soft">{t('turn')} {state.turnCount}</span>
       <Rules state={state} />
+      <Calculator state={state} />
       <span className="ml-auto text-ink-soft">
         {t('saved')}
       </span>

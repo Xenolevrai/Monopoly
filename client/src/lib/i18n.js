@@ -55,6 +55,9 @@ const FR = {
   understood: "J'ai compris",
   theRules: 'Les règles',
   close: 'Fermer',
+  calculator: 'Calculatrice',
+  calculatorTitle: 'Calculatrice',
+  calculatorHint: 'Pour évaluer un achat, une hypothèque ou un partage, sans rien engager.',
 
   // — En jeu —————————————————————————————————————
   rollDice: 'Lancer les dés',
@@ -201,6 +204,9 @@ const EN = {
   understood: 'Got it',
   theRules: 'The rules',
   close: 'Close',
+  calculator: 'Calculator',
+  calculatorTitle: 'Calculator',
+  calculatorHint: 'To work out a purchase, a mortgage, or a split, without committing to anything.',
 
   rollDice: 'Roll the dice',
   tryDouble: 'Try for a double',
