@@ -5,9 +5,27 @@
  * l'état (ou un identifiant d'édition) en premier argument. C'est ce qui permet
  * à un même moteur de faire tourner plusieurs éditions sans se dupliquer.
  */
-import { getEdition, editionOf, EDITIONS, DEFAULT_EDITION, listEditions, OWNABLE_TYPES } from './editions.js';
+import {
+  getEdition,
+  editionOf,
+  EDITIONS,
+  DEFAULT_EDITION,
+  DEFAULT_LOCALE,
+  LOCALES,
+  listEditions,
+  OWNABLE_TYPES,
+} from './editions.js';
 
-export { getEdition, editionOf, EDITIONS, DEFAULT_EDITION, listEditions, OWNABLE_TYPES };
+export {
+  getEdition,
+  editionOf,
+  EDITIONS,
+  DEFAULT_EDITION,
+  DEFAULT_LOCALE,
+  LOCALES,
+  listEditions,
+  OWNABLE_TYPES,
+};
 
 /** Accepte indifféremment un état de partie ou un identifiant d'édition. */
 function resolve(source) {

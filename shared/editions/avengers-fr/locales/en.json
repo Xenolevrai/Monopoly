@@ -1,0 +1,234 @@
+{
+  "name": "Monopoly Marvel Avengers",
+  "theme": "Earth's mightiest heroes",
+  "tagline": "The classic rules, in millions.",
+  "summary": "Recruit Marvel heroes, set up S.H.I.E.L.D. bases and headquarters.",
+  "centerTitle": "Monopoly",
+  "centerSubtitle": "Avengers",
+  "groups": {
+    "brown": "S.H.I.E.L.D. agents",
+    "lightblue": "Veterans",
+    "pink": "New guard",
+    "orange": "Defenders",
+    "red": "Founding Avengers",
+    "yellow": "The originals",
+    "green": "Guardians of the Galaxy",
+    "darkblue": "Strategic bases",
+    "railroad": "Tactical vehicles",
+    "utility": "Technologies"
+  },
+  "decks": {
+    "chance": "S.H.I.E.L.D.",
+    "community_chest": "Stark Industries"
+  },
+  "buildingLabels": {
+    "house": "Base",
+    "houses": "Bases",
+    "hotel": "Headquarters",
+    "hotels": "Headquarters"
+  },
+  "tokens": {
+    "marteau": "Thor's Hammer",
+    "bouclier": "Shield",
+    "casque": "Iron Man Helmet",
+    "gantelet": "Gauntlet",
+    "arc": "Bow",
+    "quinjet": "Quinjet"
+  },
+  "spaces": {
+    "0": {
+      "name": "GO",
+      "shortName": "GO"
+    },
+    "1": {
+      "name": "Nick Fury",
+      "shortName": "Nick Fury"
+    },
+    "2": {
+      "name": "Stark Industries",
+      "shortName": "Stark"
+    },
+    "3": {
+      "name": "Maria Hill",
+      "shortName": "Maria Hill"
+    },
+    "4": {
+      "name": "Damage Control Tax",
+      "shortName": "Damage Control"
+    },
+    "5": {
+      "name": "The Quinjet",
+      "shortName": "Quinjet"
+    },
+    "6": {
+      "name": "Falcon",
+      "shortName": "Falcon"
+    },
+    "7": {
+      "name": "S.H.I.E.L.D.",
+      "shortName": "S.H.I.E.L.D."
+    },
+    "8": {
+      "name": "Winter Soldier",
+      "shortName": "Winter Soldier"
+    },
+    "9": {
+      "name": "Vision",
+      "shortName": "Vision"
+    },
+    "10": {
+      "name": "The Raft",
+      "shortName": "The Raft"
+    },
+    "11": {
+      "name": "Ant-Man",
+      "shortName": "Ant-Man"
+    },
+    "12": {
+      "name": "Stark Arc Reactor",
+      "shortName": "Arc Reactor"
+    },
+    "13": {
+      "name": "Wasp",
+      "shortName": "Wasp"
+    },
+    "14": {
+      "name": "Black Panther",
+      "shortName": "Black Panther"
+    },
+    "15": {
+      "name": "S.H.I.E.L.D. Helicarrier",
+      "shortName": "Helicarrier"
+    },
+    "16": {
+      "name": "Doctor Strange",
+      "shortName": "Dr Strange"
+    },
+    "17": {
+      "name": "Stark Industries",
+      "shortName": "Stark"
+    },
+    "18": {
+      "name": "Spider-Man",
+      "shortName": "Spider-Man"
+    },
+    "19": {
+      "name": "Captain Marvel",
+      "shortName": "Captain Marvel"
+    },
+    "20": {
+      "name": "Free Parking",
+      "shortName": "Free Parking"
+    },
+    "21": {
+      "name": "Hawkeye",
+      "shortName": "Hawkeye"
+    },
+    "22": {
+      "name": "S.H.I.E.L.D.",
+      "shortName": "S.H.I.E.L.D."
+    },
+    "23": {
+      "name": "Black Widow",
+      "shortName": "Black Widow"
+    },
+    "24": {
+      "name": "Hulk",
+      "shortName": "Hulk"
+    },
+    "25": {
+      "name": "Cap's Motorcycle",
+      "shortName": "Cap's Bike"
+    },
+    "26": {
+      "name": "Thor",
+      "shortName": "Thor"
+    },
+    "27": {
+      "name": "Captain America",
+      "shortName": "Captain America"
+    },
+    "28": {
+      "name": "Pym Technologies",
+      "shortName": "Pym Tech"
+    },
+    "29": {
+      "name": "Iron Man",
+      "shortName": "Iron Man"
+    },
+    "30": {
+      "name": "Go to The Raft!",
+      "shortName": "Go to The Raft"
+    },
+    "31": {
+      "name": "Star-Lord",
+      "shortName": "Star-Lord"
+    },
+    "32": {
+      "name": "Gamora & Drax",
+      "shortName": "Gamora & Drax"
+    },
+    "33": {
+      "name": "Stark Industries",
+      "shortName": "Stark"
+    },
+    "34": {
+      "name": "Groot & Rocket",
+      "shortName": "Groot & Rocket"
+    },
+    "35": {
+      "name": "The Milano",
+      "shortName": "The Milano"
+    },
+    "36": {
+      "name": "S.H.I.E.L.D.",
+      "shortName": "S.H.I.E.L.D."
+    },
+    "37": {
+      "name": "The Raft Facility",
+      "shortName": "Raft Facility"
+    },
+    "38": {
+      "name": "Sokovia Accords Fine",
+      "shortName": "Sokovia Fine"
+    },
+    "39": {
+      "name": "Avengers Tower",
+      "shortName": "Avengers Tower"
+    }
+  },
+  "cards": {
+    "av-shield-01": "Report to HQ: advance to GO. Collect 200 M$.",
+    "av-shield-02": "Deploy to Avengers Tower.",
+    "av-shield-03": "Tactical reinforcement with Black Panther. If you pass GO, collect 200 M$.",
+    "av-shield-04": "Join Captain Marvel's squad. If you pass GO, collect 200 M$.",
+    "av-shield-05": "Emergency transport requisition: advance to the nearest tactical vehicle. If it is owned, pay the owner twice the rental.",
+    "av-shield-06": "Emergency transport requisition: advance to the nearest tactical vehicle. If it is owned, pay the owner twice the rental.",
+    "av-shield-07": "Technology inspection: advance to the nearest technology. Throw the dice again and pay the owner ten times the amount thrown.",
+    "av-shield-08": "Quinjet flight. If you pass GO, collect 200 M$.",
+    "av-shield-09": "Stark technology dividends: the bank pays you 50 M$.",
+    "av-shield-10": "Level 7 clearance: get out of The Raft free. This card may be kept until needed or sold.",
+    "av-shield-11": "Tactical retreat: go back three spaces.",
+    "av-shield-12": "Locked up in The Raft. Do not pass GO, do not collect 200 M$.",
+    "av-shield-13": "Weapons maintenance: pay 25 M$ per base and 100 M$ per headquarters.",
+    "av-shield-14": "Speeding in flight armour: pay a 15 M$ fine.",
+    "av-shield-15": "Emergency coalition funding: pay each player 50 M$.",
+    "av-shield-16": "Intergalactic mission bonus: collect 150 M$.",
+    "av-stark-01": "Planetary mission launch: advance to GO. Collect 200 M$.",
+    "av-stark-02": "Stark patent sold: bank error in your favour, collect 200 M$.",
+    "av-stark-03": "Combat fitness assessment: pay 50 M$.",
+    "av-stark-04": "Sale of Chitauri alloy: collect 50 M$.",
+    "av-stark-05": "Wakandan diplomatic pass: get out of The Raft free. This card may be kept until needed or sold.",
+    "av-stark-06": "Secretary Ross issues a warrant: go directly to The Raft, do not pass GO.",
+    "av-stark-07": "Stark Foundation charity gala: collect 10 M$ from every player.",
+    "av-stark-08": "Weapons tax refund: collect 20 M$.",
+    "av-stark-09": "Pym Technologies research grant: collect 100 M$.",
+    "av-stark-10": "Runner-up in the training tournament: collect 10 M$.",
+    "av-stark-11": "Debrief with Nick Fury: advance to his space. If you pass GO, collect 200 M$.",
+    "av-stark-12": "Collateral damage in an urban fight: pay 50 M$ in civilian repairs.",
+    "av-stark-13": "Bounty for capturing a Hydra sleeper agent: collect 100 M$.",
+    "av-stark-14": "Post-invasion reconstruction: pay 40 M$ per base and 115 M$ per headquarters.",
+    "av-stark-15": "Heroic civilian rescue rewarded: collect 100 M$.",
+    "av-stark-16": "Sokovia Accords violation: pay a 100 M$ fine."
+  }
+}

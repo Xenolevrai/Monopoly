@@ -7,7 +7,7 @@
  * revendre, échanger — ou déclarer faillite.
  */
 import { getSpace, cardsOf, rulesOf, ownableSpaces } from '../../shared/index.js';
-import { log, amountText } from './log.js';
+import { log, say, amountText } from './log.js';
 import { playerById, propertiesOf, maxRaisable, activePlayers, netWorth, rentFor } from './queries.js';
 
 /** Crédite une joueuse. */
@@ -15,7 +15,7 @@ export function credit(state, playerId, amount, reason) {
   if (amount <= 0) return;
   const player = playerById(state, playerId);
   player.cash += amount;
-  log(state, 'credit', `${player.name} reçoit ${amountText(state, amount)}${reason ? ` (${reason})` : ''}.`, {
+  log(state, 'credit', say(state, 'credited', { name: player.name, amount: amountText(state, amount), reason }), {
     playerId,
     amount,
     reason,
@@ -49,12 +49,12 @@ export function charge(state, playerId, amount, reason, creditorId = null, optio
       log(
         state,
         'payment',
-        `${player.name} paie ${amountText(state, amount)} à ${playerById(state, creditorId).name} (${reason}).`,
+        say(state, 'paysPlayer', { name: player.name, amount: amountText(state, amount), creditor: playerById(state, creditorId).name, reason }),
         { playerId, creditorId, amount, reason },
       );
     } else {
       if (state.settings.freeParkingPot && isTaxLike(reason)) state.freeParkingPot += amount;
-      log(state, 'payment', `${player.name} paie ${amountText(state, amount)} à la banque (${reason}).`, {
+      log(state, 'payment', say(state, 'paysBank', { name: player.name, amount: amountText(state, amount), reason }), {
         playerId,
         creditorId: null,
         amount,
@@ -75,8 +75,18 @@ export function charge(state, playerId, amount, reason, creditorId = null, optio
       state,
       'payment',
       paid < amount
-        ? `${player.name} ne peut verser que ${amountText(state, paid)} sur ${amountText(state, amount)} (${reason}) : le reste est passé.`
-        : `${player.name} verse ${amountText(state, paid)}${creditorId ? ` à ${playerById(state, creditorId).name}` : ''} (${reason}).`,
+        ? say(state, 'partialPay', {
+            name: player.name,
+            paid: amountText(state, paid),
+            amount: amountText(state, amount),
+            reason,
+          })
+        : say(state, 'hands', {
+            name: player.name,
+            paid: amountText(state, paid),
+            creditor: creditorId ? playerById(state, creditorId).name : null,
+            reason,
+          }),
       { playerId, creditorId, amount: paid, reason },
     );
     return { paid: true, shortfall: amount - paid };
@@ -98,7 +108,7 @@ export function charge(state, playerId, amount, reason, creditorId = null, optio
   log(
     state,
     'debt',
-    `${player.name} doit ${amountText(state, amount)}${creditorId ? ` à ${playerById(state, creditorId).name}` : ' à la banque'} (${reason}).`,
+    say(state, 'owes', { name: player.name, amount: amountText(state, amount), creditor: creditorId ? playerById(state, creditorId).name : null, reason }),
     { playerId, creditorId, amount, reason },
   );
   return { paid: false, shortfall: Math.max(0, amount - player.cash) };
@@ -128,7 +138,7 @@ export function settleDebt(state) {
   log(
     state,
     'payment',
-    `${debtor.name} règle sa dette de ${amountText(state, debt.amount)}${debt.creditorId ? ` envers ${playerById(state, debt.creditorId).name}` : ' envers la banque'}.`,
+    say(state, 'settles', { name: debtor.name, amount: amountText(state, debt.amount), creditor: debt.creditorId ? playerById(state, debt.creditorId).name : null }),
     { playerId: debt.debtorId, creditorId: debt.creditorId, amount: debt.amount },
   );
   state.debt = null;
@@ -162,7 +172,7 @@ export function declareBankruptcy(state, playerId) {
     log(
       state,
       'bankruptcy',
-      `${player.name} fait faillite. ${creditor.name} récupère ${amountText(state, player.cash)} et ${owned.length} propriété(s).`,
+      say(state, 'bankruptTo', { name: player.name, creditor: creditor.name, amount: amountText(state, player.cash), count: owned.length }),
       { playerId, creditorId, amount: player.cash, spaceIds: owned.map((p) => p.spaceId) },
     );
   } else {
@@ -172,7 +182,7 @@ export function declareBankruptcy(state, playerId) {
       prop.mortgaged = false;
     }
     returnJailCardsToDecks(state, player.getOutOfJailCards);
-    log(state, 'bankruptcy', `${player.name} fait faillite. Ses biens retournent à la banque.`, {
+    log(state, 'bankruptcy', say(state, 'bankruptBank', { name: player.name }), {
       playerId,
       spaceIds: owned.map((p) => p.spaceId),
     });
@@ -270,16 +280,25 @@ export function finishGame(state, reason = 'la partie est arrêtée') {
   state.pending = { kind: null, playerIds: [] };
   state.debt = null;
 
-  log(state, 'victory', `Fin de partie (${reason}).`, { standings });
+  log(state, 'victory', say(state, 'gameOver', { reason }), { standings });
   standings.forEach((entry, index) => {
     log(
       state,
       'victory',
       entry.bankrupt && !byExploration
-        ? `${entry.name} avait fait faillite.`
+        ? say(state, 'standingBankrupt', { name: entry.name })
         : byExploration
-          ? `${index + 1}. ${entry.name} — ${entry.worth} points (dont ${entry.bonus} de lieux explorés).`
-          : `${index + 1}. ${entry.name} — ${amountText(state, entry.worth)} de patrimoine.`,
+          ? say(state, 'standingPoints', {
+              rank: index + 1,
+              name: entry.name,
+              worth: entry.worth,
+              bonus: entry.bonus,
+            })
+          : say(state, 'standingWorth', {
+              rank: index + 1,
+              name: entry.name,
+              worth: amountText(state, entry.worth),
+            }),
       entry,
     );
   });
@@ -314,13 +333,13 @@ export function checkGameOver(state) {
   if (edition.winCondition === 'allLocationsExplored') {
     const remaining = ownableSpaces(state).filter((space) => !state.properties[space.id].ownerId);
     if (remaining.length > 0) return false;
-    finishGame(state, 'tous les lieux du plateau ont été explorés');
+    finishGame(state, say(state, 'allExplored'));
     return true;
   }
 
   const alive = activePlayers(state);
   if (alive.length > 1) return false;
-  finishGame(state, alive[0] ? `${alive[0].name} reste seule en jeu` : 'plus personne en jeu');
+  finishGame(state, alive[0] ? say(state, 'lastStanding', { name: alive[0].name }) : say(state, 'noneLeft'));
   return true;
 }
 

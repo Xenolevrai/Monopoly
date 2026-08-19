@@ -57,8 +57,8 @@
   },
   {
     "id": 4,
-    "name": "Accords de Sokovie",
-    "shortName": "Sokovie",
+    "name": "Taxe Damage Control",
+    "shortName": "Damage Control",
     "type": "tax",
     "amount": 200,
     "side": "bottom",
@@ -319,8 +319,8 @@
   },
   {
     "id": 20,
-    "name": "Le Complexe des Avengers",
-    "shortName": "Complexe",
+    "name": "Parc Gratuit",
+    "shortName": "Parc Gratuit",
     "type": "free_parking",
     "side": "top",
     "corner": true
@@ -452,8 +452,8 @@
   },
   {
     "id": 28,
-    "name": "Particules Pym",
-    "shortName": "Particules Pym",
+    "name": "Pym Technologies",
+    "shortName": "Pym Tech",
     "type": "utility",
     "group": "utility",
     "price": 150,
@@ -588,8 +588,8 @@
   },
   {
     "id": 37,
-    "name": "Le Raft — sécurité maximale",
-    "shortName": "Raft (max)",
+    "name": "Centre pénitentiaire du Raft",
+    "shortName": "Centre du Raft",
     "type": "property",
     "group": "darkblue",
     "price": 350,
@@ -608,8 +608,8 @@
   },
   {
     "id": 38,
-    "name": "Taxe d'armement",
-    "shortName": "Taxe armement",
+    "name": "Amende des Accords de Sokovie",
+    "shortName": "Accords Sokovie",
     "type": "tax",
     "amount": 100,
     "side": "right",

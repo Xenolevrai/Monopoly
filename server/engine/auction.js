@@ -6,7 +6,7 @@
  * mise ou passe à son tour, la dernière en lice emporte le lot.
  */
 import { getSpace } from '../../shared/index.js';
-import { log, amountText } from './log.js';
+import { log, say, amountText } from './log.js';
 import { playerById, activePlayers } from './queries.js';
 import { buyProperty } from './property.js';
 
@@ -25,7 +25,7 @@ export function startAuction(state, spaceId, openerId = null) {
     minimumRaise: 1,
   };
   state.pending = { kind: 'auction_bid', playerIds: [bidders[startIndex]], payload: { spaceId } };
-  log(state, 'auction', `${getSpace(state, spaceId).name} est mise aux enchères.`, { spaceId });
+  log(state, 'auction', say(state, 'auctionOpens', { space: getSpace(state, spaceId).name }), { spaceId });
   return { ok: true };
 }
 
@@ -42,7 +42,7 @@ export function placeBid(state, playerId, amount) {
 
   auction.highestBid = amount;
   auction.highestBidderId = playerId;
-  log(state, 'auction', `${player.name} mise ${amountText(state, amount)}.`, { playerId, amount, spaceId: auction.spaceId });
+  log(state, 'auction', say(state, 'auctionBid', { name: player.name, amount: amountText(state, amount) }), { playerId, amount, spaceId: auction.spaceId });
   return advanceAuction(state);
 }
 
@@ -53,7 +53,7 @@ export function passBid(state, playerId) {
   if (auction.currentBidderId !== playerId) return { ok: false, error: "Ce n'est pas à vous d'enchérir." };
 
   auction.activeBidders = auction.activeBidders.filter((id) => id !== playerId);
-  log(state, 'auction', `${playerById(state, playerId).name} passe.`, { playerId, spaceId: auction.spaceId });
+  log(state, 'auction', say(state, 'auctionPass', { name: playerById(state, playerId).name }), { playerId, spaceId: auction.spaceId });
   return advanceAuction(state);
 }
 
@@ -95,13 +95,13 @@ function closeAuction(state) {
 
   if (highestBidderId && highestBid > 0) {
     buyProperty(state, highestBidderId, spaceId, highestBid);
-    log(state, 'auction', `${playerById(state, highestBidderId).name} remporte ${space.name} pour ${amountText(state, highestBid)}.`, {
+    log(state, 'auction', say(state, 'auctionWon', { name: playerById(state, highestBidderId).name, space: space.name, amount: amountText(state, highestBid) }), {
       playerId: highestBidderId,
       spaceId,
       amount: highestBid,
     });
   } else {
-    log(state, 'auction', `Personne n'a misé : ${space.name} reste à la banque.`, { spaceId });
+    log(state, 'auction', say(state, 'auctionUnsold', { space: space.name }), { spaceId });
   }
   return { ok: true, sold: Boolean(highestBidderId) };
 }

@@ -4,13 +4,27 @@
  * Les éditions sont importées depuis `shared/` : le client et le serveur lisent
  * exactement les mêmes prix, les mêmes loyers et les mêmes cartes.
  */
-import { getEdition, listEditions, DEFAULT_EDITION } from '../../../shared/editions.js';
+import {
+  getEdition,
+  listEditions,
+  DEFAULT_EDITION,
+  DEFAULT_LOCALE,
+  LOCALES,
+} from '../../../shared/editions.js';
 
-export { getEdition, listEditions, DEFAULT_EDITION };
+export { getEdition, listEditions, DEFAULT_EDITION, DEFAULT_LOCALE, LOCALES };
 
-/** L'édition d'une partie (ou le classique tant qu'on n'est dans aucune partie). */
+/**
+ * L'édition d'une partie, dans sa langue (ou le classique en français tant qu'on
+ * n'est dans aucune partie).
+ */
 export function editionFor(state) {
-  return getEdition(state?.editionId);
+  return getEdition(state?.editionId, state?.locale);
+}
+
+/** La langue de la partie en cours. */
+export function localeOf(state) {
+  return LOCALES.includes(state?.locale) ? state.locale : DEFAULT_LOCALE;
 }
 
 export function boardOf(state) {
@@ -96,7 +110,9 @@ export function propertiesByGroup(state, playerId) {
 /** Formate un montant dans la monnaie de l'édition : 1 500 €, 320 points… */
 export function money(state, amount) {
   const label = editionFor(state).currency.label ?? '€';
-  return `${Math.round(amount ?? 0).toLocaleString('fr-FR')} ${label}`;
+  // Séparateur de milliers selon la langue : « 1 500 € » ou « 1,500 $ ».
+  const formatted = Math.round(amount ?? 0).toLocaleString(localeOf(state) === 'en' ? 'en-GB' : 'fr-FR');
+  return `${formatted} ${label}`;
 }
 
 /**

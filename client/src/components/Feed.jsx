@@ -1,6 +1,7 @@
 /** Journal de partie et chat, en deux onglets dans la même colonne. */
 import { useEffect, useRef, useState } from 'react';
 import { sendAction } from '../lib/socket.js';
+import { useT } from '../lib/i18n.js';
 
 const TONE = {
   buy: 'text-[var(--color-money)]',
@@ -43,6 +44,7 @@ function Journal({ log }) {
 
 function Chat({ state, actor }) {
   const [text, setText] = useState('');
+  const t = useT(state);
   const list = useRef(null);
   useEffect(() => {
     const el = list.current;
@@ -75,7 +77,7 @@ function Chat({ state, actor }) {
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Écrire un message…"
+          placeholder={t("writeMessage")}
           maxLength={300}
           className="min-w-0 flex-1 rounded border border-black/20 bg-white px-2 py-1.5 text-sm"
         />
@@ -83,7 +85,7 @@ function Chat({ state, actor }) {
           type="submit"
           className="rounded border border-black/15 bg-white px-3 font-condensed text-sm uppercase hover:bg-black/5"
         >
-          Envoyer
+          {t('send')}
         </button>
       </form>
     </>
@@ -92,9 +94,10 @@ function Chat({ state, actor }) {
 
 export default function Feed({ state, actor }) {
   const [tab, setTab] = useState('journal');
+  const t = useT(state);
   const tabs = [
-    ['journal', 'Journal'],
-    ['chat', `Chat${state.chat.length ? ` (${state.chat.length})` : ''}`],
+    ['journal', t('journal')],
+    ['chat', `${t('chat')}${state.chat.length ? ` (${state.chat.length})` : ''}`],
   ];
 
   return (

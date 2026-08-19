@@ -41,9 +41,9 @@ export function newPlayerId() {
 }
 
 /** Crée une partie et son hôte. */
-export function createRoom(hostId, editionId) {
+export function createRoom(hostId, editionId, locale) {
   const code = generateCode();
-  const game = createGame(code, hostId, { editionId });
+  const game = createGame(code, hostId, { editionId, locale });
   games.set(code, { ...game, savedAt: 0, timer: null });
   return games.get(code);
 }
@@ -143,6 +143,7 @@ export function listRooms() {
     .map((room) => ({
       code: room.state.code,
       editionId: room.state.editionId,
+      locale: room.state.locale,
       phase: room.state.phase,
       turnCount: room.state.turnCount,
       lastPlayed: room.state.log.at(-1)?.at ?? room.savedAt,

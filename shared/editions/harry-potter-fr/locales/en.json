@@ -1,0 +1,234 @@
+{
+  "name": "Monopoly Harry Potter",
+  "theme": "Hogwarts and the wizarding world",
+  "tagline": "The classic rules, in Galleons.",
+  "summary": "Classic Monopoly on the Hogwarts board: buy, build cottages and castles, mortgage, and outlast everyone.",
+  "centerTitle": "Monopoly",
+  "centerSubtitle": "Hogwarts",
+  "groups": {
+    "brown": "Hideaways",
+    "lightblue": "Inns",
+    "pink": "Diagon Alley",
+    "orange": "Hogsmeade",
+    "red": "Hogwarts grounds",
+    "yellow": "Great halls",
+    "green": "Hidden rooms",
+    "darkblue": "Gringotts",
+    "railroad": "Magical transport",
+    "utility": "Magical services"
+  },
+  "decks": {
+    "chance": "Spells",
+    "community_chest": "Potions"
+  },
+  "buildingLabels": {
+    "house": "Cottage",
+    "houses": "Cottages",
+    "hotel": "Castle",
+    "hotels": "Castles"
+  },
+  "tokens": {
+    "baguette": "Wand",
+    "chaudron": "Cauldron",
+    "vif": "Golden Snitch",
+    "hibou": "Owl",
+    "balai": "Broomstick",
+    "choixpeau": "Sorting Hat"
+  },
+  "spaces": {
+    "0": {
+      "name": "GO",
+      "shortName": "GO"
+    },
+    "1": {
+      "name": "Cupboard Under the Stairs",
+      "shortName": "Cupboard"
+    },
+    "2": {
+      "name": "Potions",
+      "shortName": "Potions"
+    },
+    "3": {
+      "name": "Hagrid's Hut",
+      "shortName": "Hagrid"
+    },
+    "4": {
+      "name": "Ministry of Magic Tax",
+      "shortName": "Ministry Tax"
+    },
+    "5": {
+      "name": "Hogwarts Express",
+      "shortName": "Hogwarts Exp."
+    },
+    "6": {
+      "name": "The Leaky Cauldron",
+      "shortName": "Leaky Cauldron"
+    },
+    "7": {
+      "name": "Spells",
+      "shortName": "Spells"
+    },
+    "8": {
+      "name": "The Three Broomsticks",
+      "shortName": "Three Brooms"
+    },
+    "9": {
+      "name": "The Hog's Head",
+      "shortName": "Hog's Head"
+    },
+    "10": {
+      "name": "Azkaban",
+      "shortName": "Azkaban"
+    },
+    "11": {
+      "name": "Flourish and Blotts",
+      "shortName": "Flourish"
+    },
+    "12": {
+      "name": "Floo Network",
+      "shortName": "Floo Network"
+    },
+    "13": {
+      "name": "Shell Cottage",
+      "shortName": "Shell Cottage"
+    },
+    "14": {
+      "name": "Ollivanders Wand Shop",
+      "shortName": "Ollivanders"
+    },
+    "15": {
+      "name": "Durmstrang Ship",
+      "shortName": "Durmstrang"
+    },
+    "16": {
+      "name": "Weasleys' Wizard Wheezes",
+      "shortName": "Wizard Wheezes"
+    },
+    "17": {
+      "name": "Potions",
+      "shortName": "Potions"
+    },
+    "18": {
+      "name": "Honeydukes",
+      "shortName": "Honeydukes"
+    },
+    "19": {
+      "name": "The Burrow",
+      "shortName": "The Burrow"
+    },
+    "20": {
+      "name": "Free Parking",
+      "shortName": "Free Parking"
+    },
+    "21": {
+      "name": "The Shrieking Shack",
+      "shortName": "Shrieking Shack"
+    },
+    "22": {
+      "name": "Spells",
+      "shortName": "Spells"
+    },
+    "23": {
+      "name": "Quidditch Pitch",
+      "shortName": "Quidditch"
+    },
+    "24": {
+      "name": "Astronomy Tower",
+      "shortName": "Astronomy"
+    },
+    "25": {
+      "name": "Flying Ford Anglia",
+      "shortName": "Ford Anglia"
+    },
+    "26": {
+      "name": "The Great Hall",
+      "shortName": "Great Hall"
+    },
+    "27": {
+      "name": "12 Grimmauld Place",
+      "shortName": "Grimmauld Pl."
+    },
+    "28": {
+      "name": "Owl Post Service",
+      "shortName": "Owl Post"
+    },
+    "29": {
+      "name": "Room of Requirement",
+      "shortName": "Room of Req."
+    },
+    "30": {
+      "name": "Go to Azkaban!",
+      "shortName": "Go to Azkaban"
+    },
+    "31": {
+      "name": "Chamber of Secrets",
+      "shortName": "Chamber"
+    },
+    "32": {
+      "name": "Hogwarts Library",
+      "shortName": "Library"
+    },
+    "33": {
+      "name": "Potions",
+      "shortName": "Potions"
+    },
+    "34": {
+      "name": "Dumbledore's Office",
+      "shortName": "Dumbledore"
+    },
+    "35": {
+      "name": "The Knight Bus",
+      "shortName": "Knight Bus"
+    },
+    "36": {
+      "name": "Spells",
+      "shortName": "Spells"
+    },
+    "37": {
+      "name": "Lestrange Vault",
+      "shortName": "Lestrange"
+    },
+    "38": {
+      "name": "Hogwarts Supplies Tax",
+      "shortName": "Supplies Tax"
+    },
+    "39": {
+      "name": "Gringotts Wizarding Bank",
+      "shortName": "Gringotts"
+    }
+  },
+  "cards": {
+    "hp-sort-01": "Advance to GO. Collect 200 Galleons.",
+    "hp-sort-02": "Go to Gringotts Wizarding Bank.",
+    "hp-sort-03": "Advance to Flourish and Blotts. If you pass GO, collect 200 Galleons.",
+    "hp-sort-04": "Advance to The Burrow. If you pass GO, collect 200 Galleons.",
+    "hp-sort-05": "Advance to the nearest magical transport. If it is owned, pay the owner twice the rental.",
+    "hp-sort-06": "Advance to the nearest magical transport. If it is owned, pay the owner twice the rental.",
+    "hp-sort-07": "Advance to the nearest magical service. Throw the dice again and pay the owner ten times the amount thrown.",
+    "hp-sort-08": "Take the Hogwarts Express. If you pass GO, collect 200 Galleons.",
+    "hp-sort-09": "Gringotts pays you a dividend of 50 Galleons.",
+    "hp-sort-10": "Get out of Azkaban free. This card may be kept until needed or sold.",
+    "hp-sort-11": "Go back three spaces.",
+    "hp-sort-12": "Go directly to Azkaban. Do not pass GO, do not collect 200 Galleons.",
+    "hp-sort-13": "Magical repairs on your buildings: pay 25 Galleons per cottage and 100 per castle.",
+    "hp-sort-14": "Speeding on your broomstick: pay a 15 Galleon fine.",
+    "hp-sort-15": "You are elected chair of the Gobstones Club: pay each player 50 Galleons.",
+    "hp-sort-16": "Your cauldron loan matures: collect 150 Galleons.",
+    "hp-potion-01": "Advance to GO. Collect 200 Galleons.",
+    "hp-potion-02": "Gringotts vault error in your favour: collect 200 Galleons.",
+    "hp-potion-03": "St Mungo's fees: pay 50 Galleons.",
+    "hp-potion-04": "Sale of potion ingredients: collect 50 Galleons.",
+    "hp-potion-05": "Get out of Azkaban free. This card may be kept until needed or sold.",
+    "hp-potion-06": "Go directly to Azkaban. Do not pass GO, do not collect 200 Galleons.",
+    "hp-potion-07": "Birthday party in the Great Hall: collect 10 Galleons from every player.",
+    "hp-potion-08": "Ministry tax refund: collect 20 Galleons.",
+    "hp-potion-09": "You inherit from an old wizarding relative: collect 100 Galleons.",
+    "hp-potion-10": "Second prize in the Quidditch tournament: collect 10 Galleons.",
+    "hp-potion-11": "Go to Hagrid's Hut. If you pass GO, collect 200 Galleons.",
+    "hp-potion-12": "Hogwarts tuition and books: pay 50 Galleons.",
+    "hp-potion-13": "Defence Against the Dark Arts scholarship: collect 100 Galleons.",
+    "hp-potion-14": "Magical street repairs: pay 40 Galleons per cottage and 115 per castle.",
+    "hp-potion-15": "Auction of magical artefacts: collect 100 Galleons.",
+    "hp-potion-16": "Fine for misuse of magic: pay 100 Galleons."
+  }
+}

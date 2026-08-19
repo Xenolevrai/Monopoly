@@ -6,7 +6,7 @@
  * règle de case n'est écrite qu'une seule fois.
  */
 import { getSpace, boardOf } from '../../shared/index.js';
-import { log, amountText } from './log.js';
+import { log, say, amountText } from './log.js';
 import { playerById, rentFor, config } from './queries.js';
 import { credit, charge } from './money.js';
 
@@ -32,7 +32,7 @@ export function moveTo(state, playerId, target, collectGoSalary = true) {
 }
 
 function collectSalary(state, playerId) {
-  credit(state, playerId, config(state).currency.goBonus, 'passage par la case Départ');
+  credit(state, playerId, config(state).currency.goBonus, say(state, 'reasonGo'));
 }
 
 /**
@@ -53,7 +53,7 @@ export function sendToJail(state, playerId) {
   player.jailTurns = 0;
   state.dice.extraRoll = false;
   state.dice.doublesCount = 0;
-  log(state, 'jail', `${player.name} va en prison.`, { playerId });
+  log(state, 'jail', say(state, 'toJail', { name: player.name }), { playerId });
 }
 
 /**
@@ -63,7 +63,7 @@ export function sendToJail(state, playerId) {
 export function resolveLanding(state, playerId, ctx = {}) {
   const player = playerById(state, playerId);
   const space = getSpace(state, player.position);
-  log(state, 'land', `${player.name} arrive sur ${space.name}.`, { playerId, spaceId: space.id });
+  log(state, 'land', say(state, 'lands', { name: player.name, space: space.name }), { playerId, spaceId: space.id });
 
   switch (space.type) {
     case 'property':
@@ -94,7 +94,7 @@ export function resolveLanding(state, playerId, ctx = {}) {
       if (state.settings.freeParkingPot && state.freeParkingPot > 0) {
         const pot = state.freeParkingPot;
         state.freeParkingPot = 0;
-        credit(state, playerId, pot, 'cagnotte du Parc Gratuit');
+        credit(state, playerId, pot, say(state, 'reasonParking'));
       }
       return;
 
@@ -114,7 +114,7 @@ function resolveOwnable(state, player, space, ctx) {
   if (!prop.ownerId) {
     if (home === space.id) {
       prop.ownerId = player.id;
-      log(state, 'buy', `${player.name} est chez elle : ${space.name} lui revient sans rien payer.`, {
+      log(state, 'buy', say(state, 'homeFree', { name: player.name, space: space.name }), {
         playerId: player.id,
         spaceId: space.id,
         amount: 0,
@@ -138,14 +138,14 @@ function resolveOwnable(state, player, space, ctx) {
 
   // Chez soi, même si quelqu'un d'autre y est passé avant : aucun droit à payer.
   if (home === space.id) {
-    log(state, 'rent', `${space.name} est la salle commune de ${player.name} : elle ne paie rien.`, {
+    log(state, 'rent', say(state, 'rentHome', { space: space.name, name: player.name }), {
       playerId: player.id,
       spaceId: space.id,
     });
     return;
   }
   if (prop.mortgaged) {
-    log(state, 'rent', `${space.name} est hypothéquée : aucun loyer n'est dû.`, {
+    log(state, 'rent', say(state, 'rentMortgaged', { space: space.name }), {
       playerId: player.id,
       spaceId: space.id,
     });
@@ -160,12 +160,12 @@ function resolveOwnable(state, player, space, ctx) {
   });
   if (rent <= 0) return;
 
-  log(state, 'rent', `${player.name} doit ${amountText(state, rent)} de loyer à ${owner.name} pour ${space.name}.`, {
+  log(state, 'rent', say(state, 'rentDue', { name: player.name, amount: amountText(state, rent), owner: owner.name, space: space.name }), {
     playerId: player.id,
     creditorId: owner.id,
     spaceId: space.id,
     amount: rent,
   });
   // Un loyer se règle, se négocie, ou mène à la faillite : jamais un prélèvement d'office.
-  charge(state, player.id, rent, `loyer de ${space.name}`, owner.id, { negotiable: true });
+  charge(state, player.id, rent, say(state, 'reasonRent', { space: space.name }), owner.id, { negotiable: true });
 }

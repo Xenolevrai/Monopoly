@@ -1,6 +1,6 @@
 /** Achat, hypothèque, construction et revente. */
 import { getSpace, rulesOf } from '../../shared/index.js';
-import { log, amountText } from './log.js';
+import { log, say, amountText } from './log.js';
 import {
   playerById,
   canBuild,
@@ -9,6 +9,15 @@ import {
   buildingLevel,
 } from './queries.js';
 import { credit, refreshDebtPending } from './money.js';
+
+/** Les libellés de construction de l'édition : maisons, chaumières, blasons… */
+function labels(state) {
+  return (
+    rulesOf(state).buildingLabels ?? {
+      house: 'Maison', houses: 'Maisons', hotel: 'Hôtel', hotels: 'Hôtels',
+    }
+  );
+}
 
 /** Achat à la banque au prix affiché. */
 export function buyProperty(state, playerId, spaceId, price = null) {
@@ -23,7 +32,7 @@ export function buyProperty(state, playerId, spaceId, price = null) {
 
   player.cash -= cost;
   prop.ownerId = playerId;
-  log(state, 'buy', `${player.name} achète ${space.name} pour ${amountText(state, cost)}.`, {
+  log(state, 'buy', say(state, rulesOf(state).mechanics.explorationMode ? 'explores' : 'buys', { name: player.name, space: space.name, amount: amountText(state, cost) }), {
     playerId,
     spaceId,
     amount: cost,
@@ -63,7 +72,7 @@ export function unmortgage(state, playerId, spaceId) {
 
   player.cash -= cost;
   prop.mortgaged = false;
-  log(state, 'unmortgage', `${player.name} lève l'hypothèque de ${space.name} pour ${amountText(state, cost)}.`, {
+  log(state, 'unmortgage', say(state, 'unmortgages', { name: player.name, space: space.name, amount: amountText(state, cost) }), {
     playerId,
     spaceId,
     amount: cost,
@@ -86,7 +95,7 @@ export function buildHouse(state, playerId, spaceId) {
     prop.hotel = true;
     state.bank.hotels -= 1;
     state.bank.houses += 4; // les 4 maisons retournent au stock
-    log(state, 'build', `${player.name} construit un hôtel sur ${space.name} (${amountText(state, check.cost)}).`, {
+    log(state, 'build', say(state, 'buildsTop', { name: player.name, label: labels(state).hotel.toLowerCase(), space: space.name, amount: amountText(state, check.cost) }), {
       playerId,
       spaceId,
       amount: check.cost,
@@ -97,7 +106,7 @@ export function buildHouse(state, playerId, spaceId) {
     log(
       state,
       'build',
-      `${player.name} construit une maison sur ${space.name} (${amountText(state, check.cost)}) — ${prop.houses} au total.`,
+      say(state, 'builds', { name: player.name, label: labels(state).house.toLowerCase(), space: space.name, amount: amountText(state, check.cost), count: prop.houses }),
       { playerId, spaceId, amount: check.cost, houses: prop.houses },
     );
   }
@@ -120,13 +129,13 @@ export function sellBuilding(state, playerId, spaceId) {
       log(
         state,
         'sell',
-        `${player(state, playerId)} revend l'hôtel de ${space.name} pour ${amountText(state, check.refund)} (la banque n'a plus de maisons).`,
+        say(state, 'sellsTopRazed', { name: player(state, playerId), label: labels(state).hotel.toLowerCase(), space: space.name, amount: amountText(state, check.refund) }),
         { playerId, spaceId, amount: check.refund },
       );
     } else {
       prop.houses = 4;
       state.bank.houses -= 4;
-      log(state, 'sell', `${player(state, playerId)} revend l'hôtel de ${space.name} pour ${amountText(state, check.refund)} — 4 maisons restent.`, {
+      log(state, 'sell', say(state, 'sellsTop', { name: player(state, playerId), label: labels(state).hotel.toLowerCase(), space: space.name, amount: amountText(state, check.refund) }), {
         playerId,
         spaceId,
         amount: check.refund,
@@ -135,7 +144,7 @@ export function sellBuilding(state, playerId, spaceId) {
   } else {
     prop.houses -= 1;
     state.bank.houses += 1;
-    log(state, 'sell', `${player(state, playerId)} revend une maison de ${space.name} pour ${amountText(state, check.refund)}.`, {
+    log(state, 'sell', say(state, 'sells', { name: player(state, playerId), space: space.name, amount: amountText(state, check.refund) }), {
       playerId,
       spaceId,
       amount: check.refund,

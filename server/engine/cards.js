@@ -6,7 +6,7 @@
  * cartes « libérée de prison » quittent la file tant qu'une joueuse les détient.
  */
 import { cardsOf, getEdition, boardOf } from '../../shared/index.js';
-import { log, amountText } from './log.js';
+import { log, say, amountText } from './log.js';
 import { playerById, buildingsOf, activePlayers } from './queries.js';
 import { credit, charge } from './money.js';
 import { advance, moveTo, sendToJail, resolveLanding } from './movement.js';
@@ -18,7 +18,8 @@ const DECKS = ['chance', 'community_chest'];
 const INDEX_CACHE = new Map();
 
 function cardIndex(state) {
-  const editionId = state.editionId ?? 'classic-fr';
+  // La clé porte la langue : le texte d'une carte en dépend.
+  const editionId = `${state.editionId ?? 'classic-fr'}:${state.locale ?? 'fr'}`;
   if (!INDEX_CACHE.has(editionId)) {
     const decks = cardsOf(state);
     INDEX_CACHE.set(
@@ -33,7 +34,7 @@ function cardIndex(state) {
 
 /** Le nom que cette édition donne à chaque pile. */
 function deckLabel(state, deck) {
-  return getEdition(state.editionId).theming?.decks?.[deck]?.label ?? deck;
+  return getEdition(state.editionId, state.locale).theming?.decks?.[deck]?.label ?? deck;
 }
 
 export function getCard(state, cardId) {
@@ -65,7 +66,7 @@ export function drawCard(state, playerId, deck, ctx = {}) {
   const card = cardIndex(state)[cardId];
   const player = playerById(state, playerId);
   state.drawnCardId = cardId;
-  log(state, 'card', `${player.name} pioche une carte ${deckLabel(state, deck)} : « ${card.text} »`, {
+  log(state, 'card', say(state, 'draws', { name: player.name, deck: deckLabel(state, deck), text: card.text }), {
     playerId,
     deck,
     cardId,
@@ -126,11 +127,11 @@ export function applyCardAction(state, playerId, action, ctx = {}) {
 
   switch (action.type) {
     case 'collect':
-      credit(state, playerId, action.amount, 'carte');
+      credit(state, playerId, action.amount, say(state, 'reasonCard'));
       return;
 
     case 'pay':
-      charge(state, playerId, action.amount, 'carte');
+      charge(state, playerId, action.amount, say(state, 'reasonCard'));
       return;
 
     case 'move_to': {
@@ -156,7 +157,7 @@ export function applyCardAction(state, playerId, action, ctx = {}) {
     case 'nearest': {
       const target = nearestSpaceOfType(state, player.position, action.spaceType);
       if (target == null) {
-        log(state, 'card', `Aucune case de ce type sur ce plateau.`, { playerId });
+        log(state, 'card', say(state, 'noSuchSpace'), { playerId });
         return;
       }
       moveTo(state, playerId, target, true);
@@ -179,10 +180,10 @@ export function applyCardAction(state, playerId, action, ctx = {}) {
       const { houses, hotels } = buildingsOf(state, playerId);
       const total = houses * action.perHouse + hotels * action.perHotel;
       if (total === 0) {
-        log(state, 'card', `${player.name} n'a aucune construction : rien à payer.`, { playerId });
+        log(state, 'card', say(state, 'nothingToRepair', { name: player.name }), { playerId });
         return;
       }
-      charge(state, playerId, total, `réparations (${houses} maison(s), ${hotels} hôtel(s))`);
+      charge(state, playerId, total, say(state, 'reasonRepairs', { houses, hotels }));
       return;
     }
 
@@ -192,7 +193,7 @@ export function applyCardAction(state, playerId, action, ctx = {}) {
     case 'pay_to_each': {
       for (const other of activePlayers(state)) {
         if (other.id === playerId) continue;
-        charge(state, playerId, action.amount, `versement à ${other.name}`, other.id);
+        charge(state, playerId, action.amount, say(state, 'reasonPayTo', { name: other.name }), other.id);
         if (state.debt) return;
       }
       return;
@@ -207,7 +208,7 @@ export function applyCardAction(state, playerId, action, ctx = {}) {
     }
 
     case 'get_out_of_jail_free':
-      log(state, 'card', `${player.name} conserve une carte « libérée de prison ».`, { playerId });
+      log(state, 'card', say(state, 'keepsJailCard', { name: player.name }), { playerId });
       return;
 
     case 'draw_card':
@@ -226,7 +227,7 @@ export function applyCardAction(state, playerId, action, ctx = {}) {
       return;
 
     default:
-      log(state, 'error', `Effet de carte inconnu : ${action.type}`, { action });
+      log(state, 'error', say(state, 'unknownCard', { type: action.type }), { action });
   }
 }
 
@@ -242,7 +243,7 @@ function nearestSpaceOfType(state, from, spaceType) {
 
 /** Un nouveau jet, pour les cartes qui l'exigent avant de calculer un loyer. */
 function rollTotal(rng, state) {
-  const { count, sides } = getEdition(state.editionId).dice;
+  const { count, sides } = getEdition(state.editionId, state.locale).dice;
   return rollDice(rng, count, sides).reduce((a, b) => a + b, 0);
 }
 
@@ -258,7 +259,7 @@ function collectFromEach(state, collectorId, amount, payerIds) {
     const payerId = remaining.shift();
     const payer = playerById(state, payerId);
     if (!payer || payer.bankrupt) continue;
-    charge(state, payerId, amount, 'anniversaire', collectorId);
+    charge(state, payerId, amount, say(state, 'reasonBirthday'), collectorId);
     if (state.debt) {
       state.pendingCollection = { collectorId, amount, remaining };
       return;
@@ -285,7 +286,7 @@ export function resolveCardChoice(state, playerId, optionIndex, ctx = {}) {
   const action = payload.actions[optionIndex];
   if (!action) return { ok: false, error: 'Option invalide.' };
   const label = payload.options[optionIndex].label;
-  log(state, 'card', `${playerById(state, playerId).name} choisit : ${label}.`, { playerId, optionIndex });
+  log(state, 'card', say(state, 'cardChoice', { name: playerById(state, playerId).name, label }), { playerId, optionIndex });
   state.pending = { kind: null, playerIds: [] };
   applyCardAction(state, playerId, action, ctx);
   return { ok: true };

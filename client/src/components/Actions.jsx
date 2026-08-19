@@ -8,6 +8,7 @@
  */
 import { useState } from 'react';
 import { boardOf, groupsOf, money, buildingLabels, editionFor } from '../lib/board.js';
+import { useT } from '../lib/i18n.js';
 import { sendAction } from '../lib/socket.js';
 import TokenIcon from './TokenIcon.jsx';
 import { BillStack } from './Money.jsx';
@@ -33,6 +34,7 @@ function Button({ children, onClick, tone = 'primary', disabled, className = '' 
 
 /** Le titre de propriété, dans l'esprit des cartes du jeu. */
 export function PropertyCard({ state, spaceId }) {
+  const t = useT(state);
   const space = boardOf(state)[spaceId];
   if (!space) return null;
   const color = space.group ? groupsOf(state)[space.group]?.color : null;
@@ -40,18 +42,18 @@ export function PropertyCard({ state, spaceId }) {
   const rows =
     space.type === 'property'
       ? [
-          ['Loyer terrain nu', space.rent[0]],
-          [`Avec 1 ${labels.house.toLowerCase()}`, space.rent[1]],
-          [`Avec 2 ${labels.houses.toLowerCase()}`, space.rent[2]],
-          [`Avec 3 ${labels.houses.toLowerCase()}`, space.rent[3]],
-          [`Avec 4 ${labels.houses.toLowerCase()}`, space.rent[4]],
+          [t('bareRent'), space.rent[0]],
+          [t('withN', 1, labels.house.toLowerCase()), space.rent[1]],
+          [t('withN', 2, labels.houses.toLowerCase()), space.rent[2]],
+          [t('withN', 3, labels.houses.toLowerCase()), space.rent[3]],
+          [t('withN', 4, labels.houses.toLowerCase()), space.rent[4]],
           ...(editionFor(state).mechanics.hotels
-            ? [[`Avec ${labels.hotel.toLowerCase()}`, space.rent[5]]]
+            ? [[t('withOne', labels.hotel.toLowerCase()), space.rent[5]]]
             : []),
         ]
       : space.type === 'railroad'
         ? space.rent.map((r, i) => [
-            `${i + 1} ${groupsOf(state)[space.group]?.label ?? 'gare'}${i ? 's' : ''} possédée${i ? 's' : ''}`,
+            t('ownedCount', i + 1, groupsOf(state)[space.group]?.label ?? ''),
             r,
           ])
         : [];
@@ -84,12 +86,13 @@ export function PropertyCard({ state, spaceId }) {
         )}
         {space.type === 'utility' && (
           <p className="text-[11px] text-ink-soft">
-            Loyer : {space.rentMultipliers[0]} × le jet de dés, ou {space.rentMultipliers[1]} × si les
-            deux sont possédées.
+            {t('utilityRent', space.rentMultipliers[0], space.rentMultipliers[1])}
           </p>
         )}
         <div className="mt-2 border-t border-black/15 pt-1.5 text-[11px] text-ink-soft">
-          <p className="tabular">Prix d'achat : {money(state, space.price)}</p>
+          <p className="tabular">
+            {t('price')} : {money(state, space.price)}
+          </p>
           {space.houseCost && (
             <p className="tabular">
               {labels.house} : {money(state, space.houseCost)}
@@ -102,7 +105,9 @@ export function PropertyCard({ state, spaceId }) {
             </p>
           )}
           {editionFor(state).mechanics.mortgage && (
-            <p className="tabular">Valeur hypothécaire : {money(state, space.mortgage)}</p>
+            <p className="tabular">
+              {t('mortgageValue')} : {money(state, space.mortgage)}
+            </p>
           )}
         </div>
       </div>
@@ -111,27 +116,27 @@ export function PropertyCard({ state, spaceId }) {
 }
 
 function Roll({ state, payload, actor }) {
+  const t = useT(state);
   if (!payload?.inJail) {
-    return <Button onClick={() => sendAction({ type: 'ROLL_DICE' }, actor)}>Lancer les dés</Button>;
+    return <Button onClick={() => sendAction({ type: 'ROLL_DICE' }, actor)}>{t('rollDice')}</Button>;
   }
   return (
     <div className="space-y-2">
       <p className="text-xs text-ink-soft">
-        En prison (tentative {payload.jailTurns + 1}/3). Faites un double, payez la caution, ou
-        utilisez une carte.
+        {t('inJailFor', payload.jailTurns + 1, editionFor(state).jail.maxTurns)}
       </p>
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => sendAction({ type: 'ROLL_DICE' }, actor)}>Tenter un double</Button>
+        <Button onClick={() => sendAction({ type: 'ROLL_DICE' }, actor)}>{t('tryDouble')}</Button>
         <Button
           tone="ghost"
           disabled={!payload.canPayBail}
           onClick={() => sendAction({ type: 'PAY_BAIL' }, actor)}
         >
-          Payer {money(state, payload.bail)}
+          {t('payBail')} {money(state, payload.bail)}
         </Button>
         {payload.hasJailCard && (
           <Button tone="ghost" onClick={() => sendAction({ type: 'USE_JAIL_CARD' }, actor)}>
-            Utiliser ma carte
+            {t('useCard')}
           </Button>
         )}
       </div>
@@ -140,6 +145,8 @@ function Roll({ state, payload, actor }) {
 }
 
 function BuyOrAuction({ state, me, payload, actor }) {
+  const t = useT(state);
+  const edition = editionFor(state);
   // `payload.canAfford` est figé au moment où la case a été résolue : si l'on
   // hypothèque un bien entre-temps pour réunir la somme, il faut relire le
   // solde courant plutôt que ce cliché, sans quoi le bouton reste grisé alors
@@ -150,16 +157,15 @@ function BuyOrAuction({ state, me, payload, actor }) {
       <PropertyCard state={state} spaceId={payload.spaceId} />
       <div className="flex flex-wrap gap-2">
         <Button disabled={!canAfford} onClick={() => sendAction({ type: 'BUY_PROPERTY' }, actor)}>
-          Acheter — {money(state, payload.price)}
+          {edition.vocabulary?.buy ?? t('buy')} — {money(state, payload.price)}
         </Button>
         <Button tone="ghost" onClick={() => sendAction({ type: 'DECLINE_PROPERTY' }, actor)}>
-          Refuser (enchère)
+          {t('decline')}
         </Button>
       </div>
       {!canAfford && (
         <p className="text-xs text-[var(--color-accent)]">
-          Fonds insuffisants : hypothéquez ou revendez ci-dessous pour réunir la somme, ou refusez pour la
-          mettre aux enchères.
+          {t(edition.mechanics.mortgage ? 'cannotAfford' : 'cannotAffordNoMortgage')}
         </p>
       )}
     </div>
@@ -167,6 +173,7 @@ function BuyOrAuction({ state, me, payload, actor }) {
 }
 
 function Auction({ state, me, actor }) {
+  const t = useT(state);
   const auction = state.auction;
   const [amount, setAmount] = useState(auction ? String(auction.highestBid + 10) : '10');
   if (!auction) return null;
@@ -201,10 +208,10 @@ function Auction({ state, me, actor }) {
           disabled={numericAmount <= auction.highestBid || numericAmount > (me?.cash ?? 0)}
           onClick={() => sendAction({ type: 'AUCTION_BID', amount: numericAmount }, actor)}
         >
-          Miser
+          {t('bid')}
         </Button>
         <Button tone="ghost" onClick={() => sendAction({ type: 'AUCTION_PASS' }, actor)}>
-          Passer
+          {t('pass')}
         </Button>
       </div>
     </div>
@@ -227,6 +234,7 @@ function CardChoice({ payload, actor }) {
 }
 
 function Debt({ state, me, payload, actor, onOpenTrade, onOpenSettlement }) {
+  const t = useT(state);
   const creditor = state.players.find((p) => p.id === payload.creditorId);
   const hasCash = me.cash >= payload.amount;
 
@@ -241,26 +249,26 @@ function Debt({ state, me, payload, actor, onOpenTrade, onOpenSettlement }) {
       {/* Ce qu'on pose sur la table si l'on paie comptant. */}
       {hasCash && (
         <div className="rounded border border-black/10 bg-white p-2">
-          <p className="mb-1 text-[11px] text-ink-soft">Les billets à sortir</p>
+          <p className="mb-1 text-[11px] text-ink-soft">{t('billsToHand')}</p>
           <BillStack state={state} amount={payload.amount} />
         </div>
       )}
 
       <div className="flex flex-wrap gap-2">
         <Button disabled={!hasCash} onClick={() => sendAction({ type: 'PAY_DEBT' }, actor)}>
-          Payer {money(state, payload.amount)}
+          {t('pay')} {money(state, payload.amount)}
         </Button>
         {creditor && (
           <Button tone="ghost" onClick={onOpenSettlement}>
-            S'arranger avec {creditor.name}
+            {t('arrangeWith', creditor.name)}
           </Button>
         )}
         <Button tone="ghost" onClick={onOpenTrade}>
-          Négocier ailleurs
+          {t('negotiateElsewhere')}
         </Button>
         {editionFor(state).mechanics.bankruptcyEliminates && (
           <Button tone="danger" onClick={() => sendAction({ type: 'DECLARE_BANKRUPTCY' }, actor)}>
-            Faillite
+            {t('bankruptcy')}
           </Button>
         )}
       </div>
@@ -287,13 +295,14 @@ function Manage({ state, me }) {
   const board = boardOf(state);
   const groups = groupsOf(state);
   const labels = buildingLabels(state);
+  const t = useT(state);
   // Une édition sans hypothèque ne doit pas montrer le bouton : il serait refusé.
   const canMortgage = editionFor(state).mechanics.mortgage;
 
   return (
     <div className="space-y-1.5">
       <h3 className="font-condensed text-[11px] uppercase tracking-[0.2em] text-ink-soft">
-        Les biens de {me.name}
+        {t('myAssets', me.name)}
       </h3>
       <div className="scroll-thin max-h-52 space-y-1 overflow-y-auto pr-1">
         {owned
@@ -327,7 +336,7 @@ function Manage({ state, me }) {
                 )}
                 {prop.mortgaged && (
                   <span className="rounded-sm bg-[var(--color-accent)] px-1 py-0.5 font-condensed text-[9px] uppercase tracking-wide text-white">
-                    Hypothéquée
+                    {t('mortgaged')}
                   </span>
                 )}
                 <span className="ml-auto flex gap-1">
@@ -335,7 +344,7 @@ function Manage({ state, me }) {
                     <>
                       <button
                         className={btn}
-                        title={`Construire (${labels.house.toLowerCase()})`}
+                        title={`${t("build")} (${labels.house.toLowerCase()})`}
                         onClick={() => sendAction({ type: 'BUILD_HOUSE', spaceId: prop.spaceId }, me.id)}
                       >
                         +
@@ -343,7 +352,7 @@ function Manage({ state, me }) {
                       {level > 0 && (
                         <button
                           className={btn}
-                          title={`Revendre (${labels.house.toLowerCase()})`}
+                          title={`${t("sellBuilding")} (${labels.house.toLowerCase()})`}
                           onClick={() => sendAction({ type: 'SELL_BUILDING', spaceId: prop.spaceId }, me.id)}
                         >
                           −
@@ -357,7 +366,7 @@ function Manage({ state, me }) {
                         className={btn}
                         onClick={() => sendAction({ type: 'UNMORTGAGE', spaceId: prop.spaceId }, me.id)}
                       >
-                        Lever ({money(state, Math.ceil(space.mortgage * 1.1))})
+                        {t('unmortgage')} ({money(state, Math.ceil(space.mortgage * 1.1))})
                       </button>
                     ) : (
                       level === 0 && (
@@ -365,7 +374,7 @@ function Manage({ state, me }) {
                           className={btn}
                           onClick={() => sendAction({ type: 'MORTGAGE', spaceId: prop.spaceId }, me.id)}
                         >
-                          Hypothéquer ({money(state, space.mortgage)})
+                          {t('mortgage')} ({money(state, space.mortgage)})
                         </button>
                       )
                     ))}
@@ -379,6 +388,7 @@ function Manage({ state, me }) {
 }
 
 export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement }) {
+  const t = useT(state);
   if (!me) return null;
   const { pending } = state;
   const actor = me.id;
@@ -395,7 +405,7 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
     const standings = state.standings ?? [];
     return (
       <div className="panel space-y-2 rounded-lg p-4">
-        <p className="text-center font-condensed text-2xl uppercase tracking-widest">Partie terminée</p>
+        <p className="text-center font-condensed text-2xl uppercase tracking-widest">{t('gameOver')}</p>
         <p className="text-center text-sm">
           {winner ? `${winner.name} l'emporte !` : 'Match nul.'}
         </p>
@@ -432,7 +442,7 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
       {hotSeat && mineTurn && (
         <div className="flex items-center gap-2 rounded border border-[var(--color-gold)]/50 bg-[var(--color-gold)]/10 px-2 py-1.5">
           <TokenIcon token={me.token} color={me.color} className="h-5 w-5" />
-          <span className="font-condensed text-sm uppercase">À {me.name} de jouer</span>
+          <span className="font-condensed text-sm uppercase">{t('yourTurn', me.name)}</span>
         </div>
       )}
 
@@ -451,8 +461,8 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
       {!mineTurn && (
         <p className="text-sm text-ink-soft">
           {pending.kind === 'auction_bid'
-            ? `Enchère : au tour de ${waitingFor?.name ?? '…'}`
-            : `En attente de ${waitingFor?.name ?? '…'}`}
+            ? t('auctionTurn', waitingFor?.name ?? '…')
+            : t('waitingFor', waitingFor?.name ?? '…')}
         </p>
       )}
 
@@ -462,16 +472,15 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
       {mineTurn && pending.kind === 'draw_card' && (
         <div className="space-y-2">
           <p className="text-sm">
-            {editionFor(state).theming?.decks?.[pending.payload.deck]?.label} : piochez la
-            carte du dessus du tas, au centre du plateau.
+            {t('drawFromPile', editionFor(state).theming?.decks?.[pending.payload.deck]?.label)}
           </p>
-          <Button onClick={() => sendAction({ type: 'DRAW_CARD' }, actor)}>Piocher une carte</Button>
+          <Button onClick={() => sendAction({ type: 'DRAW_CARD' }, actor)}>{t('drawCard')}</Button>
         </div>
       )}
       {mineTurn && pending.kind === 'card_reveal' && (
         <div className="space-y-2">
           <p className="text-sm">« {pending.payload.text} »</p>
-          <Button onClick={() => sendAction({ type: 'ACKNOWLEDGE_CARD' }, actor)}>J'applique</Button>
+          <Button onClick={() => sendAction({ type: 'ACKNOWLEDGE_CARD' }, actor)}>{t('applyCard')}</Button>
         </div>
       )}
       {mineTurn && pending.kind === 'buy_or_auction' && (
@@ -492,17 +501,17 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
       {mineTurn && pending.kind === 'end_turn' && (
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => sendAction({ type: 'END_TURN' }, actor)}>
-            {state.dice?.extraRoll ? 'Rejouer (double)' : 'Finir le tour'}
+            {state.dice?.extraRoll ? t('playAgain') : t('endTurn')}
           </Button>
           <Button tone="ghost" onClick={onOpenTrade}>
-            Échanger
+            {t('trade')}
           </Button>
         </div>
       )}
 
       {(!mineTurn || pending.kind !== 'end_turn') && state.phase === 'playing' && pending.kind !== 'pay_debt' && (
         <Button tone="ghost" onClick={onOpenTrade}>
-          Négocier{pendingOffers > 0 ? ` (${pendingOffers} offre${pendingOffers > 1 ? 's' : ''})` : ''}
+          {t('negotiate')}{pendingOffers > 0 ? ` (${pendingOffers})` : ''}
         </Button>
       )}
 

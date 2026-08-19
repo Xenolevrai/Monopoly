@@ -6,7 +6,7 @@
  * qu'on n'a pas) et à l'acceptation (l'état a pu changer entre-temps).
  */
 import { getSpace } from '../../shared/index.js';
-import { log, amountText } from './log.js';
+import { log, say, amountText } from './log.js';
 import { playerById, buildingLevel } from './queries.js';
 import { refreshDebtPending } from './money.js';
 
@@ -83,8 +83,12 @@ export function proposeTrade(state, fromPlayerId, toPlayerId, give, receive, opt
     state,
     'trade',
     settlesDebt
-      ? `${from.name} propose un arrangement à ${to.name} pour solder ${amountText(state, state.debt.amount)}.`
-      : `${from.name} propose un échange à ${to.name}.`,
+      ? say(state, 'tradeSettlementProposed', {
+          from: from.name,
+          to: to.name,
+          amount: amountText(state, state.debt.amount),
+        })
+      : say(state, 'tradeProposed', { from: from.name, to: to.name }),
     { tradeId: trade.id, trade },
   );
   return { ok: true, trade };
@@ -106,8 +110,8 @@ export function respondToTrade(state, playerId, tradeId, accept) {
       state,
       'trade',
       trade.settlesDebt
-        ? `${to.name} refuse l'arrangement : ${from.name} doit toujours sa dette.`
-        : `${to.name} refuse l'échange proposé par ${from.name}.`,
+        ? say(state, 'tradeSettlementDeclined', { from: from.name, to: to.name })
+        : say(state, 'tradeDeclined', { from: from.name, to: to.name }),
       { tradeId },
     );
     return { ok: true, accepted: false };
@@ -116,7 +120,7 @@ export function respondToTrade(state, playerId, tradeId, accept) {
   // Un arrangement n'a de sens que tant que la dette existe.
   if (trade.settlesDebt && state.debt?.debtorId !== trade.fromPlayerId) {
     trade.status = 'cancelled';
-    log(state, 'trade', "L'arrangement n'a plus lieu d'être : la dette est réglée.", { tradeId });
+    log(state, 'trade', say(state, 'tradeMoot'), { tradeId });
     return { ok: false, error: "Cette dette n'est plus en cours." };
   }
 
@@ -124,7 +128,7 @@ export function respondToTrade(state, playerId, tradeId, accept) {
   const error = validateSide(state, trade.fromPlayerId, trade.give) ?? validateSide(state, trade.toPlayerId, trade.receive);
   if (error) {
     trade.status = 'cancelled';
-    log(state, 'trade', `L'échange n'est plus réalisable : ${error}`, { tradeId });
+    log(state, 'trade', say(state, 'tradeImpossible', { error }), { tradeId });
     return { ok: false, error };
   }
 
@@ -152,7 +156,7 @@ export function cancelTrade(state, playerId, tradeId) {
   if (!trade || trade.status !== 'pending') return { ok: false, error: 'Échange introuvable.' };
   if (trade.fromPlayerId !== playerId) return { ok: false, error: "Cet échange n'est pas le vôtre." };
   trade.status = 'cancelled';
-  log(state, 'trade', `${playerById(state, playerId).name} annule sa proposition.`, { tradeId });
+  log(state, 'trade', say(state, 'tradeCancelled', { from: playerById(state, playerId).name }), { tradeId });
   return { ok: true };
 }
 
@@ -180,12 +184,12 @@ function executeTrade(state, trade) {
       side.jailCards ? `${side.jailCards} carte(s) de prison` : null,
     ]
       .filter(Boolean)
-      .join(', ') || 'rien';
+      .join(', ') || say(state, 'nothing');
 
   log(
     state,
     'trade',
-    `Échange accepté : ${from.name} donne ${describe(trade.give)} et reçoit ${describe(trade.receive)} de ${to.name}.`,
+    say(state, 'tradeAccepted', { from: from.name, to: to.name, gives: describe(trade.give), receives: describe(trade.receive) }),
     { tradeId: trade.id, trade },
   );
 

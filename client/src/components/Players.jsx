@@ -1,5 +1,6 @@
 /** Panneau des joueuses : solde, propriétés par couleur, état (prison, absente). */
 import { propertiesByGroup, money, editionFor } from '../lib/board.js';
+import { useT } from '../lib/i18n.js';
 import TokenIcon from './TokenIcon.jsx';
 import { BillStack } from './Money.jsx';
 
@@ -25,6 +26,7 @@ function PropertyChip({ item, groupColor }) {
 function PlayerCard({ player, state, isLocal, isActingHere, isCurrent, onFocus }) {
   const groups = propertiesByGroup(state, player.id);
   const faction = editionFor(state).factions?.options.find((f) => f.id === player.faction);
+  const t = useT(state);
 
   return (
     <div
@@ -46,7 +48,7 @@ function PlayerCard({ player, state, isLocal, isActingHere, isCurrent, onFocus }
         <span className="truncate font-condensed text-[15px] uppercase">{player.name}</span>
         {isLocal && (
           <span className="rounded bg-[var(--color-gold)]/20 px-1 text-[9px] uppercase tracking-wide text-[#6b5216]">
-            ici
+            {t('here')}
           </span>
         )}
         <span className="tabular ml-auto shrink-0 font-semibold text-[var(--color-money)]">
@@ -67,9 +69,15 @@ function PlayerCard({ player, state, isLocal, isActingHere, isCurrent, onFocus }
             {faction.label}
           </span>
         )}
-        {player.bankrupt && <span className="text-[var(--color-accent)]">éliminée</span>}
-        {player.inJail && <span className="text-[var(--color-accent)]">en prison ({player.jailTurns}/3)</span>}
-        {!player.connected && !player.bankrupt && <span className="text-[var(--color-accent)]">absente</span>}
+        {player.bankrupt && <span className="text-[var(--color-accent)]">{t('eliminated')}</span>}
+        {player.inJail && (
+          <span className="text-[var(--color-accent)]">
+            {t('inJailFor', player.jailTurns, editionFor(state).jail.maxTurns)}
+          </span>
+        )}
+        {!player.connected && !player.bankrupt && (
+          <span className="text-[var(--color-accent)]">{t('away')}</span>
+        )}
         {player.getOutOfJailCards > 0 && (
           <span className="text-[var(--color-money)]">{player.getOutOfJailCards} carte(s) de sortie</span>
         )}
@@ -101,15 +109,16 @@ function PlayerCard({ player, state, isLocal, isActingHere, isCurrent, onFocus }
 }
 
 export default function Players({ state, mine, me, onFocus }) {
+  const t = useT(state);
   const current = state.players[state.currentPlayerIndex];
   const localIds = new Set(mine.map((p) => p.id));
 
   return (
     <div className="panel space-y-2 rounded-lg p-3">
       <div className="flex items-baseline justify-between">
-        <h2 className="font-condensed text-base uppercase tracking-[0.2em]">Joueuses</h2>
+        <h2 className="font-condensed text-base uppercase tracking-[0.2em]">{t('players')}</h2>
         <span className="tabular text-[11px] text-ink-soft">
-          banque : {state.bank.houses} maisons · {state.bank.hotels} hôtels
+          {t('bank')} : {state.bank.houses} · {state.bank.hotels}
         </span>
       </div>
       {state.players.map((player) => (
@@ -125,7 +134,7 @@ export default function Players({ state, mine, me, onFocus }) {
       ))}
       {mine.length > 1 && (
         <p className="text-[10px] text-ink-soft">
-          Plusieurs joueuses sur cet écran : cliquez sur un nom pour agir en son nom hors de son tour.
+          {t('hotSeatHint')}
         </p>
       )}
     </div>

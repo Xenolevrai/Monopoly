@@ -1,5 +1,15 @@
-/** Journal de partie : une phrase française prête à afficher + les données brutes. */
+/** Journal de partie : une phrase prête à afficher, dans la langue de la partie. */
 import { rulesOf } from '../../shared/index.js';
+import { msg } from '../../shared/messages.js';
+
+/**
+ * La phrase d'un événement, dans la langue de la partie. Le journal est rendu
+ * au moment où l'événement se produit puis stocké tel quel : une partie reprise
+ * des jours plus tard se relit exactement comme elle a été jouée.
+ */
+export function say(state, key, params = {}) {
+  return msg(state.locale ?? 'fr', key, params);
+}
 
 /**
  * L'identifiant vient d'un compteur porté par la partie elle-même, pas du
@@ -22,5 +32,6 @@ export function log(state, type, text, data = {}) {
  */
 export function amountText(state, amount) {
   const currency = rulesOf(state).currency;
-  return `${Math.round(amount).toLocaleString('fr-FR')} ${currency.label}`;
+  const locale = state.locale === 'en' ? 'en-GB' : 'fr-FR';
+  return `${Math.round(amount).toLocaleString(locale)} ${currency.label}`;
 }

@@ -9,10 +9,10 @@
  *
  * Le moteur ne connaît ni Socket.io ni React : il se teste seul (voir tests/).
  */
-import { getEdition, DEFAULT_EDITION, listEditions } from '../../shared/index.js';
+import { getEdition, DEFAULT_EDITION, DEFAULT_LOCALE, listEditions } from '../../shared/index.js';
 import { createGameState, createPlayer } from '../../shared/schema.js';
 import { createRng } from './rng.js';
-import { log } from './log.js';
+import { log, say } from './log.js';
 import { playerById, currentPlayer, activePlayers } from './queries.js';
 import { buildDecks, drawCard, applyRevealedCard, resolveCardChoice, resumeCollection } from './cards.js';
 import { declareBankruptcy, checkGameOver, settleDebt, finishGame } from './money.js';
@@ -25,8 +25,8 @@ export * from './queries.js';
 export { createGameState, createPlayer };
 
 /** Crée une partie et son générateur aléatoire. */
-export function createGame(code, hostId, { seed, editionId = DEFAULT_EDITION } = {}) {
-  const state = createGameState(code, hostId, editionId);
+export function createGame(code, hostId, { seed, editionId = DEFAULT_EDITION, locale = DEFAULT_LOCALE } = {}) {
+  const state = createGameState(code, hostId, editionId, locale);
   return { state, rng: createRng(seed ?? Date.now()) };
 }
 
@@ -35,7 +35,7 @@ export { listEditions, getEdition };
 /** Ajoute une joueuse au lobby. */
 export function addPlayer(game, { id, name, token, faction }) {
   const { state } = game;
-  const edition = getEdition(state.editionId);
+  const edition = getEdition(state.editionId, state.locale);
   if (state.phase !== 'lobby') return { ok: false, error: 'La partie a déjà commencé.' };
   if (state.players.length >= edition.playerCount.max)
     return { ok: false, error: 'La partie est complète.' };
@@ -74,8 +74,8 @@ export function addPlayer(game, { id, name, token, faction }) {
     state,
     'lobby',
     swapped
-      ? `${name} rejoint la partie — le pion demandé était pris, elle joue « ${tokenDef.label} ».`
-      : `${name} rejoint la partie.`,
+      ? say(state, 'joinsSwapped', { name, token: tokenDef.label })
+      : say(state, 'joins', { name }),
     { playerId: id, token: tokenDef.id, swapped },
   );
   return { ok: true, player, swapped };
@@ -117,11 +117,11 @@ export function startGame(game, playerId) {
   const { state, rng } = game;
   if (state.phase !== 'lobby') return { ok: false, error: 'La partie a déjà commencé.' };
   if (!playerById(state, playerId)) return { ok: false, error: 'Joueuse inconnue.' };
-  const minPlayers = getEdition(state.editionId).playerCount.min;
+  const minPlayers = getEdition(state.editionId, state.locale).playerCount.min;
   if (state.players.length < minPlayers)
     return { ok: false, error: `Il faut au moins ${minPlayers} joueuses.` };
 
-  log(state, 'setup', `${playerById(state, playerId).name} lance la partie.`, { playerId });
+  log(state, 'setup', say(state, 'starts', { name: playerById(state, playerId).name }), { playerId });
   buildDecks(state, rng);
   determineTurnOrder(state, rng);
   state.phase = 'playing';
@@ -214,7 +214,7 @@ function applyAction(game, state, rng, player, action) {
       const spaceId = pending.payload.spaceId;
       state.pending = { kind: null, playerIds: [] };
       if (state.settings.auctionOnDecline) return startAuction(state, spaceId, playerId);
-      log(state, 'buy', `${player.name} renonce à acheter cette propriété.`, { playerId, spaceId });
+      log(state, 'buy', say(state, 'declines', { name: player.name }), { playerId, spaceId });
       return { ok: true };
     }
 
@@ -323,7 +323,7 @@ function advanceFlow(state) {
   // dernier lieu exploré met fin à la partie sur-le-champ. On teste avant les
   // gardes ci-dessous : sinon l'invite « finir le tour », posée juste avant,
   // ferait sortir d'ici et la partie continuerait un tour de trop.
-  if (getEdition(state.editionId).winCondition === 'allLocationsExplored' && checkGameOver(state))
+  if (getEdition(state.editionId, state.locale).winCondition === 'allLocationsExplored' && checkGameOver(state))
     return;
 
   if (state.debt) return; // en attente d'un règlement ou d'une faillite

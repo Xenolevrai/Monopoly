@@ -8,11 +8,13 @@
  */
 import { useState } from 'react';
 import { boardOf, groupsOf, money } from '../lib/board.js';
+import { useT } from '../lib/i18n.js';
 import { sendAction } from '../lib/socket.js';
 import TokenIcon from './TokenIcon.jsx';
 import { BillPicker } from './Money.jsx';
 
 function Side({ title, player, state, value, onChange }) {
+  const t = useT(state);
   const board = boardOf(state);
   const groups = groupsOf(state);
   const owned = Object.values(state.properties)
@@ -33,7 +35,7 @@ function Side({ title, player, state, value, onChange }) {
       </p>
 
       <div className="space-y-1">
-        <p className="text-[11px] text-ink-soft">Billets posés sur la table</p>
+        <p className="text-[11px] text-ink-soft">{t('billsOnTable')}</p>
         <BillPicker
           state={state}
           value={value.cash}
@@ -44,7 +46,7 @@ function Side({ title, player, state, value, onChange }) {
 
       {player.getOutOfJailCards > 0 && (
         <label className="flex items-center gap-2 text-xs">
-          <span className="text-ink-soft">Cartes de prison</span>
+          <span className="text-ink-soft">{t('jailCards')}</span>
           <input
             type="number"
             min={0}
@@ -57,7 +59,7 @@ function Side({ title, player, state, value, onChange }) {
       )}
 
       <div className="scroll-thin max-h-40 space-y-1 overflow-y-auto pr-1">
-        {owned.length === 0 && <p className="text-[11px] text-ink-soft">Aucune propriété échangeable.</p>}
+        {owned.length === 0 && <p className="text-[11px] text-ink-soft">{t('nothingTradable')}</p>}
         {owned.map((prop) => {
           const space = board[prop.spaceId];
           const selected = value.spaceIds.includes(prop.spaceId);
@@ -92,6 +94,7 @@ function Side({ title, player, state, value, onChange }) {
 const EMPTY = { cash: 0, spaceIds: [], jailCards: 0 };
 
 export default function TradeDialog({ state, me, mine, onClose, settleMode = false }) {
+  const t = useT(state);
   const localIds = mine.map((p) => p.id);
   const debt = state.debt;
 
@@ -120,7 +123,7 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
       side.jailCards ? `${side.jailCards} carte(s) de prison` : null,
     ]
       .filter(Boolean)
-      .join(', ') || 'rien';
+      .join(', ') || t('nothing');
 
   const submit = () => {
     if (!target) return;
@@ -144,7 +147,7 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
       <div className="panel max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-condensed text-xl uppercase tracking-[0.2em]">
-            {settleMode ? 'Proposer un arrangement' : 'Négocier'}
+            {settleMode ? t('proposeArrangement') : t('negotiate')}
           </h2>
           <button onClick={onClose} className="text-ink-soft hover:text-ink">
             ✕
@@ -163,7 +166,7 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
         {incoming.length > 0 && (
           <div className="mb-4 space-y-2">
             <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
-              Propositions reçues
+              {t('offersReceived')}
             </p>
             {incoming.map((trade) => {
               const proposer = state.players.find((p) => p.id === trade.fromPlayerId);
@@ -179,18 +182,18 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
                 >
                   <p className="mb-1 flex items-center gap-1.5">
                     <TokenIcon token={recipient?.token} color={recipient?.color} className="h-4 w-4" />
-                    <span className="font-condensed uppercase">Pour {recipient?.name}</span>
+                    <span className="font-condensed uppercase">{t('forPlayer', recipient?.name)}</span>
                     {trade.settlesDebt && (
                       <span className="rounded bg-[var(--color-accent)] px-1.5 py-px text-[10px] uppercase text-white">
-                        arrangement — {money(state, trade.debtAmount)}
+                        {t('arrangement')} — {money(state, trade.debtAmount)}
                       </span>
                     )}
                   </p>
                   <p>
-                    <span style={{ color: proposer?.color }}>{proposer?.name}</span> donne{' '}
-                    <span className="text-[var(--color-money)]">{describe(trade.give)}</span> et reçoit{' '}
+                    <span style={{ color: proposer?.color }}>{proposer?.name}</span> {t('gives').toLowerCase()}{' '}
+                    <span className="text-[var(--color-money)]">{describe(trade.give)}</span> {t('receives').toLowerCase()}{' '}
                     <span className="text-[#8a5a00]">{describe(trade.receive)}</span>.
-                    {trade.settlesDebt && ' La dette serait alors effacée.'}
+                    {trade.settlesDebt && ` ${t('debtCleared')}`}
                   </p>
                   <div className="mt-2 flex gap-2">
                     <button
@@ -202,7 +205,7 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
                         )
                       }
                     >
-                      Accepter
+                      {t('accept')}
                     </button>
                     <button
                       className="rounded border border-black/15 bg-white px-3 py-1 font-condensed uppercase hover:bg-black/5"
@@ -213,7 +216,7 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
                         )
                       }
                     >
-                      Refuser
+                      {t('refuse')}
                     </button>
                   </div>
                 </div>
@@ -225,20 +228,20 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
         {outgoing.length > 0 && (
           <div className="mb-4 space-y-1">
             <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
-              En attente de réponse
+              {t('awaitingReply')}
             </p>
             {outgoing.map((trade) => {
               const to = state.players.find((p) => p.id === trade.toPlayerId);
               return (
                 <div key={trade.id} className="flex items-center gap-2 text-xs text-ink-soft">
-                  <span>Proposition à {to?.name}</span>
+                  <span>{t('proposalTo', to?.name)}</span>
                   <button
                     className="rounded border border-black/15 bg-white px-2 py-0.5 hover:bg-black/5"
                     onClick={() =>
                       sendAction({ type: 'CANCEL_TRADE', tradeId: trade.id }, trade.fromPlayerId)
                     }
                   >
-                    Annuler
+                    {t('cancel')}
                   </button>
                 </div>
               );
@@ -251,7 +254,7 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
             <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
               {mine.length > 1 && !settleMode && (
                 <>
-                  <span className="text-ink-soft">Au nom de</span>
+                  <span className="text-ink-soft">{t('onBehalfOf')}</span>
                   <select
                     value={fromId}
                     onChange={(e) => {
@@ -270,7 +273,7 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
                   </select>
                 </>
               )}
-              <span className="text-ink-soft">Avec</span>
+              <span className="text-ink-soft">{t('with')}</span>
               {settleMode ? (
                 <span className="font-condensed uppercase">{target.name}</span>
               ) : (
@@ -292,13 +295,12 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
             </div>
 
             <div className="flex flex-col gap-5 sm:flex-row">
-              <Side title="Donne" player={from} state={state} value={give} onChange={setGive} />
-              <Side title="Reçoit" player={target} state={state} value={receive} onChange={setReceive} />
+              <Side title={t("gives")} player={from} state={state} value={give} onChange={setGive} />
+              <Side title={t("receives")} player={target} state={state} value={receive} onChange={setReceive} />
             </div>
 
             <p className="mt-4 text-[11px] text-ink-soft">
-              Un terrain construit ne peut pas être échangé : revendez d'abord ses maisons. La
-              réponse peut arriver à tout moment, même hors du tour de la joueuse.
+              {t('tradeHint')}
             </p>
 
             <div className="mt-3 flex justify-end gap-2">
@@ -306,18 +308,18 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
                 className="rounded border border-black/15 bg-white px-3 py-2 font-condensed text-sm uppercase hover:bg-black/5"
                 onClick={onClose}
               >
-                Fermer
+                {t('close')}
               </button>
               <button
                 className="rounded bg-[var(--color-accent)] px-3 py-2 font-condensed text-sm uppercase text-white hover:bg-[var(--color-accent-deep)]"
                 onClick={submit}
               >
-                {settleMode ? "Proposer l'arrangement" : 'Proposer'}
+                {settleMode ? t('proposeArrangement') : t('propose')}
               </button>
             </div>
           </>
         ) : (
-          <p className="text-sm text-ink-soft">Aucune autre joueuse en lice.</p>
+          <p className="text-sm text-ink-soft">{t('noOneElse')}</p>
         )}
       </div>
     </div>

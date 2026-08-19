@@ -13,6 +13,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import GameOver from './components/GameOver.jsx';
 import { PropertyCard } from './components/Actions.jsx';
 import { editionFor } from './lib/board.js';
+import { useT } from './lib/i18n.js';
 
 function allCardsOf(state) {
   const cards = editionFor(state).cards;
@@ -28,12 +29,12 @@ function allCardsOf(state) {
  * défiler en entier à chaque tour pour atteindre les boutons. Sur ordinateur,
  * tout reste côte à côte et cette barre disparaît.
  */
-function MobileTabs({ tab, onChange, waiting }) {
+function MobileTabs({ tab, onChange, waiting, t }) {
   const tabs = [
-    ['jouer', 'Jouer'],
-    ['plateau', 'Plateau'],
-    ['joueuses', 'Joueuses'],
-    ['journal', 'Journal'],
+    ['jouer', t('tabPlay')],
+    ['plateau', t('tabBoard')],
+    ['joueuses', t('tabPlayers')],
+    ['journal', t('tabLog')],
   ];
 
   return (
@@ -70,6 +71,7 @@ export default function App() {
   const { rolling } = useCinematic(state);
   // Les couleurs de l'édition en cours, appliquées à toute la page.
   useEditionTheme(state);
+  const t = useT(state);
   const [tradeOpen, setTradeOpen] = useState(false);
   const [settleOpen, setSettleOpen] = useState(false);
   const [inspected, setInspected] = useState(null);
@@ -125,7 +127,7 @@ export default function App() {
     <div className="min-h-screen p-3 lg:p-5">
       {!connected && (
         <div className="fixed inset-x-0 top-0 z-50 bg-[var(--color-accent)] py-1.5 text-center text-xs text-white">
-          Connexion perdue — reprise automatique dès que le serveur répond…
+          {t('connectionLost')}
         </div>
       )}
       {error && (
@@ -194,7 +196,7 @@ export default function App() {
         </aside>
       </div>
 
-      <MobileTabs tab={tab} onChange={setTab} waiting={myTurn} />
+      <MobileTabs tab={tab} onChange={setTab} waiting={myTurn} t={t} />
 
       {finished && !recapClosed && (
         <ErrorBoundary zone="Le récapitulatif">
@@ -228,7 +230,7 @@ export default function App() {
               onClick={() => setInspected(null)}
               className="mt-2 w-full rounded border border-black/15 bg-white py-2 font-condensed text-sm uppercase hover:bg-black/5"
             >
-              Fermer
+              {t('close')}
             </button>
           </div>
         </div>

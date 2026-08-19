@@ -5,6 +5,7 @@
  */
 import { boardOf, gridPosition, gridTemplate, gridSize, groupColor, editionFor, money } from '../lib/board.js';
 import { iconFor } from './SpaceIcons.jsx';
+import { translator } from '../lib/i18n.js';
 import Pawns from './Pawns.jsx';
 import Dice from './Dice.jsx';
 
@@ -13,9 +14,11 @@ const ROTATION = { bottom: 0, left: 90, top: 180, right: -90 };
 
 /** Les mentions imprimées sous les quatre coins, dans la monnaie de l'édition. */
 function cornerNote(state, id) {
-  if (id === 0) return `Recevez ${money(state, editionFor(state).currency.goBonus)}`;
-  if (id === 10) return 'Simple visite';
-  if (id === 30) return 'Sans passer par Départ';
+  const t = translator(state.locale);
+  const board = editionFor(state).board;
+  if (board[id]?.type === 'go') return t('collect', money(state, editionFor(state).currency.goBonus));
+  if (board[id]?.type === 'jail') return t('justVisiting');
+  if (board[id]?.type === 'go_to_jail') return t('notPassingGo');
   return null;
 }
 
@@ -118,7 +121,7 @@ function Space({ space, state, active, onSelect }) {
           )}
           {prop?.mortgaged && (
             <span className="font-condensed text-[6.5px] uppercase text-[var(--color-accent)]">
-              hypothéquée
+              {translator(state.locale)('mortgaged')}
             </span>
           )}
         </span>
@@ -157,7 +160,7 @@ function CardPiles({ state, canDraw, deckToDraw, onDraw }) {
             onClick={() => mine && onDraw(pile.id)}
             className={`relative block ${mine ? 'cursor-pointer pile-ready' : 'cursor-default'}`}
             style={{ transform: `rotate(${pile.tilt}deg)` }}
-            title={mine ? `Piocher une carte ${pile.label}` : pile.label}
+            title={pile.label}
           >
             {/* Les cartes du dessous, pour l'épaisseur du tas. */}
             <span className="absolute left-1 top-1 h-full w-full rounded border-2 border-ink/60 bg-white/70" />
@@ -175,7 +178,7 @@ function CardPiles({ state, canDraw, deckToDraw, onDraw }) {
             </span>
             {mine && (
               <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap font-condensed text-[10px] uppercase text-[var(--color-accent)]">
-                Piochez !
+                {translator(state.locale)('drawNow')}
               </span>
             )}
           </button>
@@ -221,7 +224,7 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
             sombre, et la couleur de la joueuse reste identifiable. */}
         {state.phase === 'playing' && current && (
           <p className="flex items-center gap-1.5 rounded-full border border-black/15 bg-[var(--color-space)] px-3 py-1 font-condensed text-xs uppercase tracking-widest text-ink">
-            Au tour de
+            {translator(state.locale)('turnOf')}
             <span className="inline-flex items-center gap-1">
               <span
                 className="h-2.5 w-2.5 rounded-full border border-black/30"
@@ -234,7 +237,7 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
         <Dice values={state.dice?.values} rolling={rolling} />
         {state.settings?.freeParkingPot && state.freeParkingPot > 0 && (
           <p className="tabular text-[11px] opacity-80" style={{ color: 'var(--color-board-ink)' }}>
-            Cagnotte du Parc Gratuit :{' '}
+            {state.locale === 'en' ? 'Free Parking pot:' : 'Cagnotte du Parc Gratuit :'}{' '}
             <span className="font-semibold text-[var(--color-money)]">{money(state, state.freeParkingPot)}</span>
           </p>
         )}
@@ -258,7 +261,7 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
             className="mb-2 font-condensed text-base uppercase tracking-[0.2em]"
             style={{ color: tint }}
           >
-            {howler ? 'Beuglante' : (deck?.label ?? drawnCard.deck)}
+            {howler ? (state.locale === 'en' ? 'Howler' : 'Beuglante') : (deck?.label ?? drawnCard.deck)}
           </p>
           <p className="text-sm leading-snug text-ink">{drawnCard.text}</p>
           {revealed && (
@@ -267,7 +270,7 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
               onClick={onAcknowledge}
               className="mt-3 w-full rounded bg-[var(--color-accent)] py-2 font-condensed text-sm uppercase tracking-wide text-white hover:bg-[var(--color-accent-deep)]"
             >
-              J'applique
+              {translator(state.locale)('applyCard')}
             </button>
           )}
         </div>

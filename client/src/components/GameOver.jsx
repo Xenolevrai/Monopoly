@@ -7,11 +7,13 @@
  * regardant une dernière fois le plateau, soit en quittant pour rejouer.
  */
 import { money } from '../lib/board.js';
+import { useT } from '../lib/i18n.js';
 import TokenIcon from './TokenIcon.jsx';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 export default function GameOver({ state, onLeave, onClose }) {
+  const t = useT(state);
   const standings = state.standings ?? [];
   const winner = state.players.find((p) => p.id === state.winnerId);
   const podium = standings.filter((entry) => !entry.bankrupt);
@@ -33,7 +35,7 @@ export default function GameOver({ state, onLeave, onClose }) {
               </p>
             </div>
           ) : (
-            <p className="mt-2 font-condensed text-3xl uppercase text-white">Match nul</p>
+            <p className="mt-2 font-condensed text-3xl uppercase text-white">{t('draw')}</p>
           )}
           <p className="mt-1 font-condensed text-xs uppercase tracking-[0.25em] text-white/80">
             {winner ? "l'emporte" : ''}
@@ -42,7 +44,7 @@ export default function GameOver({ state, onLeave, onClose }) {
 
         <div className="space-y-4 p-6">
           <div className="flex items-baseline justify-between">
-            <h2 className="font-condensed text-base uppercase tracking-[0.2em]">Le compte final</h2>
+            <h2 className="font-condensed text-base uppercase tracking-[0.2em]">{t('finalCount')}</h2>
             <span className="text-[11px] text-ink-soft">
               {state.turnCount} tours joués · partie {state.code}
             </span>

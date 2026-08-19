@@ -1,7 +1,8 @@
 /** Accueil (créer / rejoindre) puis salon d'attente avec le code à partager. */
 import { useEffect, useState } from 'react';
 import { socket } from '../lib/socket.js';
-import { getEdition, listEditions, DEFAULT_EDITION } from '../lib/board.js';
+import { getEdition, listEditions, DEFAULT_EDITION, DEFAULT_LOCALE, LOCALES } from '../lib/board.js';
+import { translator } from '../lib/i18n.js';
 import TokenIcon from './TokenIcon.jsx';
 import Rules from './Rules.jsx';
 
@@ -37,14 +38,14 @@ function Logo({ edition, small = false }) {
  * l'autre. On choisit sa boîte avant de créer la partie, comme on la sort de
  * l'étagère.
  */
-function EditionGallery({ value, onChange }) {
-  const editions = listEditions();
+function EditionGallery({ value, onChange, locale, t }) {
+  const editions = listEditions(locale);
   if (editions.length < 2) return null;
 
   return (
     <div className="space-y-2">
       <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
-        Quelle boîte sort-on ?
+        {t('whichBox')}
       </p>
       <div className="grid gap-2 sm:grid-cols-2">
         {editions.map((edition) => {
@@ -75,11 +76,39 @@ function EditionGallery({ value, onChange }) {
               <span className="text-[11px] text-ink-soft">{edition.theme}</span>
               <span className="text-[11px] leading-snug">{edition.summary}</span>
               <span className="mt-0.5 font-condensed text-[10px] uppercase tracking-wide text-ink-soft">
-                {edition.playerCount.min}–{edition.playerCount.max} joueuses · {edition.boardSize} cases
+                {edition.playerCount.min}–{edition.playerCount.max} · {edition.boardSize}
               </span>
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+/** Le choix de la langue : la boîte se joue en français ou en anglais. */
+function LocalePicker({ value, onChange, t }) {
+  const LABELS = { fr: 'Français', en: 'English' };
+  return (
+    <div className="space-y-1.5">
+      <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
+        {t('language')}
+      </p>
+      <div className="flex gap-2">
+        {LOCALES.map((code) => (
+          <button
+            key={code}
+            type="button"
+            onClick={() => onChange(code)}
+            className={`flex-1 rounded border-2 py-2 font-condensed text-sm uppercase tracking-wide transition-all ${
+              value === code
+                ? 'border-ink bg-white'
+                : 'border-black/12 bg-white/60 hover:bg-white'
+            }`}
+          >
+            {LABELS[code]}
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -191,7 +220,7 @@ function TokenPicker({ edition, value, onChange, taken = [] }) {
  * Les parties laissées en plan sur ce serveur. On reprend la sienne d'un clic,
  * sans avoir noté le code la semaine dernière.
  */
-function ResumeList() {
+function ResumeList({ t, locale }) {
   const [games, setGames] = useState([]);
   const [openCode, setOpenCode] = useState(null);
   const [picked, setPicked] = useState([]);
@@ -210,6 +239,11 @@ function ResumeList() {
   const when = (at) => {
     if (!at) return '';
     const days = Math.floor((Date.now() - at) / 86400000);
+    if (locale === 'en') {
+      if (days === 0) return 'today';
+      if (days === 1) return 'yesterday';
+      return `${days} days ago`;
+    }
     if (days === 0) return "aujourd'hui";
     if (days === 1) return 'hier';
     return `il y a ${days} jours`;
@@ -230,7 +264,7 @@ function ResumeList() {
   return (
     <div className="space-y-2">
       <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
-        Reprendre une partie
+        {t('resumeGame')}
       </p>
 
       {games.slice(0, 6).map((game) => {
@@ -255,9 +289,9 @@ function ResumeList() {
                 ))}
               </span>
               <span className="ml-auto text-right text-[11px] leading-tight text-ink-soft">
-                {getEdition(game.editionId).name}
+                {getEdition(game.editionId, game.locale).name}
                 <br />
-                tour {game.turnCount} · {when(game.lastPlayed)}
+                {t('turn')} {game.turnCount} · {when(game.lastPlayed)}
               </span>
             </button>
 
@@ -266,7 +300,7 @@ function ResumeList() {
             {isOpen && (
               <div className="space-y-2 border-t border-black/10 px-3 py-2.5">
                 <p className="text-[11px] text-ink-soft">
-                  Qui reprend sur cet appareil ? Cochez chaque joueuse qui jouera ici.
+                  {t('whoResumes')}
                 </p>
                 <div className="space-y-1">
                   {game.players.map((player) => {
@@ -292,11 +326,11 @@ function ResumeList() {
                         <TokenIcon token={player.token} color={player.color} className="h-5 w-5" />
                         <span className="font-condensed text-sm uppercase">{player.name}</span>
                         {player.bankrupt && (
-                          <span className="text-[10px] text-ink-soft">éliminée</span>
+                          <span className="text-[10px] text-ink-soft">{t('eliminated')}</span>
                         )}
                         {player.connected && !player.bankrupt && (
                           <span className="ml-auto text-[10px] text-[var(--color-money)]">
-                            déjà revenue
+                            {t('alreadyBack')}
                           </span>
                         )}
                       </button>
@@ -309,9 +343,7 @@ function ResumeList() {
                   onClick={() => rejoin(game.code)}
                   className="w-full rounded bg-[var(--color-accent)] py-2 font-condensed text-sm uppercase text-white hover:bg-[var(--color-accent-deep)] disabled:bg-black/15 disabled:text-black/40"
                 >
-                  {picked.length > 1
-                    ? `Reprendre à ${picked.length} sur cet écran`
-                    : 'Reprendre ma place'}
+                  {picked.length > 1 ? t('resumeSeveral', picked.length) : t('resumeMine')}
                 </button>
               </div>
             )}
@@ -325,21 +357,23 @@ function ResumeList() {
 export function Home({ error }) {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
+  const [locale, setLocale] = useState(DEFAULT_LOCALE);
   const [editionId, setEditionId] = useState(DEFAULT_EDITION);
-  const edition = getEdition(editionId);
+  const edition = getEdition(editionId, locale);
+  const t = translator(locale);
   const [token, setToken] = useState(edition.tokens[0].id);
   const [faction, setFaction] = useState(edition.factions?.options[0].id ?? null);
 
   // Changer d'édition change la boîte de pions et les camps : on reprend les
   // premiers de la nouvelle plutôt que de garder des choix qui n'existent pas ici.
   const chooseEdition = (id) => {
-    const next = getEdition(id);
+    const next = getEdition(id, locale);
     setEditionId(id);
     setToken(next.tokens[0].id);
     setFaction(next.factions?.options[0].id ?? null);
   };
 
-  const create = () => socket.emit('game:create', { name, token, editionId, faction });
+  const create = () => socket.emit('game:create', { name, token, editionId, faction, locale });
   const join = () => socket.emit('game:join', { code: code.toUpperCase(), name, token, faction });
 
   return (
@@ -348,22 +382,24 @@ export function Home({ error }) {
         <Logo edition={edition} />
 
         <label className="block font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
-          Votre pseudo
+          {t('yourName')}
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={20}
-            placeholder="Julie"
+            placeholder={t('namePlaceholder')}
             className="mt-1 w-full rounded border border-black/20 bg-white px-3 py-2 font-sans text-sm normal-case tracking-normal text-ink"
           />
         </label>
 
-        <EditionGallery value={editionId} onChange={chooseEdition} />
+        <LocalePicker value={locale} onChange={setLocale} t={t} />
+
+        <EditionGallery value={editionId} onChange={chooseEdition} locale={locale} t={t} />
 
         <FactionPicker edition={edition} value={faction} onChange={setFaction} />
 
         <div className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
-          Votre pion
+          {t('yourToken')}
           <div className="mt-1.5">
             <TokenPicker edition={edition} value={token} onChange={setToken} />
           </div>
@@ -375,12 +411,12 @@ export function Home({ error }) {
           onClick={create}
           className="w-full rounded bg-[var(--color-accent)] py-2.5 font-condensed text-base uppercase tracking-wide text-white transition-colors hover:bg-[var(--color-accent-deep)] disabled:bg-black/15 disabled:text-black/40"
         >
-          Créer une partie — {edition.name}
+          {t('createGame')} — {edition.name}
         </button>
 
         <div className="flex items-center gap-2 font-condensed text-[10px] uppercase tracking-widest text-ink-soft">
           <span className="h-px flex-1 bg-black/15" />
-          ou rejoindre
+          {t('orJoin')}
           <span className="h-px flex-1 bg-black/15" />
         </div>
 
@@ -389,7 +425,7 @@ export function Home({ error }) {
             value={code}
             onChange={(e) => setCode(e.target.value.toUpperCase())}
             maxLength={6}
-            placeholder="CODE"
+            placeholder={t("code")}
             className="tabular w-full rounded border border-black/20 bg-white px-3 py-2 text-center font-condensed text-lg tracking-[0.4em]"
           />
           <button
@@ -398,16 +434,13 @@ export function Home({ error }) {
             onClick={join}
             className="shrink-0 rounded border border-black/15 bg-white px-4 font-condensed text-sm uppercase hover:bg-black/5 disabled:opacity-40"
           >
-            Rejoindre
+            {t('join')}
           </button>
         </div>
 
-        <ResumeList />
+        <ResumeList t={t} locale={locale} />
 
-        <p className="text-center text-[11px] text-ink-soft">
-          Une partie interrompue vous attend ici, même des jours plus tard et même si personne
-          n'est connecté : ouvrez-la et désignez votre joueuse.
-        </p>
+        <p className="text-center text-[11px] text-ink-soft">{t('resumeHint')}</p>
 
         {error && <p className="text-center text-sm text-[var(--color-accent)]">{error}</p>}
       </div>
@@ -416,7 +449,7 @@ export function Home({ error }) {
 }
 
 /** Formulaire d'ajout d'une joueuse supplémentaire sur ce même ordinateur. */
-function AddLocalPlayer({ edition, taken, takenFactions = [], onCancel }) {
+function AddLocalPlayer({ t, edition, taken, takenFactions = [], onCancel }) {
   const free = edition.tokens.find((t) => !taken.includes(t.id));
   const [name, setName] = useState('');
   const [token, setToken] = useState(free?.id ?? edition.tokens[0].id);
@@ -440,7 +473,7 @@ function AddLocalPlayer({ edition, taken, takenFactions = [], onCancel }) {
         value={name}
         onChange={(e) => setName(e.target.value)}
         maxLength={20}
-        placeholder="Pseudo de la joueuse"
+        placeholder={t("localName")}
         className="w-full rounded border border-black/20 bg-white px-3 py-2 text-sm"
         autoFocus
       />
@@ -453,14 +486,14 @@ function AddLocalPlayer({ edition, taken, takenFactions = [], onCancel }) {
           onClick={add}
           className="flex-1 rounded bg-[var(--color-accent)] py-2 font-condensed text-sm uppercase text-white hover:bg-[var(--color-accent-deep)] disabled:bg-black/15 disabled:text-black/40"
         >
-          Ajouter
+          {t('add')}
         </button>
         <button
           type="button"
           onClick={onCancel}
           className="rounded border border-black/15 bg-white px-3 font-condensed text-sm uppercase hover:bg-black/5"
         >
-          Annuler
+          {t('cancel')}
         </button>
       </div>
     </div>
@@ -470,6 +503,7 @@ function AddLocalPlayer({ edition, taken, takenFactions = [], onCancel }) {
 /** Barre discrète en jeu : code, tour, et arrêt de la partie. */
 export function GameMenu({ state, mine, onLeave, onShowRecap }) {
   const [confirming, setConfirming] = useState(false);
+  const t = translator(state.locale);
 
   if (!mine.length) return null;
 
@@ -477,20 +511,20 @@ export function GameMenu({ state, mine, onLeave, onShowRecap }) {
   if (state.phase === 'finished') {
     return (
       <div className="panel flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-xs">
-        <span className="font-condensed uppercase text-[var(--color-accent)]">Partie terminée</span>
+        <span className="font-condensed uppercase text-[var(--color-accent)]">{t('gameOver')}</span>
         <button
           type="button"
           onClick={onShowRecap}
           className="rounded border border-black/15 bg-white px-2 py-1 font-condensed uppercase hover:bg-black/5"
         >
-          Revoir le compte final
+          {t('seeRecap')}
         </button>
         <button
           type="button"
           onClick={onLeave}
           className="ml-auto rounded bg-[var(--color-accent)] px-2 py-1 font-condensed uppercase text-white hover:bg-[var(--color-accent-deep)]"
         >
-          Quitter et rejouer
+          {t('quitAndReplay')}
         </button>
       </div>
     );
@@ -501,27 +535,27 @@ export function GameMenu({ state, mine, onLeave, onShowRecap }) {
   return (
     <div className="panel flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-xs">
       <span className="tabular font-condensed tracking-[0.15em]">{state.code}</span>
-      <span className="text-ink-soft">tour {state.turnCount}</span>
+      <span className="text-ink-soft">{t('turn')} {state.turnCount}</span>
       <Rules state={state} />
       <span className="ml-auto text-ink-soft">
-        La partie est sauvegardée : fermez tout, elle vous attendra.
+        {t('saved')}
       </span>
       {confirming ? (
           <span className="flex items-center gap-1.5">
-            <span className="text-ink-soft">Tout le monde est d'accord ?</span>
+            <span className="text-ink-soft">{t('agreed')}</span>
             <button
               type="button"
               onClick={() => socket.emit('game:end')}
               className="rounded bg-[var(--color-accent)] px-2 py-1 font-condensed uppercase text-white hover:bg-[var(--color-accent-deep)]"
             >
-              Oui, terminer
+              {t('yesEnd')}
             </button>
             <button
               type="button"
               onClick={() => setConfirming(false)}
               className="rounded border border-black/15 bg-white px-2 py-1 font-condensed uppercase hover:bg-black/5"
             >
-              Non
+              {t('no')}
             </button>
           </span>
       ) : (
@@ -530,7 +564,7 @@ export function GameMenu({ state, mine, onLeave, onShowRecap }) {
           onClick={() => setConfirming(true)}
           className="rounded border border-black/15 bg-white px-2 py-1 font-condensed uppercase hover:bg-black/5"
         >
-          Terminer la partie
+          {t('endGame')}
         </button>
       )}
     </div>
@@ -538,7 +572,8 @@ export function GameMenu({ state, mine, onLeave, onShowRecap }) {
 }
 
 export function WaitingRoom({ state, mine, onLeave }) {
-  const edition = getEdition(state.editionId);
+  const edition = getEdition(state.editionId, state.locale);
+  const t = translator(state.locale);
   const localIds = new Set(mine.map((p) => p.id));
   const [copied, setCopied] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -564,7 +599,7 @@ export function WaitingRoom({ state, mine, onLeave }) {
 
         <div className="text-center">
           <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
-            Code de la partie
+            {t('gameCode')}
           </p>
           <button
             onClick={copy}
@@ -574,13 +609,13 @@ export function WaitingRoom({ state, mine, onLeave }) {
             {state.code}
           </button>
           <p className="mt-1 text-[11px] text-ink-soft">
-            {copied ? 'Copié !' : 'À dicter aux joueuses qui nous rejoignent à distance.'}
+            {copied ? t('copied') : t('dictate')}
           </p>
         </div>
 
         <div className="space-y-2">
           <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
-            Joueuses ({state.players.length}/{edition.playerCount.max})
+            {t('players')} ({state.players.length}/{edition.playerCount.max})
           </p>
           {state.players.map((player) => (
             <div
@@ -591,7 +626,7 @@ export function WaitingRoom({ state, mine, onLeave }) {
               <span className="font-condensed text-[15px] uppercase">{player.name}</span>
               {localIds.has(player.id) && (
                 <span className="rounded bg-[var(--color-gold)]/20 px-1 font-condensed text-[10px] uppercase text-[#6b5216]">
-                  sur cet écran
+                  {t('onThisScreen')}
                 </span>
               )}
               {localIds.has(player.id) && mine.length > 1 && (
@@ -604,13 +639,14 @@ export function WaitingRoom({ state, mine, onLeave }) {
                 </button>
               )}
               {!player.connected && (
-                <span className="ml-auto text-[10px] text-[var(--color-accent)]">absente</span>
+                <span className="ml-auto text-[10px] text-[var(--color-accent)]">{t('away')}</span>
               )}
             </div>
           ))}
 
           {adding ? (
             <AddLocalPlayer
+              t={t}
               edition={edition}
               taken={taken}
               takenFactions={state.players.map((p) => p.faction)}
@@ -623,7 +659,7 @@ export function WaitingRoom({ state, mine, onLeave }) {
               onClick={() => setAdding(true)}
               className="w-full rounded border border-dashed border-black/25 bg-white/40 py-2 font-condensed text-sm uppercase tracking-wide hover:bg-white/80 disabled:opacity-40"
             >
-              {full ? 'Partie complète' : '+ Ajouter une joueuse sur cet ordinateur'}
+              {full ? t('gameFull') : t('addLocal')}
             </button>
           )}
         </div>
@@ -636,7 +672,7 @@ export function WaitingRoom({ state, mine, onLeave }) {
 
         <div className="space-y-1.5">
           <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
-            Règles maison
+            {t('houseRules')}
           </p>
           {[
             ['freeParkingPot', "Cagnotte sur le Parc Gratuit (les taxes s'y accumulent)"],
@@ -663,15 +699,15 @@ export function WaitingRoom({ state, mine, onLeave }) {
           className="w-full rounded bg-[var(--color-accent)] py-2.5 font-condensed text-base uppercase tracking-wide text-white transition-colors hover:bg-[var(--color-accent-deep)] disabled:bg-black/15 disabled:text-black/40"
         >
           {state.players.length < edition.playerCount.min
-            ? `Il faut au moins ${edition.playerCount.min} joueuses`
-            : 'Lancer la partie'}
+            ? t('needPlayers', edition.playerCount.min)
+            : t('startGame')}
         </button>
         <p className="text-center text-[11px] text-ink-soft">
-          Quand tout le monde est là, n'importe qui peut lancer.
+          {t('anyoneStarts')}
         </p>
 
         <button onClick={onLeave} className="w-full text-center text-xs text-ink-soft hover:text-ink">
-          Quitter
+          {t('leave')}
         </button>
       </div>
     </div>

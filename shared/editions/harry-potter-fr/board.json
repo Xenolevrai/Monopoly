@@ -57,8 +57,8 @@
   },
   {
     "id": 4,
-    "name": "Impôt du Ministère de la Magie",
-    "shortName": "Ministère",
+    "name": "Taxe du Ministère de la Magie",
+    "shortName": "Taxe Ministère",
     "type": "tax",
     "amount": 200,
     "side": "bottom",
@@ -151,7 +151,7 @@
   },
   {
     "id": 10,
-    "name": "Azkaban",
+    "name": "Prison d'Azkaban",
     "shortName": "Azkaban",
     "type": "jail",
     "side": "left",
@@ -234,7 +234,7 @@
   },
   {
     "id": 15,
-    "name": "Vaisseau de Durmstrang",
+    "name": "Le Vaisseau de Durmstrang",
     "shortName": "Durmstrang",
     "type": "railroad",
     "group": "railroad",
@@ -319,8 +319,8 @@
   },
   {
     "id": 20,
-    "name": "La Cour de Poudlard",
-    "shortName": "Cour",
+    "name": "Parc Gratuit",
+    "shortName": "Parc Gratuit",
     "type": "free_parking",
     "side": "top",
     "corner": true
@@ -395,7 +395,7 @@
   },
   {
     "id": 25,
-    "name": "Voiture Volante de Ford Anglia",
+    "name": "Voiture Volante Ford Anglia",
     "shortName": "Ford Anglia",
     "type": "railroad",
     "group": "railroad",
@@ -487,8 +487,8 @@
   },
   {
     "id": 30,
-    "name": "Direction Azkaban",
-    "shortName": "Direction Azkaban",
+    "name": "Allez à Azkaban !",
+    "shortName": "Allez à Azkaban",
     "type": "go_to_jail",
     "side": "right",
     "corner": true
@@ -608,8 +608,8 @@
   },
   {
     "id": 38,
-    "name": "Taxe sur les objets magiques",
-    "shortName": "Taxe magique",
+    "name": "Fournitures scolaires de Poudlard",
+    "shortName": "Fournitures",
     "type": "tax",
     "amount": 100,
     "side": "right",

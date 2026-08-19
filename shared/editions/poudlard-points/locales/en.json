@@ -1,0 +1,247 @@
+{
+  "name": "Monopoly Harry Potter — House Cup",
+  "theme": "House points and exploring the castle",
+  "tagline": "The Hasbro box: no money, no bankruptcy.",
+  "summary": "Pick your house, explore the castle with your points, place your crests. The game ends when the last location is explored — highest total wins.",
+  "centerTitle": "Hogwarts",
+  "centerSubtitle": "The House Cup",
+  "groups": {
+    "brown": "First steps",
+    "lightblue": "Inns",
+    "pink": "Diagon Alley",
+    "orange": "Hogsmeade",
+    "red": "Hogwarts grounds",
+    "yellow": "Great halls",
+    "green": "Hidden rooms",
+    "darkblue": "Gringotts",
+    "railroad": "Magical transport",
+    "utility": "Magical services"
+  },
+  "decks": {
+    "chance": "Owl Post"
+  },
+  "buildingLabels": {
+    "house": "Crest",
+    "houses": "Crests",
+    "hotel": "Golden crest",
+    "hotels": "Golden crests"
+  },
+  "vocabulary": {
+    "buy": "Explore",
+    "rent": "Toll",
+    "jail": "Detention",
+    "bail": "Fine to the prefect"
+  },
+  "factions": {
+    "label": "Your house",
+    "prompt": "The Sorting Hat sends you to…",
+    "options": {
+      "gryffondor": "Gryffindor",
+      "poufsouffle": "Hufflepuff",
+      "serdaigle": "Ravenclaw",
+      "serpentard": "Slytherin"
+    }
+  },
+  "tokens": {
+    "harry": "Harry Potter",
+    "hermione": "Hermione Granger",
+    "ron": "Ron Weasley",
+    "drago": "Draco Malfoy"
+  },
+  "spaces": {
+    "0": {
+      "name": "GO",
+      "shortName": "GO"
+    },
+    "1": {
+      "name": "Cupboard Under the Stairs",
+      "shortName": "Cupboard"
+    },
+    "2": {
+      "name": "Owl Post",
+      "shortName": "Owl Post"
+    },
+    "3": {
+      "name": "Hagrid's Hut",
+      "shortName": "Hagrid"
+    },
+    "4": {
+      "name": "Detention with Snape",
+      "shortName": "Detention"
+    },
+    "5": {
+      "name": "Hogwarts Express",
+      "shortName": "Hogwarts Exp."
+    },
+    "6": {
+      "name": "The Leaky Cauldron",
+      "shortName": "Leaky Cauldron"
+    },
+    "7": {
+      "name": "Owl Post",
+      "shortName": "Owl Post"
+    },
+    "8": {
+      "name": "The Three Broomsticks",
+      "shortName": "Three Brooms"
+    },
+    "9": {
+      "name": "The Hog's Head",
+      "shortName": "Hog's Head"
+    },
+    "10": {
+      "name": "In Detention",
+      "shortName": "Detention"
+    },
+    "11": {
+      "name": "Flourish and Blotts",
+      "shortName": "Flourish"
+    },
+    "12": {
+      "name": "Floo Network",
+      "shortName": "Floo Network"
+    },
+    "13": {
+      "name": "Shell Cottage",
+      "shortName": "Shell Cottage"
+    },
+    "14": {
+      "name": "Ollivanders Wand Shop",
+      "shortName": "Ollivanders"
+    },
+    "15": {
+      "name": "Durmstrang Ship",
+      "shortName": "Durmstrang"
+    },
+    "16": {
+      "name": "Weasleys' Wizard Wheezes",
+      "shortName": "Wizard Wheezes"
+    },
+    "17": {
+      "name": "Owl Post",
+      "shortName": "Owl Post"
+    },
+    "18": {
+      "name": "Honeydukes",
+      "shortName": "Honeydukes"
+    },
+    "19": {
+      "name": "The Burrow",
+      "shortName": "The Burrow"
+    },
+    "20": {
+      "name": "Magical Rest",
+      "shortName": "Magical Rest"
+    },
+    "21": {
+      "name": "The Shrieking Shack",
+      "shortName": "Shrieking Shack"
+    },
+    "22": {
+      "name": "Owl Post",
+      "shortName": "Owl Post"
+    },
+    "23": {
+      "name": "Quidditch Pitch",
+      "shortName": "Quidditch"
+    },
+    "24": {
+      "name": "Astronomy Tower",
+      "shortName": "Astronomy"
+    },
+    "25": {
+      "name": "Flying Ford Anglia",
+      "shortName": "Ford Anglia"
+    },
+    "26": {
+      "name": "The Great Hall",
+      "shortName": "Great Hall"
+    },
+    "27": {
+      "name": "12 Grimmauld Place",
+      "shortName": "Grimmauld Pl."
+    },
+    "28": {
+      "name": "Owl Post Service",
+      "shortName": "Owl Post Svc"
+    },
+    "29": {
+      "name": "Room of Requirement",
+      "shortName": "Room of Req."
+    },
+    "30": {
+      "name": "Go to Detention!",
+      "shortName": "Go to Detention"
+    },
+    "31": {
+      "name": "Chamber of Secrets",
+      "shortName": "Chamber"
+    },
+    "32": {
+      "name": "Hogwarts Library",
+      "shortName": "Library"
+    },
+    "33": {
+      "name": "Owl Post",
+      "shortName": "Owl Post"
+    },
+    "34": {
+      "name": "Dumbledore's Office",
+      "shortName": "Dumbledore"
+    },
+    "35": {
+      "name": "The Knight Bus",
+      "shortName": "Knight Bus"
+    },
+    "36": {
+      "name": "Owl Post",
+      "shortName": "Owl Post"
+    },
+    "37": {
+      "name": "Lestrange Vault",
+      "shortName": "Lestrange"
+    },
+    "38": {
+      "name": "School Supplies Fee",
+      "shortName": "Supplies Fee"
+    },
+    "39": {
+      "name": "Gringotts Wizarding Bank",
+      "shortName": "Gringotts"
+    }
+  },
+  "cards": {
+    "hibou-01": "Correct answer in Transfiguration: your house gains 20 points.",
+    "hibou-02": "You catch the Golden Snitch at practice: 50 house points.",
+    "hibou-03": "You win a duelling practice: 30 house points.",
+    "hibou-04": "Professor Flitwick rewards your charm: 10 points.",
+    "hibou-05": "Return to GO and collect your 20 points for passing.",
+    "hibou-06": "Thestral flight: go to the Room of Requirement.",
+    "hibou-07": "Alohomora — the door gives way: advance to the Chamber of Secrets.",
+    "hibou-08": "Accio! The Knight Bus carries you off.",
+    "hibou-09": "You are excused from detention. Keep this card until needed.",
+    "hibou-10": "Tea at Hagrid's: go to his hut.",
+    "hibou-11": "You get lost on the staircases: go back three spaces.",
+    "hibou-12": "The Hogwarts Express whistles: board the nearest magical transport.",
+    "hibou-13": "A spell sweeps you to the nearest magical service. Throw the dice again and pay ten times the amount.",
+    "hibou-14": "Common room party: collect 10 points from every player.",
+    "hibou-15": "You help a classmate in Potions: 20 house points.",
+    "hibou-16": "Excellence in Defence Against the Dark Arts: 40 points.",
+    "hibou-17": "Quidditch victory: 50 house points.",
+    "hibou-18": "The Sorting Hat whispers advice: go to the Great Hall.",
+    "hibou-19": "Professor McGonagall praises your work: 30 points.",
+    "hibou-20": "You are excused from detention. Keep this card until needed.",
+    "hibou-21": "An owl brings you a Honeydukes parcel: 15 points.",
+    "hibou-22": "Ministry study grant: 25 house points.",
+    "hibou-23": "Go to Gringotts Wizarding Bank.",
+    "hibou-24": "You break a rare phial: pay 25 points per crest placed.",
+    "hibou-25": "Upkeep of the places you explored: pay 40 points per crest.",
+    "hibou-26": "You hand out Chocolate Frogs: pay 10 points to every player.",
+    "hibou-27": "Go to The Leaky Cauldron for a Butterbeer.",
+    "beuglante-01": "HOWLER! Your parents heard about the flying car: 40 points lost.",
+    "beuglante-02": "HOWLER! Snape takes 30 house points from you.",
+    "beuglante-03": "HOWLER! Filch caught you in the corridors at night: go to detention.",
+    "beuglante-04": "HOWLER! Summoned at once: off to detention.",
+    "beuglante-05": "HOWLER! Compulsory contribution to Hogwarts' reserve: 25 points."
+  }
+}

@@ -90,6 +90,7 @@
  * @property {string} code            - code de partie à partager (ex. « PARIS7 »)
  * @property {string} hostId
  * @property {string} editionId       - quelle édition fait tourner cette partie
+ * @property {'fr'|'en'} locale       - la langue dans laquelle elle se joue
  * @property {GamePhase} phase
  * @property {Player[]} players
  * @property {number} currentPlayerIndex
@@ -115,7 +116,7 @@
  * @property {number} version         - incrémenté à chaque mutation (détection de désync)
  */
 
-import { ownableSpaces, getEdition, DEFAULT_EDITION } from './index.js';
+import { ownableSpaces, getEdition, DEFAULT_EDITION, DEFAULT_LOCALE } from './index.js';
 
 /**
  * Construit l'état initial d'une partie (phase lobby, sans joueuses).
@@ -123,8 +124,8 @@ import { ownableSpaces, getEdition, DEFAULT_EDITION } from './index.js';
  * @param {string} hostId
  * @returns {GameState}
  */
-export function createGameState(code, hostId, editionId = DEFAULT_EDITION) {
-  const edition = getEdition(editionId);
+export function createGameState(code, hostId, editionId = DEFAULT_EDITION, locale = DEFAULT_LOCALE) {
+  const edition = getEdition(editionId, locale);
 
   /** @type {Record<number, PropertyState>} */
   const properties = {};
@@ -142,6 +143,9 @@ export function createGameState(code, hostId, editionId = DEFAULT_EDITION) {
     code,
     hostId,
     editionId: edition.id,
+    // La langue de la partie : elle ne change ni les prix ni les règles, seulement
+    // les mots — noms de cases, textes de cartes, interface.
+    locale,
     phase: 'lobby',
     players: [],
     currentPlayerIndex: 0,

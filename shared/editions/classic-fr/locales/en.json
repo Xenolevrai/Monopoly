@@ -1,0 +1,237 @@
+{
+  "currency": {
+    "label": "$"
+  },
+  "name": "Classic Monopoly",
+  "theme": "Atlantic City streets",
+  "tagline": "The original rules, the original board.",
+  "summary": "Buy streets, build houses, collect rent, bankrupt everyone else.",
+  "centerTitle": "Monopoly",
+  "centerSubtitle": "Atlantic City",
+  "groups": {
+    "brown": "Brown",
+    "lightblue": "Light blue",
+    "pink": "Pink",
+    "orange": "Orange",
+    "red": "Red",
+    "yellow": "Yellow",
+    "green": "Green",
+    "darkblue": "Dark blue",
+    "railroad": "Railroads",
+    "utility": "Utilities"
+  },
+  "decks": {
+    "chance": "Chance",
+    "community_chest": "Community Chest"
+  },
+  "buildingLabels": {
+    "house": "House",
+    "houses": "Houses",
+    "hotel": "Hotel",
+    "hotels": "Hotels"
+  },
+  "tokens": {
+    "chapeau": "Top Hat",
+    "chat": "Cat",
+    "bateau": "Battleship",
+    "brouette": "Wheelbarrow",
+    "de": "Thimble",
+    "lanterne": "Lantern"
+  },
+  "spaces": {
+    "0": {
+      "name": "GO",
+      "shortName": "GO"
+    },
+    "1": {
+      "name": "Mediterranean Avenue",
+      "shortName": "Mediterranean"
+    },
+    "2": {
+      "name": "Community Chest",
+      "shortName": "Comm. Chest"
+    },
+    "3": {
+      "name": "Baltic Avenue",
+      "shortName": "Baltic"
+    },
+    "4": {
+      "name": "Income Tax",
+      "shortName": "Income Tax"
+    },
+    "5": {
+      "name": "Reading Railroad",
+      "shortName": "Reading RR"
+    },
+    "6": {
+      "name": "Oriental Avenue",
+      "shortName": "Oriental"
+    },
+    "7": {
+      "name": "Chance",
+      "shortName": "Chance"
+    },
+    "8": {
+      "name": "Vermont Avenue",
+      "shortName": "Vermont"
+    },
+    "9": {
+      "name": "Connecticut Avenue",
+      "shortName": "Connecticut"
+    },
+    "10": {
+      "name": "Jail",
+      "shortName": "Jail"
+    },
+    "11": {
+      "name": "St. Charles Place",
+      "shortName": "St. Charles"
+    },
+    "12": {
+      "name": "Electric Company",
+      "shortName": "Electric Co."
+    },
+    "13": {
+      "name": "States Avenue",
+      "shortName": "States"
+    },
+    "14": {
+      "name": "Virginia Avenue",
+      "shortName": "Virginia"
+    },
+    "15": {
+      "name": "Pennsylvania Railroad",
+      "shortName": "Pennsylvania RR"
+    },
+    "16": {
+      "name": "St. James Place",
+      "shortName": "St. James"
+    },
+    "17": {
+      "name": "Community Chest",
+      "shortName": "Comm. Chest"
+    },
+    "18": {
+      "name": "Tennessee Avenue",
+      "shortName": "Tennessee"
+    },
+    "19": {
+      "name": "New York Avenue",
+      "shortName": "New York"
+    },
+    "20": {
+      "name": "Free Parking",
+      "shortName": "Free Parking"
+    },
+    "21": {
+      "name": "Kentucky Avenue",
+      "shortName": "Kentucky"
+    },
+    "22": {
+      "name": "Chance",
+      "shortName": "Chance"
+    },
+    "23": {
+      "name": "Indiana Avenue",
+      "shortName": "Indiana"
+    },
+    "24": {
+      "name": "Illinois Avenue",
+      "shortName": "Illinois"
+    },
+    "25": {
+      "name": "B. & O. Railroad",
+      "shortName": "B. & O. RR"
+    },
+    "26": {
+      "name": "Atlantic Avenue",
+      "shortName": "Atlantic"
+    },
+    "27": {
+      "name": "Ventnor Avenue",
+      "shortName": "Ventnor"
+    },
+    "28": {
+      "name": "Water Works",
+      "shortName": "Water Works"
+    },
+    "29": {
+      "name": "Marvin Gardens",
+      "shortName": "Marvin Gardens"
+    },
+    "30": {
+      "name": "Go to Jail",
+      "shortName": "Go to Jail"
+    },
+    "31": {
+      "name": "Pacific Avenue",
+      "shortName": "Pacific"
+    },
+    "32": {
+      "name": "North Carolina Avenue",
+      "shortName": "N. Carolina"
+    },
+    "33": {
+      "name": "Community Chest",
+      "shortName": "Comm. Chest"
+    },
+    "34": {
+      "name": "Pennsylvania Avenue",
+      "shortName": "Pennsylvania"
+    },
+    "35": {
+      "name": "Short Line",
+      "shortName": "Short Line"
+    },
+    "36": {
+      "name": "Chance",
+      "shortName": "Chance"
+    },
+    "37": {
+      "name": "Park Place",
+      "shortName": "Park Place"
+    },
+    "38": {
+      "name": "Luxury Tax",
+      "shortName": "Luxury Tax"
+    },
+    "39": {
+      "name": "Boardwalk",
+      "shortName": "Boardwalk"
+    }
+  },
+  "cards": {
+    "chance-01": "Go back three spaces.",
+    "chance-02": "Advance to St. Charles Place. If you pass GO, collect $200.",
+    "chance-03": "The bank pays you a dividend of $50.",
+    "chance-04": "Pay school fees of $150.",
+    "chance-05": "Advance to Illinois Avenue. If you pass GO, collect $200.",
+    "chance-06": "Make general repairs on all your property: pay $25 per house and $100 per hotel.",
+    "chance-07": "You are assessed for street repairs: pay $40 per house and $115 per hotel.",
+    "chance-08": "Take a trip to Pennsylvania Railroad. Buy it, or pay the owner twice the rental.",
+    "chance-09": "Speeding fine: pay $15.",
+    "chance-10": "You have won a crossword competition: collect $100.",
+    "chance-11": "Drunk in charge fine: pay $20.",
+    "chance-12": "Advance to GO. Collect $200.",
+    "chance-13": "Get out of jail free. This card may be kept until needed or sold.",
+    "chance-14": "Advance to Boardwalk.",
+    "chance-15": "Your building loan matures: collect $150.",
+    "chance-16": "Go directly to jail. Do not pass GO, do not collect $200.",
+    "cc-01": "Doctor's fees: pay $10.",
+    "cc-02": "Bank error in your favour: collect $200.",
+    "cc-03": "Receive interest on your loan: collect $25.",
+    "cc-04": "You may pay a $10 fine, or draw a Chance card instead.",
+    "cc-05": "Income tax refund: collect $20.",
+    "cc-06": "Hospital fees: pay $50.",
+    "cc-07": "You have won second prize in a beauty contest: collect $10.",
+    "cc-08": "You inherit: collect $100.",
+    "cc-09": "From sale of stock you get $50.",
+    "cc-10": "Go directly to jail. Do not pass GO, do not collect $200.",
+    "cc-11": "Annual income: collect $100.",
+    "cc-12": "It is your birthday: collect $10 from every player.",
+    "cc-13": "Go back to Mediterranean Avenue.",
+    "cc-14": "Get out of jail free. This card may be kept until needed or sold.",
+    "cc-15": "Advance to GO. Collect $200.",
+    "cc-16": "Life insurance premium due: pay $50."
+  }
+}
