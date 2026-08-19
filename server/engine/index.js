@@ -9,7 +9,7 @@
  *
  * Le moteur ne connaît ni Socket.io ni React : il se teste seul (voir tests/).
  */
-import { getEdition, DEFAULT_EDITION, DEFAULT_LOCALE, listEditions } from '../../shared/index.js';
+import { getEdition, editionOf, DEFAULT_EDITION, DEFAULT_LOCALE, listEditions } from '../../shared/index.js';
 import { createGameState, createPlayer } from '../../shared/schema.js';
 import { createRng } from './rng.js';
 import { log, say } from './log.js';
@@ -25,8 +25,12 @@ export * from './queries.js';
 export { createGameState, createPlayer };
 
 /** Crée une partie et son générateur aléatoire. */
-export function createGame(code, hostId, { seed, editionId = DEFAULT_EDITION, locale = DEFAULT_LOCALE } = {}) {
-  const state = createGameState(code, hostId, editionId, locale);
+export function createGame(
+  code,
+  hostId,
+  { seed, editionId = DEFAULT_EDITION, locale = DEFAULT_LOCALE, extensionIds = [] } = {},
+) {
+  const state = createGameState(code, hostId, editionId, locale, extensionIds);
   return { state, rng: createRng(seed ?? Date.now()) };
 }
 
@@ -35,7 +39,7 @@ export { listEditions, getEdition };
 /** Ajoute une joueuse au lobby. */
 export function addPlayer(game, { id, name, token, faction }) {
   const { state } = game;
-  const edition = getEdition(state.editionId, state.locale);
+  const edition = editionOf(state);
   if (state.phase !== 'lobby') return { ok: false, error: 'La partie a déjà commencé.' };
   if (state.players.length >= edition.playerCount.max)
     return { ok: false, error: 'La partie est complète.' };
@@ -117,7 +121,7 @@ export function startGame(game, playerId) {
   const { state, rng } = game;
   if (state.phase !== 'lobby') return { ok: false, error: 'La partie a déjà commencé.' };
   if (!playerById(state, playerId)) return { ok: false, error: 'Joueuse inconnue.' };
-  const minPlayers = getEdition(state.editionId, state.locale).playerCount.min;
+  const minPlayers = editionOf(state).playerCount.min;
   if (state.players.length < minPlayers)
     return { ok: false, error: `Il faut au moins ${minPlayers} joueuses.` };
 
@@ -323,7 +327,7 @@ function advanceFlow(state) {
   // dernier lieu exploré met fin à la partie sur-le-champ. On teste avant les
   // gardes ci-dessous : sinon l'invite « finir le tour », posée juste avant,
   // ferait sortir d'ici et la partie continuerait un tour de trop.
-  if (getEdition(state.editionId, state.locale).winCondition === 'allLocationsExplored' && checkGameOver(state))
+  if (editionOf(state).winCondition === 'allLocationsExplored' && checkGameOver(state))
     return;
 
   if (state.debt) return; // en attente d'un règlement ou d'une faillite

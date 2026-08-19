@@ -5,7 +5,7 @@
  * c'est littéralement la règle « remettre la carte sous la pile ». Les deux
  * cartes « libérée de prison » quittent la file tant qu'une joueuse les détient.
  */
-import { cardsOf, getEdition, boardOf } from '../../shared/index.js';
+import { cardsOf, editionOf, boardOf } from '../../shared/index.js';
 import { log, say, amountText } from './log.js';
 import { playerById, buildingsOf, activePlayers } from './queries.js';
 import { credit, charge } from './money.js';
@@ -34,7 +34,7 @@ function cardIndex(state) {
 
 /** Le nom que cette édition donne à chaque pile. */
 function deckLabel(state, deck) {
-  return getEdition(state.editionId, state.locale).theming?.decks?.[deck]?.label ?? deck;
+  return editionOf(state).theming?.decks?.[deck]?.label ?? deck;
 }
 
 export function getCard(state, cardId) {
@@ -243,7 +243,7 @@ function nearestSpaceOfType(state, from, spaceType) {
 
 /** Un nouveau jet, pour les cartes qui l'exigent avant de calculer un loyer. */
 function rollTotal(rng, state) {
-  const { count, sides } = getEdition(state.editionId, state.locale).dice;
+  const { count, sides } = editionOf(state).dice;
   return rollDice(rng, count, sides).reduce((a, b) => a + b, 0);
 }
 

@@ -35,6 +35,8 @@ import avCards from './editions/avengers-fr/cards.json' with { type: 'json' };
 import avMeta from './editions/avengers-fr/edition.json' with { type: 'json' };
 import avEn from './editions/avengers-fr/locales/en.json' with { type: 'json' };
 
+import { applyExtensions } from './extensions.js';
+
 /** Types de cases achetables, quel que soit le thème. */
 export const OWNABLE_TYPES = ['property', 'railroad', 'utility'];
 
@@ -149,9 +151,15 @@ export function getEdition(editionId = DEFAULT_EDITION, locale = DEFAULT_LOCALE)
   return CACHE.get(key);
 }
 
-/** L'édition d'une partie en cours, dans la langue choisie à sa création. */
+/**
+ * L'édition d'une partie en cours, dans la langue choisie à sa création, avec
+ * les extensions activées (le cas échéant) déjà fusionnées. Tout le reste du
+ * code — moteur, client, tests — continue de lire une édition ordinaire ; il
+ * n'a jamais besoin de savoir qu'une extension existe.
+ */
 export function editionOf(state) {
-  return getEdition(state?.editionId, state?.locale);
+  const base = getEdition(state?.editionId, state?.locale);
+  return applyExtensions(base, state?.extensionIds);
 }
 
 /** Ce qu'il faut pour dessiner la galerie de sélection, sans charger les plateaux. */

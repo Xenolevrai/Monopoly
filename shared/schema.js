@@ -90,6 +90,7 @@
  * @property {string} code            - code de partie à partager (ex. « PARIS7 »)
  * @property {string} hostId
  * @property {string} editionId       - quelle édition fait tourner cette partie
+ * @property {string[]} extensionIds  - extensions Hasbro activées, posées sur cette édition
  * @property {'fr'|'en'} locale       - la langue dans laquelle elle se joue
  * @property {GamePhase} phase
  * @property {Player[]} players
@@ -116,7 +117,14 @@
  * @property {number} version         - incrémenté à chaque mutation (détection de désync)
  */
 
-import { ownableSpaces, getEdition, DEFAULT_EDITION, DEFAULT_LOCALE } from './index.js';
+import { getEdition, DEFAULT_EDITION, DEFAULT_LOCALE, OWNABLE_TYPES } from './index.js';
+import { applyExtensions, compatibleExtensions } from './extensions.js';
+
+/** Ne garde que les extensions à la fois connues et compatibles avec l'édition. */
+function compatibleExtensionIds(edition, extensionIds) {
+  const allowed = new Set(compatibleExtensions(edition).map((ext) => ext.id));
+  return (extensionIds ?? []).filter((id) => allowed.has(id));
+}
 
 /**
  * Construit l'état initial d'une partie (phase lobby, sans joueuses).
@@ -124,12 +132,16 @@ import { ownableSpaces, getEdition, DEFAULT_EDITION, DEFAULT_LOCALE } from './in
  * @param {string} hostId
  * @returns {GameState}
  */
-export function createGameState(code, hostId, editionId = DEFAULT_EDITION, locale = DEFAULT_LOCALE) {
+export function createGameState(code, hostId, editionId = DEFAULT_EDITION, locale = DEFAULT_LOCALE, extensionIds = []) {
+  // Résolues avec les extensions déjà fusionnées, pour que les propriétés
+  // initiales (cases achetables, etc.) reflètent le plateau réellement joué.
   const edition = getEdition(editionId, locale);
+  const activeExtensionIds = compatibleExtensionIds(edition, extensionIds);
+  const merged = applyExtensions(edition, activeExtensionIds);
 
   /** @type {Record<number, PropertyState>} */
   const properties = {};
-  for (const space of ownableSpaces(edition.id)) {
+  for (const space of merged.board.filter((sp) => OWNABLE_TYPES.includes(sp.type))) {
     properties[space.id] = {
       spaceId: space.id,
       ownerId: null,
@@ -143,6 +155,7 @@ export function createGameState(code, hostId, editionId = DEFAULT_EDITION, local
     code,
     hostId,
     editionId: edition.id,
+    extensionIds: activeExtensionIds,
     // La langue de la partie : elle ne change ni les prix ni les règles, seulement
     // les mots — noms de cases, textes de cartes, interface.
     locale,

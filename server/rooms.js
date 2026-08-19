@@ -47,9 +47,9 @@ export function newPlayerId() {
 }
 
 /** Crée une partie et son hôte. */
-export function createRoom(hostId, editionId, locale) {
+export function createRoom(hostId, editionId, locale, extensionIds) {
   const code = generateCode();
-  const game = createGame(code, hostId, { editionId, locale });
+  const game = createGame(code, hostId, { editionId, locale, extensionIds });
   games.set(code, { ...game, savedAt: 0, timer: null });
   return games.get(code);
 }

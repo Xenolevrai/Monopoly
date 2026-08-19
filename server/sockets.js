@@ -62,12 +62,12 @@ export function registerSocketHandlers(io) {
     const currentRoom = () => (session ? getRoom(session.code) : null);
 
     // — Créer une partie ————————————————————————————————————
-    socket.on('game:create', ({ name, token, settings, editionId, faction, locale } = {}) => {
+    socket.on('game:create', ({ name, token, settings, editionId, faction, locale, extensionIds } = {}) => {
       const pseudo = cleanName(name);
       if (!pseudo) return fail('Choisissez un pseudo.');
 
       const playerId = newPlayerId();
-      const room = createRoom(playerId, editionId ?? DEFAULT_EDITION, locale);
+      const room = createRoom(playerId, editionId ?? DEFAULT_EDITION, locale, extensionIds);
       const added = addPlayer(room, { id: playerId, name: pseudo, token, faction });
       if (!added.ok) return fail(added.error);
       if (settings) updateSettings(room, playerId, settings);
