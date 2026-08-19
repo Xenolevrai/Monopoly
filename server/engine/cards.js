@@ -6,7 +6,7 @@
  * cartes « libérée de prison » quittent la file tant qu'une joueuse les détient.
  */
 import { cardsOf, getEdition, boardOf } from '../../shared/index.js';
-import { log, euros } from './log.js';
+import { log, amountText } from './log.js';
 import { playerById, buildingsOf, activePlayers } from './queries.js';
 import { credit, charge } from './money.js';
 import { advance, moveTo, sendToJail, resolveLanding } from './movement.js';
@@ -291,4 +291,4 @@ export function resolveCardChoice(state, playerId, optionIndex, ctx = {}) {
   return { ok: true };
 }
 
-export { euros };
+export { amountText };

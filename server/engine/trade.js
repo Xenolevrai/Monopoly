@@ -6,7 +6,7 @@
  * qu'on n'a pas) et à l'acceptation (l'état a pu changer entre-temps).
  */
 import { getSpace } from '../../shared/index.js';
-import { log, euros } from './log.js';
+import { log, amountText } from './log.js';
 import { playerById, buildingLevel } from './queries.js';
 import { refreshDebtPending } from './money.js';
 
@@ -26,7 +26,7 @@ function normalize(side = {}) {
 function validateSide(state, playerId, side) {
   const player = playerById(state, playerId);
   if (!player || player.bankrupt) return `Joueuse introuvable.`;
-  if (player.cash < side.cash) return `${player.name} n'a pas ${euros(side.cash)}.`;
+  if (player.cash < side.cash) return `${player.name} n'a pas ${amountText(state, side.cash)}.`;
   if (player.getOutOfJailCards < side.jailCards)
     return `${player.name} n'a pas ${side.jailCards} carte(s) « libérée de prison ».`;
   for (const spaceId of side.spaceIds) {
@@ -83,7 +83,7 @@ export function proposeTrade(state, fromPlayerId, toPlayerId, give, receive, opt
     state,
     'trade',
     settlesDebt
-      ? `${from.name} propose un arrangement à ${to.name} pour solder ${euros(state.debt.amount)}.`
+      ? `${from.name} propose un arrangement à ${to.name} pour solder ${amountText(state, state.debt.amount)}.`
       : `${from.name} propose un échange à ${to.name}.`,
     { tradeId: trade.id, trade },
   );
@@ -138,7 +138,7 @@ export function respondToTrade(state, playerId, tradeId, accept) {
     log(
       state,
       'debt',
-      `${to.name} accepte l'arrangement : la dette de ${euros(amount)} de ${from.name} est soldée.`,
+      `${to.name} accepte l'arrangement : la dette de ${amountText(state, amount)} de ${from.name} est soldée.`,
       { playerId: trade.fromPlayerId, creditorId: trade.toPlayerId, amount },
     );
   }
@@ -175,7 +175,7 @@ function executeTrade(state, trade) {
 
   const describe = (side) =>
     [
-      side.cash ? euros(side.cash) : null,
+      side.cash ? amountText(state, side.cash) : null,
       ...side.spaceIds.map((id) => getSpace(state, id).name),
       side.jailCards ? `${side.jailCards} carte(s) de prison` : null,
     ]

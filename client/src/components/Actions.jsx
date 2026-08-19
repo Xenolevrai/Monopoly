@@ -45,7 +45,9 @@ export function PropertyCard({ state, spaceId }) {
           [`Avec 2 ${labels.houses.toLowerCase()}`, space.rent[2]],
           [`Avec 3 ${labels.houses.toLowerCase()}`, space.rent[3]],
           [`Avec 4 ${labels.houses.toLowerCase()}`, space.rent[4]],
-          [`Avec ${labels.hotel.toLowerCase()}`, space.rent[5]],
+          ...(editionFor(state).mechanics.hotels
+            ? [[`Avec ${labels.hotel.toLowerCase()}`, space.rent[5]]]
+            : []),
         ]
       : space.type === 'railroad'
         ? space.rent.map((r, i) => [
@@ -90,11 +92,18 @@ export function PropertyCard({ state, spaceId }) {
           <p className="tabular">Prix d'achat : {money(state, space.price)}</p>
           {space.houseCost && (
             <p className="tabular">
-              {labels.house} : {money(state, space.houseCost)} · {labels.hotel} :{' '}
-              {money(state, space.houseCost)} + 4 {labels.houses.toLowerCase()}
+              {labels.house} : {money(state, space.houseCost)}
+              {editionFor(state).mechanics.hotels && (
+                <>
+                  {' · '}
+                  {labels.hotel} : {money(state, space.houseCost)} + 4 {labels.houses.toLowerCase()}
+                </>
+              )}
             </p>
           )}
-          <p className="tabular">Valeur hypothécaire : {money(state, space.mortgage)}</p>
+          {editionFor(state).mechanics.mortgage && (
+            <p className="tabular">Valeur hypothécaire : {money(state, space.mortgage)}</p>
+          )}
         </div>
       </div>
     </div>
@@ -249,9 +258,11 @@ function Debt({ state, me, payload, actor, onOpenTrade, onOpenSettlement }) {
         <Button tone="ghost" onClick={onOpenTrade}>
           Négocier ailleurs
         </Button>
-        <Button tone="danger" onClick={() => sendAction({ type: 'DECLARE_BANKRUPTCY' }, actor)}>
-          Faillite
-        </Button>
+        {editionFor(state).mechanics.bankruptcyEliminates && (
+          <Button tone="danger" onClick={() => sendAction({ type: 'DECLARE_BANKRUPTCY' }, actor)}>
+            Faillite
+          </Button>
+        )}
       </div>
 
       <p className="text-xs text-ink-soft">
@@ -276,6 +287,8 @@ function Manage({ state, me }) {
   const board = boardOf(state);
   const groups = groupsOf(state);
   const labels = buildingLabels(state);
+  // Une édition sans hypothèque ne doit pas montrer le bouton : il serait refusé.
+  const canMortgage = editionFor(state).mechanics.mortgage;
 
   return (
     <div className="space-y-1.5">
@@ -338,23 +351,24 @@ function Manage({ state, me }) {
                       )}
                     </>
                   )}
-                  {prop.mortgaged ? (
-                    <button
-                      className={btn}
-                      onClick={() => sendAction({ type: 'UNMORTGAGE', spaceId: prop.spaceId }, me.id)}
-                    >
-                      Lever ({money(state, Math.ceil(space.mortgage * 1.1))})
-                    </button>
-                  ) : (
-                    level === 0 && (
+                  {canMortgage &&
+                    (prop.mortgaged ? (
                       <button
                         className={btn}
-                        onClick={() => sendAction({ type: 'MORTGAGE', spaceId: prop.spaceId }, me.id)}
+                        onClick={() => sendAction({ type: 'UNMORTGAGE', spaceId: prop.spaceId }, me.id)}
                       >
-                        Hypothéquer ({money(state, space.mortgage)})
+                        Lever ({money(state, Math.ceil(space.mortgage * 1.1))})
                       </button>
-                    )
-                  )}
+                    ) : (
+                      level === 0 && (
+                        <button
+                          className={btn}
+                          onClick={() => sendAction({ type: 'MORTGAGE', spaceId: prop.spaceId }, me.id)}
+                        >
+                          Hypothéquer ({money(state, space.mortgage)})
+                        </button>
+                      )
+                    ))}
                 </span>
               </div>
             );

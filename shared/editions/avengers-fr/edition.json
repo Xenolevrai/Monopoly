@@ -107,7 +107,25 @@
     }
   ],
   "theming": {
-    "palette": "table",
+    "palette": {
+      "table": "#0d1219",
+      "tableDark": "#05080c",
+      "board": "#1d2836",
+      "boardEdge": "#2c3a4c",
+      "space": "#e9eef4",
+      "spaceAlt": "#d9e2ec",
+      "ink": "#0e1620",
+      "inkSoft": "#4c5a6b",
+      "panel": "#eef3f8",
+      "panelEdge": "#c2cedd",
+      "accent": "#b3242c",
+      "accentDeep": "#8a171e",
+      "money": "#12795a",
+      "house": "#2b7fb8",
+      "hotel": "#b3242c",
+      "gold": "#d4a32b",
+      "boardInk": "#dce5ef"
+    },
     "centerTitle": "Monopoly",
     "centerSubtitle": "Avengers",
     "decks": {
@@ -121,6 +139,17 @@
         "color": "#b3242c",
         "glyph": "⚙"
       }
+    },
+    "display": "condensed",
+    "icons": {
+      "railroad": "jet",
+      "utility": [
+        "reactor",
+        "spark"
+      ],
+      "chance": "badge",
+      "community_chest": "reactor",
+      "free_parking": "castle"
     }
   }
 }

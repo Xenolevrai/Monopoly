@@ -16,6 +16,11 @@ import hpGroups from './editions/harry-potter-fr/groups.json' with { type: 'json
 import hpCards from './editions/harry-potter-fr/cards.json' with { type: 'json' };
 import hpMeta from './editions/harry-potter-fr/edition.json' with { type: 'json' };
 
+import hogBoard from './editions/poudlard-points/board.json' with { type: 'json' };
+import hogGroups from './editions/poudlard-points/groups.json' with { type: 'json' };
+import hogCards from './editions/poudlard-points/cards.json' with { type: 'json' };
+import hogMeta from './editions/poudlard-points/edition.json' with { type: 'json' };
+
 import avBoard from './editions/avengers-fr/board.json' with { type: 'json' };
 import avGroups from './editions/avengers-fr/groups.json' with { type: 'json' };
 import avCards from './editions/avengers-fr/cards.json' with { type: 'json' };
@@ -33,6 +38,7 @@ export const EDITIONS = {
   'classic-fr': build(classicMeta, classicBoard, classicGroups, classicCards),
   'harry-potter-fr': build(hpMeta, hpBoard, hpGroups, hpCards),
   'avengers-fr': build(avMeta, avBoard, avGroups, avCards),
+  'poudlard-points': build(hogMeta, hogBoard, hogGroups, hogCards),
 };
 
 export const DEFAULT_EDITION = 'classic-fr';

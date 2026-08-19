@@ -6,16 +6,16 @@
  * jeu se met en attente (`pending.kind === 'pay_debt'`) : elle doit hypothéquer,
  * revendre, échanger — ou déclarer faillite.
  */
-import { getSpace, cardsOf } from '../../shared/index.js';
-import { log, euros } from './log.js';
-import { playerById, propertiesOf, maxRaisable, activePlayers, netWorth } from './queries.js';
+import { getSpace, cardsOf, rulesOf, ownableSpaces } from '../../shared/index.js';
+import { log, amountText } from './log.js';
+import { playerById, propertiesOf, maxRaisable, activePlayers, netWorth, rentFor } from './queries.js';
 
 /** Crédite une joueuse. */
 export function credit(state, playerId, amount, reason) {
   if (amount <= 0) return;
   const player = playerById(state, playerId);
   player.cash += amount;
-  log(state, 'credit', `${player.name} reçoit ${euros(amount)}${reason ? ` (${reason})` : ''}.`, {
+  log(state, 'credit', `${player.name} reçoit ${amountText(state, amount)}${reason ? ` (${reason})` : ''}.`, {
     playerId,
     amount,
     reason,
@@ -49,12 +49,12 @@ export function charge(state, playerId, amount, reason, creditorId = null, optio
       log(
         state,
         'payment',
-        `${player.name} paie ${euros(amount)} à ${playerById(state, creditorId).name} (${reason}).`,
+        `${player.name} paie ${amountText(state, amount)} à ${playerById(state, creditorId).name} (${reason}).`,
         { playerId, creditorId, amount, reason },
       );
     } else {
       if (state.settings.freeParkingPot && isTaxLike(reason)) state.freeParkingPot += amount;
-      log(state, 'payment', `${player.name} paie ${euros(amount)} à la banque (${reason}).`, {
+      log(state, 'payment', `${player.name} paie ${amountText(state, amount)} à la banque (${reason}).`, {
         playerId,
         creditorId: null,
         amount,
@@ -62,6 +62,24 @@ export function charge(state, playerId, amount, reason, creditorId = null, optio
       });
     }
     return { paid: true, shortfall: 0 };
+  }
+
+  // Éditions sans faillite (les points de maison) : on ne peut pas devoir plus
+  // qu'on n'a. On verse ce qu'on peut, et l'affaire est close — il n'y a ni
+  // dette qui traîne, ni joueuse éliminée.
+  if (!rulesOf(state).mechanics.bankruptcyEliminates) {
+    const paid = Math.min(player.cash, amount);
+    player.cash -= paid;
+    if (creditorId) playerById(state, creditorId).cash += paid;
+    log(
+      state,
+      'payment',
+      paid < amount
+        ? `${player.name} ne peut verser que ${amountText(state, paid)} sur ${amountText(state, amount)} (${reason}) : le reste est passé.`
+        : `${player.name} verse ${amountText(state, paid)}${creditorId ? ` à ${playerById(state, creditorId).name}` : ''} (${reason}).`,
+      { playerId, creditorId, amount: paid, reason },
+    );
+    return { paid: true, shortfall: amount - paid };
   }
 
   // Somme due : on ouvre une dette, qui prend la priorité sur tout le reste
@@ -80,7 +98,7 @@ export function charge(state, playerId, amount, reason, creditorId = null, optio
   log(
     state,
     'debt',
-    `${player.name} doit ${euros(amount)}${creditorId ? ` à ${playerById(state, creditorId).name}` : ' à la banque'} (${reason}).`,
+    `${player.name} doit ${amountText(state, amount)}${creditorId ? ` à ${playerById(state, creditorId).name}` : ' à la banque'} (${reason}).`,
     { playerId, creditorId, amount, reason },
   );
   return { paid: false, shortfall: Math.max(0, amount - player.cash) };
@@ -110,7 +128,7 @@ export function settleDebt(state) {
   log(
     state,
     'payment',
-    `${debtor.name} règle sa dette de ${euros(debt.amount)}${debt.creditorId ? ` envers ${playerById(state, debt.creditorId).name}` : ' envers la banque'}.`,
+    `${debtor.name} règle sa dette de ${amountText(state, debt.amount)}${debt.creditorId ? ` envers ${playerById(state, debt.creditorId).name}` : ' envers la banque'}.`,
     { playerId: debt.debtorId, creditorId: debt.creditorId, amount: debt.amount },
   );
   state.debt = null;
@@ -144,7 +162,7 @@ export function declareBankruptcy(state, playerId) {
     log(
       state,
       'bankruptcy',
-      `${player.name} fait faillite. ${creditor.name} récupère ${euros(player.cash)} et ${owned.length} propriété(s).`,
+      `${player.name} fait faillite. ${creditor.name} récupère ${amountText(state, player.cash)} et ${owned.length} propriété(s).`,
       { playerId, creditorId, amount: player.cash, spaceIds: owned.map((p) => p.spaceId) },
     );
   } else {
@@ -213,9 +231,18 @@ export function refreshDebtPending(state) {
  * poste pour que le résultat se lise sans discussion.
  */
 export function finishGame(state, reason = 'la partie est arrêtée') {
+  const edition = rulesOf(state);
+  // À l'édition à points, la banque verse en fin de partie un bonus égal au
+  // loyer courant de chaque lieu exploré : ce sont les lieux qui font le score,
+  // pas le patrimoine immobilier.
+  const byExploration = edition.winCondition === 'allLocationsExplored';
+
   const standings = state.players
     .map((player) => {
       const owned = propertiesOf(state, player.id);
+      const bonus = byExploration
+        ? owned.reduce((sum, prop) => sum + rentFor(state, prop.spaceId, { diceTotal: 7 }), 0)
+        : 0;
       return {
         playerId: player.id,
         name: player.name,
@@ -223,10 +250,19 @@ export function finishGame(state, reason = 'la partie est arrêtée') {
         cash: player.cash,
         properties: owned.length,
         buildings: owned.reduce((n, prop) => n + (prop.hotel ? 5 : prop.houses), 0),
-        worth: player.bankrupt ? 0 : netWorth(state, player.id),
+        bonus,
+        worth: byExploration
+          ? player.cash + bonus
+          : player.bankrupt
+            ? 0
+            : netWorth(state, player.id),
       };
     })
-    .sort((a, b) => Number(a.bankrupt) - Number(b.bankrupt) || b.worth - a.worth);
+    // Une joueuse éliminée passe en bas du tableau — sauf à l'édition à points,
+    // où personne n'est éliminée et où seul le total compte.
+    .sort((a, b) =>
+      byExploration ? b.worth - a.worth : Number(a.bankrupt) - Number(b.bankrupt) || b.worth - a.worth,
+    );
 
   state.phase = 'finished';
   state.standings = standings;
@@ -239,9 +275,11 @@ export function finishGame(state, reason = 'la partie est arrêtée') {
     log(
       state,
       'victory',
-      entry.bankrupt
+      entry.bankrupt && !byExploration
         ? `${entry.name} avait fait faillite.`
-        : `${index + 1}. ${entry.name} — ${euros(entry.worth)} de patrimoine.`,
+        : byExploration
+          ? `${index + 1}. ${entry.name} — ${entry.worth} points (dont ${entry.bonus} de lieux explorés).`
+          : `${index + 1}. ${entry.name} — ${amountText(state, entry.worth)} de patrimoine.`,
       entry,
     );
   });
@@ -259,10 +297,27 @@ export function returnBuildingsToBank(state, prop) {
 }
 
 /**
- * Vérifie s'il ne reste qu'une joueuse : elle gagne.
+ * Vérifie si la partie est finie, selon la condition de victoire de l'édition.
+ *
+ * `lastPlayerStanding` — le Monopoly qu'on connaît : on joue jusqu'à ce qu'il ne
+ * reste qu'une joueuse solvable.
+ *
+ * `allLocationsExplored` — l'édition à points : personne n'est éliminée, la
+ * partie s'arrête net dès que le dernier lieu du plateau a été exploré, et c'est
+ * le total de points qui départage.
+ *
  * @returns {boolean} true si la partie est terminée
  */
 export function checkGameOver(state) {
+  const edition = rulesOf(state);
+
+  if (edition.winCondition === 'allLocationsExplored') {
+    const remaining = ownableSpaces(state).filter((space) => !state.properties[space.id].ownerId);
+    if (remaining.length > 0) return false;
+    finishGame(state, 'tous les lieux du plateau ont été explorés');
+    return true;
+  }
+
   const alive = activePlayers(state);
   if (alive.length > 1) return false;
   finishGame(state, alive[0] ? `${alive[0].name} reste seule en jeu` : 'plus personne en jeu');

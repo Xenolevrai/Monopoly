@@ -174,13 +174,15 @@ export function createGameState(code, hostId, editionId = DEFAULT_EDITION) {
  * Crée une joueuse prête à être ajoutée au lobby.
  * @returns {Player}
  */
-export function createPlayer({ id, name, token, color, order, edition }) {
+export function createPlayer({ id, name, token, color, order, edition, faction = null }) {
   const config = edition ?? getEdition();
   return {
     id,
     name,
     token,
     color,
+    // Camp choisi quand l'édition en propose (maison de Poudlard…), sinon null.
+    faction,
     cash: config.currency.startingAmount,
     position: 0,
     inJail: false,

@@ -62,49 +62,53 @@ export function registerSocketHandlers(io) {
     const currentRoom = () => (session ? getRoom(session.code) : null);
 
     // — Créer une partie ————————————————————————————————————
-    socket.on('game:create', ({ name, token, settings, editionId } = {}) => {
+    socket.on('game:create', ({ name, token, settings, editionId, faction } = {}) => {
       const pseudo = cleanName(name);
       if (!pseudo) return fail('Choisissez un pseudo.');
 
       const playerId = newPlayerId();
       const room = createRoom(playerId, editionId ?? DEFAULT_EDITION);
-      const added = addPlayer(room, { id: playerId, name: pseudo, token });
+      const added = addPlayer(room, { id: playerId, name: pseudo, token, faction });
       if (!added.ok) return fail(added.error);
       if (settings) updateSettings(room, playerId, settings);
       enterRoom(room, [playerId]);
     });
 
     // — Rejoindre avec un code ————————————————————————————————
-    socket.on('game:join', ({ code, name, token } = {}) => {
+    socket.on('game:join', ({ code, name, token, faction } = {}) => {
       const room = getRoom(code);
       if (!room) return fail('Aucune partie ne porte ce code.');
       const pseudo = cleanName(name);
       if (!pseudo) return fail('Choisissez un pseudo.');
 
-      // Reprise d'une place laissée vacante : même pseudo, partie déjà lancée.
-      const existing = room.state.players.find(
-        (p) => p.name.toLowerCase() === pseudo.toLowerCase() && !p.connected,
+      // Reprise d'une place déjà occupée par ce pseudo. On préfère une place
+      // laissée vacante, mais on accepte aussi de reprendre la sienne depuis un
+      // second appareil : entre nous, personne ne cherche à voler une partie, et
+      // refuser bloquerait quelqu'un dehors pour rien.
+      const sameName = room.state.players.filter(
+        (p) => p.name.toLowerCase() === pseudo.toLowerCase(),
       );
+      const existing = sameName.find((p) => !p.connected) ?? sameName[0];
       if (existing) {
         reconnectPlayer(room, existing.id);
         return enterRoom(room, [existing.id]);
       }
 
       const playerId = newPlayerId();
-      const added = addPlayer(room, { id: playerId, name: pseudo, token });
+      const added = addPlayer(room, { id: playerId, name: pseudo, token, faction });
       if (!added.ok) return fail(added.error);
       enterRoom(room, [playerId]);
     });
 
     // — Ajouter une joueuse sur CE poste (mode même ordinateur) ————————
-    socket.on('game:add-local', ({ name, token } = {}) => {
+    socket.on('game:add-local', ({ name, token, faction } = {}) => {
       const room = currentRoom();
       if (!room) return fail("Vous n'êtes dans aucune partie.");
       const pseudo = cleanName(name);
       if (!pseudo) return fail('Choisissez un pseudo.');
 
       const playerId = newPlayerId();
-      const added = addPlayer(room, { id: playerId, name: pseudo, token });
+      const added = addPlayer(room, { id: playerId, name: pseudo, token, faction });
       if (!added.ok) return fail(added.error);
       session.playerIds.push(playerId);
       announce(room);

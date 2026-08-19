@@ -118,6 +118,12 @@ export function canBuild(state, playerId, spaceId) {
     return { ok: false, reason: 'Un terrain du groupe est hypothéqué.' };
   if (prop.hotel) return { ok: false, reason: 'Cette propriété a déjà un hôtel.' };
 
+  // Une édition sans hôtel (les blasons de maison) plafonne au dernier palier
+  // de construction : il n'y a rien au-dessus.
+  const mechanics = config(state).mechanics;
+  if (prop.houses === 4 && !mechanics.hotels)
+    return { ok: false, reason: 'Ce lieu est au maximum.' };
+
   const isHotel = prop.houses === 4;
   if (isHotel && state.bank.hotels < 1)
     return { ok: false, reason: "Il n'y a plus d'hôtel disponible à la banque." };

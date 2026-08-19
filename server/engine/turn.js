@@ -1,7 +1,7 @@
 /** Déroulé d'un tour : lancer, prison, doubles, fin de tour. */
 
 import { rollDice } from './rng.js';
-import { log, euros } from './log.js';
+import { log, amountText } from './log.js';
 import { playerById, currentPlayer, activePlayers, config } from './queries.js';
 import { charge, checkGameOver } from './money.js';
 import { advance, resolveLanding, sendToJail } from './movement.js';
@@ -99,7 +99,7 @@ export function payBail(state, playerId) {
   player.cash -= config(state).jail.bail;
   player.inJail = false;
   player.jailTurns = 0;
-  log(state, 'jail', `${player.name} paie ${euros(config(state).jail.bail)} de caution et sort de prison.`, { playerId });
+  log(state, 'jail', `${player.name} paie ${amountText(state, config(state).jail.bail)} de caution et sort de prison.`, { playerId });
   state.pending = { kind: 'roll', playerIds: [playerId], payload: {} };
   return { ok: true };
 }

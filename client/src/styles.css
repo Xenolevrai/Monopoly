@@ -33,10 +33,12 @@
   --color-house: #1f9d55;
   --color-hotel: #c62828;
   --color-gold: #b08733;
+  --color-board-ink: #16130f;    /* l'encre lisible SUR le plateau */
 
   --font-display: 'Cormorant Garamond', Georgia, serif;
   --font-sans: 'Inter Variable', 'Inter', system-ui, sans-serif;
   --font-condensed: 'Oswald', 'Inter Variable', system-ui, sans-serif;
+  --font-tile: 'Oswald', system-ui, sans-serif;
 }
 
 :root {
@@ -46,8 +48,10 @@
 body {
   margin: 0;
   /* Un plateau posé sur une table en bois : dégradé chaud et grain discret. */
+  /* Le bois de la table vient de l'édition : chaque boîte a le sien. */
   background:
-    radial-gradient(120% 100% at 50% 0%, #3a302a 0%, var(--color-table) 45%, var(--color-table-dark) 100%);
+    radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--color-table) 78%, #fff) 0%,
+      var(--color-table) 45%, var(--color-table-dark) 100%);
   color: var(--color-ink);
   font-family: var(--font-sans);
   min-height: 100vh;
@@ -80,6 +84,7 @@ body {
 .space-tile {
   background: var(--color-space);
   border: 1px solid var(--color-ink);
+  font-family: var(--font-tile);
 }
 
 .panel {

@@ -1,5 +1,5 @@
 /** Panneau des joueuses : solde, propriétés par couleur, état (prison, absente). */
-import { propertiesByGroup, money } from '../lib/board.js';
+import { propertiesByGroup, money, editionFor } from '../lib/board.js';
 import TokenIcon from './TokenIcon.jsx';
 import { BillStack } from './Money.jsx';
 
@@ -24,6 +24,7 @@ function PropertyChip({ item, groupColor }) {
 
 function PlayerCard({ player, state, isLocal, isActingHere, isCurrent, onFocus }) {
   const groups = propertiesByGroup(state, player.id);
+  const faction = editionFor(state).factions?.options.find((f) => f.id === player.faction);
 
   return (
     <div
@@ -58,6 +59,14 @@ function PlayerCard({ player, state, isLocal, isActingHere, isCurrent, onFocus }
       </div>
 
       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-ink-soft">
+        {faction && (
+          <span
+            className="rounded-full px-1.5 py-px font-condensed uppercase tracking-wide text-white"
+            style={{ backgroundColor: faction.color }}
+          >
+            {faction.label}
+          </span>
+        )}
         {player.bankrupt && <span className="text-[var(--color-accent)]">éliminée</span>}
         {player.inJail && <span className="text-[var(--color-accent)]">en prison ({player.jailTurns}/3)</span>}
         {!player.connected && !player.bankrupt && <span className="text-[var(--color-accent)]">absente</span>}

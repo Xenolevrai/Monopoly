@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { socket } from '../lib/socket.js';
 import { getEdition, listEditions, DEFAULT_EDITION } from '../lib/board.js';
 import TokenIcon from './TokenIcon.jsx';
+import Rules from './Rules.jsx';
 
 /**
  * Le bandeau titre prend les couleurs de l'édition choisie : on voit à quoi on
@@ -113,6 +114,44 @@ function EditionBriefing({ edition }) {
 }
 
 /**
+ * Choix du camp, quand l'édition en propose un : les maisons de Poudlard.
+ * Contrairement aux pions, plusieurs joueuses peuvent partager une maison.
+ */
+function FactionPicker({ edition, value, onChange }) {
+  const factions = edition.factions;
+  if (!factions) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
+        {factions.prompt ?? factions.label}
+      </p>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {factions.options.map((faction) => {
+          const selected = value === faction.id;
+          return (
+            <button
+              key={faction.id}
+              type="button"
+              onClick={() => onChange(faction.id)}
+              className={`flex flex-col items-center gap-1 rounded border-2 px-2 py-2 transition-all ${
+                selected ? 'border-ink bg-white' : 'border-black/12 bg-white/60 hover:bg-white'
+              }`}
+            >
+              <span
+                className="h-7 w-7 rounded-full border-2 border-black/25"
+                style={{ backgroundColor: faction.color }}
+              />
+              <span className="font-condensed text-[10px] uppercase leading-tight">{faction.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
  * Choix du pion : un seul par personne, les pions déjà pris sont barrés.
  */
 function TokenPicker({ edition, value, onChange, taken = [] }) {
@@ -152,9 +191,13 @@ function TokenPicker({ edition, value, onChange, taken = [] }) {
  * Les parties laissées en plan sur ce serveur. On reprend la sienne d'un clic,
  * sans avoir noté le code la semaine dernière.
  */
-function ResumeList({ onResume }) {
+function ResumeList() {
   const [games, setGames] = useState([]);
+  const [openCode, setOpenCode] = useState(null);
+  const [picked, setPicked] = useState([]);
 
+  // On relit la liste à chaque ouverture de l'accueil : une partie quittée il y
+  // a cinq minutes doit apparaître tout de suite.
   useEffect(() => {
     fetch('/api/games')
       .then((r) => r.json())
@@ -172,31 +215,109 @@ function ResumeList({ onResume }) {
     return `il y a ${days} jours`;
   };
 
+  const open = (code) => {
+    setOpenCode(code === openCode ? null : code);
+    setPicked([]);
+  };
+
+  const toggle = (playerId) =>
+    setPicked((list) =>
+      list.includes(playerId) ? list.filter((id) => id !== playerId) : [...list, playerId],
+    );
+
+  const rejoin = (code) => socket.emit('game:rejoin', { code, playerIds: picked });
+
   return (
     <div className="space-y-2">
       <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
         Reprendre une partie
       </p>
-      {games.slice(0, 4).map((game) => (
-        <button
-          key={game.code}
-          type="button"
-          onClick={() => onResume(game)}
-          className="flex w-full items-center gap-2 rounded border border-black/12 bg-white/70 px-3 py-2 text-left hover:bg-white"
-        >
-          <span className="tabular font-condensed text-lg tracking-[0.15em]">{game.code}</span>
-          <span className="flex -space-x-1">
-            {game.players.map((p) => (
-              <TokenIcon key={p.id} token={p.token} color={p.color} className="h-5 w-5" title={p.name} />
-            ))}
-          </span>
-          <span className="ml-auto text-right text-[11px] text-ink-soft">
-            {game.players.map((p) => p.name).join(', ')}
-            <br />
-            tour {game.turnCount} · {when(game.lastPlayed)}
-          </span>
-        </button>
-      ))}
+
+      {games.slice(0, 6).map((game) => {
+        const isOpen = game.code === openCode;
+        return (
+          <div key={game.code} className="overflow-hidden rounded border border-black/12 bg-white/70">
+            <button
+              type="button"
+              onClick={() => open(game.code)}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-white"
+            >
+              <span className="tabular font-condensed text-lg tracking-[0.15em]">{game.code}</span>
+              <span className="flex -space-x-1">
+                {game.players.map((p) => (
+                  <TokenIcon
+                    key={p.id}
+                    token={p.token}
+                    color={p.color}
+                    className="h-5 w-5"
+                    title={p.name}
+                  />
+                ))}
+              </span>
+              <span className="ml-auto text-right text-[11px] leading-tight text-ink-soft">
+                {getEdition(game.editionId).name}
+                <br />
+                tour {game.turnCount} · {when(game.lastPlayed)}
+              </span>
+            </button>
+
+            {/* On reprend sa place en se désignant : ni pseudo à retaper, ni code
+                à retrouver, et ça marche depuis un téléphone qui n'a jamais joué. */}
+            {isOpen && (
+              <div className="space-y-2 border-t border-black/10 px-3 py-2.5">
+                <p className="text-[11px] text-ink-soft">
+                  Qui reprend sur cet appareil ? Cochez chaque joueuse qui jouera ici.
+                </p>
+                <div className="space-y-1">
+                  {game.players.map((player) => {
+                    const selected = picked.includes(player.id);
+                    return (
+                      <button
+                        key={player.id}
+                        type="button"
+                        onClick={() => toggle(player.id)}
+                        className={`flex w-full items-center gap-2 rounded border px-2 py-1.5 text-left transition-colors ${
+                          selected
+                            ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10'
+                            : 'border-black/10 bg-white hover:bg-black/5'
+                        }`}
+                      >
+                        <span
+                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border text-[10px] leading-none text-white ${
+                            selected ? 'border-[var(--color-accent)] bg-[var(--color-accent)]' : 'border-black/25'
+                          }`}
+                        >
+                          {selected ? '✓' : ''}
+                        </span>
+                        <TokenIcon token={player.token} color={player.color} className="h-5 w-5" />
+                        <span className="font-condensed text-sm uppercase">{player.name}</span>
+                        {player.bankrupt && (
+                          <span className="text-[10px] text-ink-soft">éliminée</span>
+                        )}
+                        {player.connected && !player.bankrupt && (
+                          <span className="ml-auto text-[10px] text-[var(--color-money)]">
+                            déjà revenue
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button
+                  type="button"
+                  disabled={!picked.length}
+                  onClick={() => rejoin(game.code)}
+                  className="w-full rounded bg-[var(--color-accent)] py-2 font-condensed text-sm uppercase text-white hover:bg-[var(--color-accent-deep)] disabled:bg-black/15 disabled:text-black/40"
+                >
+                  {picked.length > 1
+                    ? `Reprendre à ${picked.length} sur cet écran`
+                    : 'Reprendre ma place'}
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -207,26 +328,19 @@ export function Home({ error }) {
   const [editionId, setEditionId] = useState(DEFAULT_EDITION);
   const edition = getEdition(editionId);
   const [token, setToken] = useState(edition.tokens[0].id);
+  const [faction, setFaction] = useState(edition.factions?.options[0].id ?? null);
 
-  // Changer d'édition change la boîte de pions : on reprend le premier de la
-  // nouvelle plutôt que de garder un pion qui n'existe pas ici.
+  // Changer d'édition change la boîte de pions et les camps : on reprend les
+  // premiers de la nouvelle plutôt que de garder des choix qui n'existent pas ici.
   const chooseEdition = (id) => {
+    const next = getEdition(id);
     setEditionId(id);
-    setToken(getEdition(id).tokens[0].id);
+    setToken(next.tokens[0].id);
+    setFaction(next.factions?.options[0].id ?? null);
   };
 
-  const create = () => socket.emit('game:create', { name, token, editionId });
-  const join = () => socket.emit('game:join', { code: code.toUpperCase(), name, token });
-
-  /** Reprendre une partie sauvegardée : on se remet dans la peau de sa joueuse. */
-  const resume = (game) => {
-    const known = game.players.find((p) => p.name.toLowerCase() === name.trim().toLowerCase());
-    if (known) {
-      socket.emit('game:rejoin', { code: game.code, playerIds: [known.id] });
-    } else {
-      setCode(game.code);
-    }
-  };
+  const create = () => socket.emit('game:create', { name, token, editionId, faction });
+  const join = () => socket.emit('game:join', { code: code.toUpperCase(), name, token, faction });
 
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
@@ -245,6 +359,8 @@ export function Home({ error }) {
         </label>
 
         <EditionGallery value={editionId} onChange={chooseEdition} />
+
+        <FactionPicker edition={edition} value={faction} onChange={setFaction} />
 
         <div className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
           Votre pion
@@ -286,10 +402,11 @@ export function Home({ error }) {
           </button>
         </div>
 
-        <ResumeList onResume={resume} />
+        <ResumeList />
 
         <p className="text-center text-[11px] text-ink-soft">
-          Une partie interrompue se retrouve ici : tapez votre pseudo puis cliquez dessus.
+          Une partie interrompue vous attend ici, même des jours plus tard et même si personne
+          n'est connecté : ouvrez-la et désignez votre joueuse.
         </p>
 
         {error && <p className="text-center text-sm text-[var(--color-accent)]">{error}</p>}
@@ -303,9 +420,10 @@ function AddLocalPlayer({ edition, taken, onCancel }) {
   const free = edition.tokens.find((t) => !taken.includes(t.id));
   const [name, setName] = useState('');
   const [token, setToken] = useState(free?.id ?? edition.tokens[0].id);
+  const [faction, setFaction] = useState(edition.factions?.options[0].id ?? null);
 
   const add = () => {
-    socket.emit('game:add-local', { name, token });
+    socket.emit('game:add-local', { name, token, faction });
     setName('');
     onCancel();
   };
@@ -321,6 +439,7 @@ function AddLocalPlayer({ edition, taken, onCancel }) {
         autoFocus
       />
       <TokenPicker edition={edition} value={token} onChange={setToken} taken={taken} />
+      <FactionPicker edition={edition} value={faction} onChange={setFaction} />
       <div className="flex gap-2">
         <button
           type="button"
@@ -377,6 +496,7 @@ export function GameMenu({ state, mine, onLeave, onShowRecap }) {
     <div className="panel flex flex-wrap items-center gap-2 rounded-lg px-3 py-2 text-xs">
       <span className="tabular font-condensed tracking-[0.15em]">{state.code}</span>
       <span className="text-ink-soft">tour {state.turnCount}</span>
+      <Rules state={state} />
       <span className="ml-auto text-ink-soft">
         La partie est sauvegardée : fermez tout, elle vous attendra.
       </span>
@@ -499,6 +619,9 @@ export function WaitingRoom({ state, mine, onLeave }) {
 
         {/* Celles qui arrivent à distance découvrent l'édition choisie ici. */}
         <EditionBriefing edition={edition} />
+        <div className="flex justify-center">
+          <Rules state={state} />
+        </div>
 
         <div className="space-y-1.5">
           <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">

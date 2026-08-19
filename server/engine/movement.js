@@ -6,7 +6,7 @@
  * règle de case n'est écrite qu'une seule fois.
  */
 import { getSpace, boardOf } from '../../shared/index.js';
-import { log, euros } from './log.js';
+import { log, amountText } from './log.js';
 import { playerById, rentFor, config } from './queries.js';
 import { credit, charge } from './money.js';
 
@@ -33,6 +33,16 @@ export function moveTo(state, playerId, target, collectGoSalary = true) {
 
 function collectSalary(state, playerId) {
   credit(state, playerId, config(state).currency.goBonus, 'passage par la case Départ');
+}
+
+/**
+ * La case « chez soi » d'une joueuse, si l'édition en déclare une : la salle
+ * commune de sa maison de Poudlard. `null` partout ailleurs.
+ */
+function homeSpaceOf(state, player) {
+  if (!player.faction) return null;
+  const faction = config(state).factions?.options?.find((f) => f.id === player.faction);
+  return faction?.homeSpace ?? null;
 }
 
 /** Envoie en prison : pas de salaire, pas de tour supplémentaire. */
@@ -97,9 +107,20 @@ export function resolveLanding(state, playerId, ctx = {}) {
 
 function resolveOwnable(state, player, space, ctx) {
   const prop = state.properties[space.id];
+  const home = homeSpaceOf(state, player);
 
-  // Libre : achat ou enchère.
+  // Libre : achat ou enchère. Sauf le fief de sa propre maison — sa salle
+  // commune —, qu'on explore gratuitement en y arrivant : on est chez soi.
   if (!prop.ownerId) {
+    if (home === space.id) {
+      prop.ownerId = player.id;
+      log(state, 'buy', `${player.name} est chez elle : ${space.name} lui revient sans rien payer.`, {
+        playerId: player.id,
+        spaceId: space.id,
+        amount: 0,
+      });
+      return;
+    }
     state.pending = {
       kind: 'buy_or_auction',
       playerIds: [player.id],
@@ -114,6 +135,15 @@ function resolveOwnable(state, player, space, ctx) {
 
   // À soi, ou hypothéquée : rien à payer.
   if (prop.ownerId === player.id) return;
+
+  // Chez soi, même si quelqu'un d'autre y est passé avant : aucun droit à payer.
+  if (home === space.id) {
+    log(state, 'rent', `${space.name} est la salle commune de ${player.name} : elle ne paie rien.`, {
+      playerId: player.id,
+      spaceId: space.id,
+    });
+    return;
+  }
   if (prop.mortgaged) {
     log(state, 'rent', `${space.name} est hypothéquée : aucun loyer n'est dû.`, {
       playerId: player.id,
@@ -130,7 +160,7 @@ function resolveOwnable(state, player, space, ctx) {
   });
   if (rent <= 0) return;
 
-  log(state, 'rent', `${player.name} doit ${euros(rent)} de loyer à ${owner.name} pour ${space.name}.`, {
+  log(state, 'rent', `${player.name} doit ${amountText(state, rent)} de loyer à ${owner.name} pour ${space.name}.`, {
     playerId: player.id,
     creditorId: owner.id,
     spaceId: space.id,

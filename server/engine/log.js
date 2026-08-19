@@ -1,4 +1,5 @@
 /** Journal de partie : une phrase française prête à afficher + les données brutes. */
+import { rulesOf } from '../../shared/index.js';
 
 /**
  * L'identifiant vient d'un compteur porté par la partie elle-même, pas du
@@ -15,7 +16,11 @@ export function log(state, type, text, data = {}) {
   return entry;
 }
 
-/** Formate un montant à la française : 1 500 €. */
-export function euros(amount) {
-  return `${Math.round(amount).toLocaleString('fr-FR')} €`;
+/**
+ * Formate un montant dans la monnaie de l'édition : 1 500 €, 310 pts, 200 M$…
+ * Le journal doit parler la langue de la boîte qu'on a sortie.
+ */
+export function amountText(state, amount) {
+  const currency = rulesOf(state).currency;
+  return `${Math.round(amount).toLocaleString('fr-FR')} ${currency.label}`;
 }

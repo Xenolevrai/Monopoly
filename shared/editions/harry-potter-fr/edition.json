@@ -107,7 +107,25 @@
     }
   ],
   "theming": {
-    "palette": "table",
+    "palette": {
+      "table": "#241a12",
+      "tableDark": "#150e09",
+      "board": "#e0d4b6",
+      "boardEdge": "#cdbe99",
+      "space": "#f5eeda",
+      "spaceAlt": "#ebe1c8",
+      "ink": "#2a1c0c",
+      "inkSoft": "#6d5a3c",
+      "panel": "#f3ead4",
+      "panelEdge": "#cdbb94",
+      "accent": "#7f0909",
+      "accentDeep": "#5c0505",
+      "money": "#1a6b4a",
+      "house": "#2e7d32",
+      "hotel": "#7f0909",
+      "gold": "#d3a625",
+      "boardInk": "#2a1c0c"
+    },
     "centerTitle": "Monopoly",
     "centerSubtitle": "Poudlard",
     "decks": {
@@ -121,6 +139,19 @@
         "color": "#1f6f5c",
         "glyph": "⚗"
       }
+    },
+    "display": "engraved",
+    "icons": {
+      "railroad": "locomotive",
+      "utility": [
+        "spark",
+        "owl"
+      ],
+      "chance": "spark",
+      "community_chest": "chest",
+      "jail": "bars",
+      "go_to_jail": "officer",
+      "free_parking": "castle"
     }
   }
 }

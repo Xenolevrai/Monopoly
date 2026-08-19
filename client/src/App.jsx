@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGame } from './lib/useGame.js';
 import { useCinematic } from './lib/useCinematic.js';
+import { useEditionTheme } from './lib/theme.js';
 import { sendAction } from './lib/socket.js';
 import { Home, WaitingRoom, GameMenu } from './components/Lobby.jsx';
 import Board from './components/Board.jsx';
@@ -20,26 +21,82 @@ function allCardsOf(state) {
   );
 }
 
+/**
+ * Les onglets du bas, sur téléphone uniquement.
+ *
+ * Le plateau remplit l'écran d'un mobile : sans onglets, il faudrait le faire
+ * défiler en entier à chaque tour pour atteindre les boutons. Sur ordinateur,
+ * tout reste côte à côte et cette barre disparaît.
+ */
+function MobileTabs({ tab, onChange, waiting }) {
+  const tabs = [
+    ['jouer', 'Jouer'],
+    ['plateau', 'Plateau'],
+    ['joueuses', 'Joueuses'],
+    ['journal', 'Journal'],
+  ];
+
+  return (
+    <nav
+      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-black/25 bg-[var(--color-panel)] pb-[env(safe-area-inset-bottom)] xl:hidden"
+      aria-label="Sections"
+    >
+      {tabs.map(([id, label]) => {
+        const active = tab === id;
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onChange(id)}
+            aria-current={active ? 'page' : undefined}
+            className={`relative flex-1 py-3 font-condensed text-[12px] uppercase tracking-wide transition-colors ${
+              active ? 'bg-[var(--color-accent)] text-white' : 'text-ink-soft'
+            }`}
+          >
+            {label}
+            {/* La pastille signale qu'on attend une décision de ce poste. */}
+            {id === 'jouer' && waiting && !active && (
+              <span className="absolute left-1/2 top-1.5 ml-5 h-2 w-2 rounded-full bg-[var(--color-accent)]" />
+            )}
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
 export default function App() {
   const { state, me, mine, error, connected, setError, leave, focusOn } = useGame();
   const { rolling } = useCinematic(state);
+  // Les couleurs de l'édition en cours, appliquées à toute la page.
+  useEditionTheme(state);
   const [tradeOpen, setTradeOpen] = useState(false);
   const [settleOpen, setSettleOpen] = useState(false);
   const [inspected, setInspected] = useState(null);
+  const [tab, setTab] = useState('jouer');
   const aside = useRef(null);
   const [recapClosed, setRecapClosed] = useState(false);
 
-  // Quand une nouvelle décision arrive, la colonne remonte : sans ça, le panneau
-  // reste caché sous la liste des biens et on croit qu'il ne se passe rien.
   const finished = state?.phase === 'finished';
   useEffect(() => {
     if (finished) setRecapClosed(false);
   }, [finished]);
 
+  // Quand une nouvelle décision arrive, la colonne remonte : sans ça, le panneau
+  // reste caché sous la liste des biens et on croit qu'il ne se passe rien.
   const pendingKind = state?.pending?.kind ?? null;
   useEffect(() => {
     if (pendingKind) aside.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [pendingKind]);
+
+  // Sur téléphone, quand le jeu attend une décision de ce poste, on bascule
+  // automatiquement sur l'onglet où se trouvent les boutons.
+  const myTurn = Boolean(
+    state?.pending?.kind && mine.some((p) => state.pending.playerIds?.includes(p.id)),
+  );
+  useEffect(() => {
+    if (myTurn) setTab('jouer');
+  }, [myTurn, pendingKind]);
 
   // Les erreurs sont passagères : elles s'effacent d'elles-mêmes.
   useEffect(() => {
@@ -77,8 +134,12 @@ export default function App() {
         </div>
       )}
 
-      <div className="mx-auto flex max-w-[1500px] flex-col gap-4 xl:h-[calc(100dvh-2.5rem)] xl:flex-row">
-        <div className="flex min-h-0 flex-1 items-start justify-center">
+      <div className="mx-auto flex max-w-[1500px] flex-col gap-4 pb-16 xl:h-[calc(100dvh-2.5rem)] xl:flex-row xl:pb-0">
+        <div
+          className={`min-h-0 flex-1 items-start justify-center xl:flex ${
+            tab === 'plateau' ? 'flex' : 'hidden'
+          }`}
+        >
           <ErrorBoundary zone="Le plateau">
             <Board
               state={state}
@@ -99,33 +160,41 @@ export default function App() {
           ref={aside}
           className="scroll-thin flex w-full shrink-0 flex-col gap-4 xl:h-full xl:w-[380px] xl:overflow-y-auto"
         >
-          <ErrorBoundary zone="Le menu de partie">
-            <GameMenu
-              state={state}
-              mine={mine}
-              onLeave={leave}
-              onShowRecap={() => setRecapClosed(false)}
-            />
-          </ErrorBoundary>
-          <ErrorBoundary zone="La barre d'action">
-            <Actions
-              state={state}
-              me={me}
-              mine={mine}
-              onOpenTrade={() => setTradeOpen(true)}
-              onOpenSettlement={() => setSettleOpen(true)}
-            />
-          </ErrorBoundary>
-          <ErrorBoundary zone="Le panneau des joueuses">
-            <Players state={state} me={me} mine={mine} onFocus={focusOn} />
-          </ErrorBoundary>
-          <div className="h-72 shrink-0">
+          <div className={tab === 'jouer' ? 'contents' : 'hidden xl:contents'}>
+            <ErrorBoundary zone="Le menu de partie">
+              <GameMenu
+                state={state}
+                mine={mine}
+                onLeave={leave}
+                onShowRecap={() => setRecapClosed(false)}
+              />
+            </ErrorBoundary>
+            <ErrorBoundary zone="La barre d'action">
+              <Actions
+                state={state}
+                me={me}
+                mine={mine}
+                onOpenTrade={() => setTradeOpen(true)}
+                onOpenSettlement={() => setSettleOpen(true)}
+              />
+            </ErrorBoundary>
+          </div>
+
+          <div className={tab === 'joueuses' ? 'contents' : 'hidden xl:contents'}>
+            <ErrorBoundary zone="Le panneau des joueuses">
+              <Players state={state} me={me} mine={mine} onFocus={focusOn} />
+            </ErrorBoundary>
+          </div>
+
+          <div className={`h-72 shrink-0 xl:block ${tab === 'journal' ? 'block' : 'hidden'}`}>
             <ErrorBoundary zone="Le journal">
               <Feed state={state} actor={me?.id} />
             </ErrorBoundary>
           </div>
         </aside>
       </div>
+
+      <MobileTabs tab={tab} onChange={setTab} waiting={myTurn} />
 
       {finished && !recapClosed && (
         <ErrorBoundary zone="Le récapitulatif">

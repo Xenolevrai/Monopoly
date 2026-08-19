@@ -1,0 +1,188 @@
+{
+  "id": "poudlard-points",
+  "name": "Monopoly Poudlard",
+  "theme": "Points de maison et exploration du château",
+  "tagline": "Pas d’argent : des points de maison, et une exploration.",
+  "summary": "Choisissez votre maison, explorez le château, posez des blasons. La partie s’arrête quand tout a été exploré — la plus grande réserve de points l’emporte.",
+  "playerCount": {
+    "min": 2,
+    "max": 6
+  },
+  "board": {
+    "size": 40
+  },
+  "currency": {
+    "type": "points",
+    "label": "pts",
+    "startingAmount": 300,
+    "goBonus": 20,
+    "singleDenomination": true,
+    "denominations": [
+      50,
+      10,
+      5,
+      1
+    ]
+  },
+  "jail": {
+    "space": 10,
+    "bail": 10,
+    "maxTurns": 3
+  },
+  "dice": {
+    "count": 2,
+    "sides": 6,
+    "doublesToJail": 3
+  },
+  "bank": {
+    "houses": 44,
+    "hotels": 0
+  },
+  "mortgage": {
+    "enabled": false,
+    "interestRate": 0
+  },
+  "turnMode": "sequential",
+  "winCondition": "allLocationsExplored",
+  "mechanics": {
+    "houses": true,
+    "hotels": false,
+    "mortgage": false,
+    "bankruptcyEliminates": false,
+    "trading": true,
+    "auctions": true,
+    "negotiableRent": true,
+    "cheatCards": false,
+    "towerMode": false,
+    "explorationMode": true,
+    "draftMode": false,
+    "battleSpaces": false,
+    "abilityTokens": false
+  },
+  "houseRules": {
+    "freeParkingPot": false,
+    "auctionOnDecline": true,
+    "evenBuildRule": true,
+    "auctionBankruptcyAssets": false
+  },
+  "buildingLabels": {
+    "house": "Blason",
+    "houses": "Blasons",
+    "hotel": "Blason d’or",
+    "hotels": "Blasons d’or"
+  },
+  "vocabulary": {
+    "buy": "Explorer",
+    "rent": "Droit de passage",
+    "jail": "Retenue",
+    "bail": "Excuses au concierge"
+  },
+  "factions": {
+    "label": "Votre maison",
+    "prompt": "Le Choixpeau vous envoie…",
+    "options": [
+      {
+        "id": "gryffondor",
+        "label": "Gryffondor",
+        "color": "#7f0909",
+        "homeSpace": 5,
+        "emblem": "lion"
+      },
+      {
+        "id": "poufsouffle",
+        "label": "Poufsouffle",
+        "color": "#d3a625",
+        "homeSpace": 15,
+        "emblem": "blaireau"
+      },
+      {
+        "id": "serdaigle",
+        "label": "Serdaigle",
+        "color": "#0e1a40",
+        "homeSpace": 25,
+        "emblem": "aigle"
+      },
+      {
+        "id": "serpentard",
+        "label": "Serpentard",
+        "color": "#1a472a",
+        "homeSpace": 35,
+        "emblem": "serpent"
+      }
+    ]
+  },
+  "tokens": [
+    {
+      "id": "baguette",
+      "label": "Baguette",
+      "color": "#7B4FA8"
+    },
+    {
+      "id": "chaudron",
+      "label": "Chaudron",
+      "color": "#2E9E63"
+    },
+    {
+      "id": "vif",
+      "label": "Vif d'or",
+      "color": "#D4A32B"
+    },
+    {
+      "id": "hibou",
+      "label": "Hibou",
+      "color": "#8A6A4F"
+    },
+    {
+      "id": "balai",
+      "label": "Balai",
+      "color": "#C6303A"
+    },
+    {
+      "id": "choixpeau",
+      "label": "Choixpeau",
+      "color": "#2A5CAA"
+    }
+  ],
+  "theming": {
+    "palette": {
+      "table": "#080c18",
+      "tableDark": "#04060d",
+      "board": "#16213d",
+      "boardEdge": "#22304f",
+      "space": "#f1e7d3",
+      "spaceAlt": "#e5d8bd",
+      "ink": "#1c1508",
+      "inkSoft": "#5e5136",
+      "panel": "#f2ead8",
+      "panelEdge": "#cbbb95",
+      "accent": "#6b3fa0",
+      "accentDeep": "#4d2b77",
+      "money": "#a8791a",
+      "house": "#d3a625",
+      "hotel": "#7f0909",
+      "gold": "#d3a625",
+      "boardInk": "#e8dcc0"
+    },
+    "centerTitle": "Poudlard",
+    "centerSubtitle": "La Coupe des Quatre Maisons",
+    "decks": {
+      "chance": {
+        "label": "Hibou Express",
+        "color": "#6b3fa0",
+        "glyph": "🦉"
+      }
+    },
+    "display": "engraved",
+    "icons": {
+      "railroad": "crest",
+      "utility": [
+        "spark",
+        "spark"
+      ],
+      "chance": "owl",
+      "jail": "bars",
+      "go_to_jail": "officer",
+      "free_parking": "castle"
+    }
+  }
+}

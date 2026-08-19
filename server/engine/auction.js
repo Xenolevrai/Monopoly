@@ -6,7 +6,7 @@
  * mise ou passe à son tour, la dernière en lice emporte le lot.
  */
 import { getSpace } from '../../shared/index.js';
-import { log, euros } from './log.js';
+import { log, amountText } from './log.js';
 import { playerById, activePlayers } from './queries.js';
 import { buyProperty } from './property.js';
 
@@ -37,12 +37,12 @@ export function placeBid(state, playerId, amount) {
 
   const player = playerById(state, playerId);
   if (!Number.isInteger(amount) || amount <= auction.highestBid)
-    return { ok: false, error: `Il faut miser plus de ${euros(auction.highestBid)}.` };
+    return { ok: false, error: `Il faut miser plus de ${amountText(state, auction.highestBid)}.` };
   if (amount > player.cash) return { ok: false, error: 'Vous ne pouvez pas miser plus que votre solde.' };
 
   auction.highestBid = amount;
   auction.highestBidderId = playerId;
-  log(state, 'auction', `${player.name} mise ${euros(amount)}.`, { playerId, amount, spaceId: auction.spaceId });
+  log(state, 'auction', `${player.name} mise ${amountText(state, amount)}.`, { playerId, amount, spaceId: auction.spaceId });
   return advanceAuction(state);
 }
 
@@ -95,7 +95,7 @@ function closeAuction(state) {
 
   if (highestBidderId && highestBid > 0) {
     buyProperty(state, highestBidderId, spaceId, highestBid);
-    log(state, 'auction', `${playerById(state, highestBidderId).name} remporte ${space.name} pour ${euros(highestBid)}.`, {
+    log(state, 'auction', `${playerById(state, highestBidderId).name} remporte ${space.name} pour ${amountText(state, highestBid)}.`, {
       playerId: highestBidderId,
       spaceId,
       amount: highestBid,

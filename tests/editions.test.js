@@ -54,6 +54,27 @@ test('chaque pion déclaré a une silhouette dessinée côté client', async () 
   }
 });
 
+test('chaque pictogramme et chaque couleur réclamés par une édition existent', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const source = await readFile(new URL('../client/src/components/SpaceIcons.jsx', import.meta.url), 'utf8');
+  // Les entrées de la bibliothèque associent un nom court à un composant :
+  // `crest: Crest`. Plusieurs par ligne, d'où la recherche non ancrée.
+  const library = new Set([...source.matchAll(/\b([a-z]+): [A-Z]\w+[,\s}]/g)].map((m) => m[1]));
+
+  for (const [id, edition] of ALL) {
+    for (const [type, entry] of Object.entries(edition.theming?.icons ?? {})) {
+      for (const name of [entry].flat()) {
+        assert.ok(library.has(name), `${id} : pictogramme « ${name} » (${type}) absent de la bibliothèque`);
+      }
+    }
+    // La palette doit être complète : une variable manquante laisserait la
+    // couleur de l'édition précédente à l'écran.
+    for (const key of ['table', 'board', 'space', 'ink', 'panel', 'accent', 'boardInk']) {
+      assert.ok(edition.theming?.palette?.[key], `${id} : couleur « ${key} » manquante`);
+    }
+  }
+});
+
 test('le plateau est numéroté sans trou et annoncé à la bonne taille', () => {
   for (const [id, edition] of ALL) {
     assert.equal(edition.board.length, edition.board.size ?? edition.board.length);

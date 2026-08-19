@@ -33,7 +33,7 @@ export function createGame(code, hostId, { seed, editionId = DEFAULT_EDITION } =
 export { listEditions, getEdition };
 
 /** Ajoute une joueuse au lobby. */
-export function addPlayer(game, { id, name, token }) {
+export function addPlayer(game, { id, name, token, faction }) {
   const { state } = game;
   const edition = getEdition(state.editionId);
   if (state.phase !== 'lobby') return { ok: false, error: 'La partie a déjà commencé.' };
@@ -51,6 +51,15 @@ export function addPlayer(game, { id, name, token }) {
     edition.tokens.find((t) => !taken.has(t.id));
   if (!tokenDef) return { ok: false, error: 'Tous les pions sont déjà pris.' };
   const swapped = token && tokenDef.id !== token;
+  // Camp (maison de Poudlard…) : on prend celui demandé s'il existe, sinon le
+  // premier libre, sinon le premier tout court — plusieurs joueuses peuvent
+  // partager une maison, contrairement aux pions.
+  const factions = edition.factions?.options ?? [];
+  const chosenFaction =
+    factions.find((f) => f.id === faction) ??
+    factions.find((f) => !state.players.some((p) => p.faction === f.id)) ??
+    factions[0];
+
   const player = createPlayer({
     id,
     name,
@@ -58,6 +67,7 @@ export function addPlayer(game, { id, name, token }) {
     color: tokenDef.color,
     order: state.players.length,
     edition,
+    faction: chosenFaction?.id ?? null,
   });
   state.players.push(player);
   log(
@@ -308,6 +318,14 @@ function canManage(state, playerId, isCurrent) {
  */
 function advanceFlow(state) {
   if (state.phase === 'finished') return;
+
+  // Aux éditions qui s'arrêtent sur l'exploration complète du plateau, le
+  // dernier lieu exploré met fin à la partie sur-le-champ. On teste avant les
+  // gardes ci-dessous : sinon l'invite « finir le tour », posée juste avant,
+  // ferait sortir d'ici et la partie continuerait un tour de trop.
+  if (getEdition(state.editionId).winCondition === 'allLocationsExplored' && checkGameOver(state))
+    return;
+
   if (state.debt) return; // en attente d'un règlement ou d'une faillite
   if (state.pending.kind) return; // en attente d'une décision
 

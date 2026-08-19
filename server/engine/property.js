@@ -1,6 +1,6 @@
 /** Achat, hypothèque, construction et revente. */
-import { getSpace } from '../../shared/index.js';
-import { log, euros } from './log.js';
+import { getSpace, rulesOf } from '../../shared/index.js';
+import { log, amountText } from './log.js';
 import {
   playerById,
   canBuild,
@@ -23,7 +23,7 @@ export function buyProperty(state, playerId, spaceId, price = null) {
 
   player.cash -= cost;
   prop.ownerId = playerId;
-  log(state, 'buy', `${player.name} achète ${space.name} pour ${euros(cost)}.`, {
+  log(state, 'buy', `${player.name} achète ${space.name} pour ${amountText(state, cost)}.`, {
     playerId,
     spaceId,
     amount: cost,
@@ -33,6 +33,8 @@ export function buyProperty(state, playerId, spaceId, price = null) {
 
 /** Hypothèque : encaisse la valeur, la propriété ne rapporte plus de loyer. */
 export function mortgage(state, playerId, spaceId) {
+  if (!rulesOf(state).mechanics.mortgage)
+    return { ok: false, error: "Cette édition ne connaît pas l'hypothèque." };
   const space = getSpace(state, spaceId);
   const prop = state.properties[spaceId];
   if (!prop || prop.ownerId !== playerId) return { ok: false, error: "Cette propriété n'est pas à vous." };
@@ -48,6 +50,8 @@ export function mortgage(state, playerId, spaceId) {
 
 /** Levée d'hypothèque : montant + 10 % d'intérêt. */
 export function unmortgage(state, playerId, spaceId) {
+  if (!rulesOf(state).mechanics.mortgage)
+    return { ok: false, error: "Cette édition ne connaît pas l'hypothèque." };
   const space = getSpace(state, spaceId);
   const prop = state.properties[spaceId];
   const player = playerById(state, playerId);
@@ -59,7 +63,7 @@ export function unmortgage(state, playerId, spaceId) {
 
   player.cash -= cost;
   prop.mortgaged = false;
-  log(state, 'unmortgage', `${player.name} lève l'hypothèque de ${space.name} pour ${euros(cost)}.`, {
+  log(state, 'unmortgage', `${player.name} lève l'hypothèque de ${space.name} pour ${amountText(state, cost)}.`, {
     playerId,
     spaceId,
     amount: cost,
@@ -82,7 +86,7 @@ export function buildHouse(state, playerId, spaceId) {
     prop.hotel = true;
     state.bank.hotels -= 1;
     state.bank.houses += 4; // les 4 maisons retournent au stock
-    log(state, 'build', `${player.name} construit un hôtel sur ${space.name} (${euros(check.cost)}).`, {
+    log(state, 'build', `${player.name} construit un hôtel sur ${space.name} (${amountText(state, check.cost)}).`, {
       playerId,
       spaceId,
       amount: check.cost,
@@ -93,7 +97,7 @@ export function buildHouse(state, playerId, spaceId) {
     log(
       state,
       'build',
-      `${player.name} construit une maison sur ${space.name} (${euros(check.cost)}) — ${prop.houses} au total.`,
+      `${player.name} construit une maison sur ${space.name} (${amountText(state, check.cost)}) — ${prop.houses} au total.`,
       { playerId, spaceId, amount: check.cost, houses: prop.houses },
     );
   }
@@ -116,13 +120,13 @@ export function sellBuilding(state, playerId, spaceId) {
       log(
         state,
         'sell',
-        `${player(state, playerId)} revend l'hôtel de ${space.name} pour ${euros(check.refund)} (la banque n'a plus de maisons).`,
+        `${player(state, playerId)} revend l'hôtel de ${space.name} pour ${amountText(state, check.refund)} (la banque n'a plus de maisons).`,
         { playerId, spaceId, amount: check.refund },
       );
     } else {
       prop.houses = 4;
       state.bank.houses -= 4;
-      log(state, 'sell', `${player(state, playerId)} revend l'hôtel de ${space.name} pour ${euros(check.refund)} — 4 maisons restent.`, {
+      log(state, 'sell', `${player(state, playerId)} revend l'hôtel de ${space.name} pour ${amountText(state, check.refund)} — 4 maisons restent.`, {
         playerId,
         spaceId,
         amount: check.refund,
@@ -131,7 +135,7 @@ export function sellBuilding(state, playerId, spaceId) {
   } else {
     prop.houses -= 1;
     state.bank.houses += 1;
-    log(state, 'sell', `${player(state, playerId)} revend une maison de ${space.name} pour ${euros(check.refund)}.`, {
+    log(state, 'sell', `${player(state, playerId)} revend une maison de ${space.name} pour ${amountText(state, check.refund)}.`, {
       playerId,
       spaceId,
       amount: check.refund,

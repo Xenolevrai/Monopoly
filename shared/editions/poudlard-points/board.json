@@ -1,0 +1,638 @@
+[
+  {
+    "id": 0,
+    "name": "Voie 9¾",
+    "shortName": "Voie 9¾",
+    "type": "go",
+    "side": "bottom",
+    "corner": true
+  },
+  {
+    "id": 1,
+    "name": "La Cabane de Hagrid",
+    "shortName": "Hagrid",
+    "type": "property",
+    "group": "brown",
+    "price": 30,
+    "rent": [
+      10,
+      20,
+      30,
+      50,
+      80,
+      130
+    ],
+    "houseCost": 30,
+    "mortgage": 20,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 2,
+    "name": "Hibou Express",
+    "shortName": "Hibou",
+    "type": "chance",
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 3,
+    "name": "La Serre de Botanique",
+    "shortName": "Serres",
+    "type": "property",
+    "group": "brown",
+    "price": 30,
+    "rent": [
+      10,
+      20,
+      30,
+      90,
+      160,
+      230
+    ],
+    "houseCost": 30,
+    "mortgage": 20,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 4,
+    "name": "Retenue avec Rusard",
+    "shortName": "Retenue",
+    "type": "tax",
+    "amount": 100,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 5,
+    "name": "Salle commune de Gryffondor",
+    "shortName": "Gryffondor",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 100,
+    "rent": [
+      10,
+      30,
+      50,
+      100
+    ],
+    "mortgage": 50,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 6,
+    "name": "Le Terrain de Quidditch",
+    "shortName": "Quidditch",
+    "type": "property",
+    "group": "lightblue",
+    "price": 50,
+    "rent": [
+      10,
+      20,
+      50,
+      140,
+      200,
+      280
+    ],
+    "houseCost": 30,
+    "mortgage": 30,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 7,
+    "name": "Hibou Express",
+    "shortName": "Hibou",
+    "type": "chance",
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 8,
+    "name": "Le Lac Noir",
+    "shortName": "Lac Noir",
+    "type": "property",
+    "group": "lightblue",
+    "price": 50,
+    "rent": [
+      10,
+      20,
+      50,
+      140,
+      200,
+      280
+    ],
+    "houseCost": 30,
+    "mortgage": 30,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 9,
+    "name": "La Forêt Interdite",
+    "shortName": "Forêt",
+    "type": "property",
+    "group": "lightblue",
+    "price": 60,
+    "rent": [
+      10,
+      20,
+      50,
+      150,
+      230,
+      300
+    ],
+    "houseCost": 30,
+    "mortgage": 30,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 10,
+    "name": "Le bureau de Rusard",
+    "shortName": "Rusard",
+    "type": "jail",
+    "side": "left",
+    "corner": true
+  },
+  {
+    "id": 11,
+    "name": "Le Chaudron Baveur",
+    "shortName": "Chaudron Baveur",
+    "type": "property",
+    "group": "pink",
+    "price": 70,
+    "rent": [
+      10,
+      30,
+      80,
+      230,
+      310,
+      380
+    ],
+    "houseCost": 50,
+    "mortgage": 40,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 12,
+    "name": "Alohomora",
+    "shortName": "Alohomora",
+    "type": "utility",
+    "group": "utility",
+    "price": 80,
+    "rentMultipliers": [
+      4,
+      10
+    ],
+    "mortgage": 40,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 13,
+    "name": "Chez Fleury et Bott",
+    "shortName": "Fleury et Bott",
+    "type": "property",
+    "group": "pink",
+    "price": 70,
+    "rent": [
+      10,
+      30,
+      80,
+      230,
+      310,
+      380
+    ],
+    "houseCost": 50,
+    "mortgage": 40,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 14,
+    "name": "Boutique d'Ollivander",
+    "shortName": "Ollivander",
+    "type": "property",
+    "group": "pink",
+    "price": 80,
+    "rent": [
+      10,
+      30,
+      90,
+      250,
+      350,
+      450
+    ],
+    "houseCost": 50,
+    "mortgage": 40,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 15,
+    "name": "Salle commune de Poufsouffle",
+    "shortName": "Poufsouffle",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 100,
+    "rent": [
+      10,
+      30,
+      50,
+      100
+    ],
+    "mortgage": 50,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 16,
+    "name": "Honeydukes",
+    "shortName": "Honeydukes",
+    "type": "property",
+    "group": "orange",
+    "price": 90,
+    "rent": [
+      10,
+      40,
+      100,
+      280,
+      380,
+      480
+    ],
+    "houseCost": 50,
+    "mortgage": 50,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 17,
+    "name": "Hibou Express",
+    "shortName": "Hibou",
+    "type": "chance",
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 18,
+    "name": "Les Trois Balais",
+    "shortName": "Trois Balais",
+    "type": "property",
+    "group": "orange",
+    "price": 90,
+    "rent": [
+      10,
+      40,
+      100,
+      280,
+      380,
+      480
+    ],
+    "houseCost": 50,
+    "mortgage": 50,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 19,
+    "name": "La Cabane Hurlante",
+    "shortName": "Cabane Hurlante",
+    "type": "property",
+    "group": "orange",
+    "price": 100,
+    "rent": [
+      10,
+      40,
+      110,
+      300,
+      400,
+      500
+    ],
+    "houseCost": 50,
+    "mortgage": 50,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 20,
+    "name": "La Grande Salle",
+    "shortName": "Grande Salle",
+    "type": "free_parking",
+    "side": "top",
+    "corner": true
+  },
+  {
+    "id": 21,
+    "name": "La Salle de Potions",
+    "shortName": "Potions",
+    "type": "property",
+    "group": "red",
+    "price": 110,
+    "rent": [
+      10,
+      50,
+      130,
+      350,
+      440,
+      530
+    ],
+    "houseCost": 80,
+    "mortgage": 60,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 22,
+    "name": "Hibou Express",
+    "shortName": "Hibou",
+    "type": "chance",
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 23,
+    "name": "La Salle de Métamorphose",
+    "shortName": "Métamorphose",
+    "type": "property",
+    "group": "red",
+    "price": 110,
+    "rent": [
+      10,
+      50,
+      130,
+      350,
+      440,
+      530
+    ],
+    "houseCost": 80,
+    "mortgage": 60,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 24,
+    "name": "La Salle de Sortilèges",
+    "shortName": "Sortilèges",
+    "type": "property",
+    "group": "red",
+    "price": 120,
+    "rent": [
+      10,
+      50,
+      150,
+      380,
+      460,
+      550
+    ],
+    "houseCost": 80,
+    "mortgage": 60,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 25,
+    "name": "Salle commune de Serdaigle",
+    "shortName": "Serdaigle",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 100,
+    "rent": [
+      10,
+      30,
+      50,
+      100
+    ],
+    "mortgage": 50,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 26,
+    "name": "La Tour d’Astronomie",
+    "shortName": "Astronomie",
+    "type": "property",
+    "group": "yellow",
+    "price": 130,
+    "rent": [
+      10,
+      60,
+      170,
+      400,
+      490,
+      580
+    ],
+    "houseCost": 80,
+    "mortgage": 70,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 27,
+    "name": "La Volière",
+    "shortName": "Volière",
+    "type": "property",
+    "group": "yellow",
+    "price": 130,
+    "rent": [
+      10,
+      60,
+      170,
+      400,
+      490,
+      580
+    ],
+    "houseCost": 80,
+    "mortgage": 70,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 28,
+    "name": "Accio",
+    "shortName": "Accio",
+    "type": "utility",
+    "group": "utility",
+    "price": 80,
+    "rentMultipliers": [
+      4,
+      10
+    ],
+    "mortgage": 40,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 29,
+    "name": "La Salle sur Demande",
+    "shortName": "Salle sur Demande",
+    "type": "property",
+    "group": "yellow",
+    "price": 140,
+    "rent": [
+      10,
+      60,
+      180,
+      430,
+      510,
+      600
+    ],
+    "houseCost": 80,
+    "mortgage": 70,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 30,
+    "name": "Convoqué chez Rusard",
+    "shortName": "Chez Rusard",
+    "type": "go_to_jail",
+    "side": "right",
+    "corner": true
+  },
+  {
+    "id": 31,
+    "name": "La Bibliothèque",
+    "shortName": "Bibliothèque",
+    "type": "property",
+    "group": "green",
+    "price": 150,
+    "rent": [
+      10,
+      70,
+      200,
+      450,
+      550,
+      640
+    ],
+    "houseCost": 100,
+    "mortgage": 80,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 32,
+    "name": "La Réserve interdite",
+    "shortName": "Réserve",
+    "type": "property",
+    "group": "green",
+    "price": 150,
+    "rent": [
+      10,
+      70,
+      200,
+      450,
+      550,
+      640
+    ],
+    "houseCost": 100,
+    "mortgage": 80,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 33,
+    "name": "Hibou Express",
+    "shortName": "Hibou",
+    "type": "chance",
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 34,
+    "name": "La Chambre des Secrets",
+    "shortName": "Chambre des Secrets",
+    "type": "property",
+    "group": "green",
+    "price": 160,
+    "rent": [
+      10,
+      80,
+      230,
+      500,
+      600,
+      700
+    ],
+    "houseCost": 100,
+    "mortgage": 80,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 35,
+    "name": "Salle commune de Serpentard",
+    "shortName": "Serpentard",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 100,
+    "rent": [
+      10,
+      30,
+      50,
+      100
+    ],
+    "mortgage": 50,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 36,
+    "name": "Hibou Express",
+    "shortName": "Hibou",
+    "type": "chance",
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 37,
+    "name": "Le Bureau de Dumbledore",
+    "shortName": "Dumbledore",
+    "type": "property",
+    "group": "darkblue",
+    "price": 180,
+    "rent": [
+      20,
+      90,
+      250,
+      550,
+      650,
+      750
+    ],
+    "houseCost": 100,
+    "mortgage": 90,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 38,
+    "name": "Don au fonds des Quatre Maisons",
+    "shortName": "Don",
+    "type": "tax",
+    "amount": 50,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 39,
+    "name": "La Coupe des Quatre Maisons",
+    "shortName": "La Coupe",
+    "type": "property",
+    "group": "darkblue",
+    "price": 200,
+    "rent": [
+      30,
+      100,
+      300,
+      700,
+      850,
+      1000
+    ],
+    "houseCost": 100,
+    "mortgage": 100,
+    "side": "right",
+    "corner": false
+  }
+]

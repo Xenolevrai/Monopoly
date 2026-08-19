@@ -153,6 +153,9 @@ export function listRooms() {
         color: p.color,
         cash: p.cash,
         bankrupt: p.bankrupt,
+        // Sert à montrer qui est déjà revenu : on reprend sa place en cliquant
+        // son nom, sans avoir à retaper son pseudo ni à retrouver le code.
+        connected: p.connected,
       })),
     }))
     .filter((room) => room.phase !== 'finished')

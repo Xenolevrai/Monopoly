@@ -62,6 +62,17 @@ function Bill({ state, bill, count, size = 'sm' }) {
 
 /** La liasse d'une joueuse : ce qu'elle a réellement en main. */
 export function BillStack({ state, amount, size = 'sm' }) {
+  // Des points de maison ne se comptent pas en billets : on affiche un sablier
+  // plutôt qu'une liasse, comme le compteur de sa maison.
+  if (editionFor(state).currency.type === 'points') {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full border border-black/15 bg-white px-2 py-0.5">
+        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: 'var(--color-gold)' }} />
+        <span className="tabular font-condensed text-[11px]">{money(state, amount)}</span>
+      </span>
+    );
+  }
+
   const bills = toBills(state, amount);
   if (!bills.length) return <span className="text-[10px] text-ink-soft">plus un billet</span>;
   return (

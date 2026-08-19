@@ -3,7 +3,7 @@
  * cernées d'un filet noir, bandeaux de couleur pleins, et — comme sur la vraie
  * boîte — les textes orientés vers le centre selon le côté du plateau.
  */
-import { boardOf, gridPosition, gridTemplate, groupColor, editionFor, money } from '../lib/board.js';
+import { boardOf, gridPosition, gridTemplate, gridSize, groupColor, editionFor, money } from '../lib/board.js';
 import { iconFor } from './SpaceIcons.jsx';
 import Pawns from './Pawns.jsx';
 import Dice from './Dice.jsx';
@@ -19,8 +19,10 @@ function cornerNote(state, id) {
   return null;
 }
 
-/** Chance et Caisse de Communauté gardent leur couleur d'origine. */
-const ICON_TINT = { chance: 'text-[var(--color-accent)]', community_chest: 'text-[#2f5c8f]' };
+/** Les cases « pile » prennent la couleur que l'édition donne à leur paquet. */
+function deckTint(state, type) {
+  return editionFor(state).theming?.decks?.[type]?.color ?? null;
+}
 
 /** Maisons vertes et hôtel rouge, posés sur le bandeau de couleur. */
 function Buildings({ prop }) {
@@ -52,7 +54,7 @@ function Space({ space, state, active, onSelect }) {
   const color = groupColor(state, space);
   const prop = state.properties?.[space.id];
   const owner = prop?.ownerId ? state.players.find((p) => p.id === prop.ownerId) : null;
-  const Icon = iconFor(space);
+  const Icon = iconFor(editionFor(state), space);
   const corner = space.corner;
 
   return (
@@ -86,7 +88,8 @@ function Space({ space, state, active, onSelect }) {
         <span className="flex flex-1 flex-col items-center justify-center gap-0.5 px-1 text-center">
           {Icon && (
             <Icon
-              className={`${corner ? 'h-7 w-7' : 'h-4 w-4'} ${ICON_TINT[space.type] ?? 'text-ink'}`}
+              className={`${corner ? 'h-7 w-7' : 'h-4 w-4'} text-ink`}
+              style={deckTint(state, space.type) ? { color: deckTint(state, space.type) } : undefined}
             />
           )}
           <span
@@ -137,11 +140,10 @@ function Space({ space, state, active, onSelect }) {
  * Quand c'est à nous de piocher, le tas concerné s'anime et devient cliquable.
  */
 function CardPiles({ state, canDraw, deckToDraw, onDraw }) {
+  // Certaines éditions fusionnent Chance et Caisse en une seule pile : on
+  // n'affiche que les paquets réellement déclarés, sans tas fantôme.
   const decks = editionFor(state).theming?.decks ?? {};
-  const piles = [
-    { id: 'chance', tilt: -4, ...decks.chance },
-    { id: 'community_chest', tilt: 3, ...decks.community_chest },
-  ];
+  const piles = Object.entries(decks).map(([id, deck], i) => ({ id, tilt: i === 0 ? -4 : 3, ...deck }));
 
   return (
     <div className="flex items-start gap-6">
@@ -165,7 +167,7 @@ function CardPiles({ state, canDraw, deckToDraw, onDraw }) {
               style={{ backgroundColor: pile.color }}
             >
               <span className="font-condensed text-[26px] leading-none text-white">
-                {pile.id === 'chance' ? '?' : '▤'}
+                {pile.glyph ?? '?'}
               </span>
               <span className="px-1 font-condensed text-[7px] uppercase leading-tight text-white/95">
                 {pile.label}
@@ -188,7 +190,7 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
   const current = state.players[state.currentPlayerIndex];
   return (
     <div
-      style={{ gridColumn: '2 / 11', gridRow: '2 / 11' }}
+      style={{ gridColumn: `2 / ${gridSize(state)}`, gridRow: `2 / ${gridSize(state)}` }}
       className="relative flex flex-col items-center justify-center gap-4 p-4"
     >
       {/* Le cartouche du titre, posé en diagonale comme sur le plateau.
@@ -202,7 +204,10 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
             {editionFor(state).theming?.centerTitle ?? 'Monopoly'}
           </p>
         </div>
-        <p className="mt-1 text-center font-condensed text-[11px] uppercase tracking-[0.45em] text-ink-soft">
+        <p
+          className="mt-1 text-center font-condensed text-[11px] uppercase tracking-[0.45em] opacity-75"
+          style={{ color: 'var(--color-board-ink)' }}
+        >
           {editionFor(state).theming?.centerSubtitle ?? ''}
         </p>
       </div>
@@ -213,13 +218,16 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
 
       <div className="absolute bottom-5 left-1/2 flex w-full -translate-x-1/2 flex-col items-center gap-3 px-4">
         {state.phase === 'playing' && current && (
-          <p className="font-condensed text-xs uppercase tracking-widest text-ink-soft">
+          <p
+            className="font-condensed text-xs uppercase tracking-widest opacity-80"
+            style={{ color: 'var(--color-board-ink)' }}
+          >
             Au tour de <span style={{ color: current.color }}>{current.name}</span>
           </p>
         )}
         <Dice values={state.dice?.values} rolling={rolling} />
         {state.settings?.freeParkingPot && state.freeParkingPot > 0 && (
-          <p className="tabular text-[11px] text-ink-soft">
+          <p className="tabular text-[11px] opacity-80" style={{ color: 'var(--color-board-ink)' }}>
             Cagnotte du Parc Gratuit :{' '}
             <span className="font-semibold text-[var(--color-money)]">{money(state, state.freeParkingPot)}</span>
           </p>
