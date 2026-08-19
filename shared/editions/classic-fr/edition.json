@@ -6,10 +6,11 @@
   "summary": "Achetez des rues, construisez, encaissez les loyers, ruinez les autres.",
   "playerCount": { "min": 2, "max": 6 },
   "board": { "size": 40 },
-  "money": {
+  "currency": {
+    "type": "money",
     "label": "€",
     "startingAmount": 1500,
-    "goSalary": 200,
+    "goBonus": 200,
     "singleDenomination": false,
     "denominations": [500, 100, 50, 20, 10, 5, 1]
   },

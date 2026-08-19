@@ -227,7 +227,7 @@ function applyAction(game, state, rng, player, action) {
 
     case 'ACKNOWLEDGE_CARD':
       if (pending.kind !== 'card_reveal' || !isMine) return refuse('Aucune carte à appliquer.');
-      return applyRevealedCard(state, playerId);
+      return applyRevealedCard(state, playerId, rng);
 
     case 'CARD_CHOICE':
       if (pending.kind !== 'card_choice' || !isMine) return refuse('Aucun choix de carte en attente.');

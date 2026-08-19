@@ -1,0 +1,126 @@
+{
+  "id": "harry-potter-fr",
+  "name": "Monopoly Harry Potter",
+  "theme": "Poudlard et le monde des sorciers",
+  "tagline": "Les règles classiques, en Gallions.",
+  "summary": "Explorez Poudlard, le Chemin de Traverse et Pré-au-Lard. Chaumières et châteaux remplacent maisons et hôtels.",
+  "playerCount": {
+    "min": 2,
+    "max": 6
+  },
+  "board": {
+    "size": 40
+  },
+  "currency": {
+    "type": "money",
+    "label": "G",
+    "startingAmount": 1500,
+    "goBonus": 200,
+    "singleDenomination": false,
+    "denominations": [
+      500,
+      100,
+      50,
+      20,
+      10,
+      5,
+      1
+    ]
+  },
+  "jail": {
+    "space": 10,
+    "bail": 50,
+    "maxTurns": 3
+  },
+  "dice": {
+    "count": 2,
+    "sides": 6,
+    "doublesToJail": 3
+  },
+  "bank": {
+    "houses": 32,
+    "hotels": 12
+  },
+  "mortgage": {
+    "enabled": true,
+    "interestRate": 0.1
+  },
+  "turnMode": "sequential",
+  "winCondition": "lastPlayerStanding",
+  "mechanics": {
+    "houses": true,
+    "hotels": true,
+    "mortgage": true,
+    "bankruptcyEliminates": true,
+    "trading": true,
+    "auctions": true,
+    "negotiableRent": true,
+    "cheatCards": false,
+    "towerMode": false,
+    "explorationMode": false,
+    "draftMode": false,
+    "battleSpaces": false,
+    "abilityTokens": false
+  },
+  "houseRules": {
+    "freeParkingPot": false,
+    "auctionOnDecline": true,
+    "evenBuildRule": true,
+    "auctionBankruptcyAssets": true
+  },
+  "buildingLabels": {
+    "house": "Chaumière",
+    "houses": "Chaumières",
+    "hotel": "Château",
+    "hotels": "Châteaux"
+  },
+  "tokens": [
+    {
+      "id": "baguette",
+      "label": "Baguette",
+      "color": "#7B4FA8"
+    },
+    {
+      "id": "chaudron",
+      "label": "Chaudron",
+      "color": "#2E9E63"
+    },
+    {
+      "id": "vif",
+      "label": "Vif d'or",
+      "color": "#D4A32B"
+    },
+    {
+      "id": "hibou",
+      "label": "Hibou",
+      "color": "#8A6A4F"
+    },
+    {
+      "id": "balai",
+      "label": "Balai",
+      "color": "#C6303A"
+    },
+    {
+      "id": "choixpeau",
+      "label": "Choixpeau",
+      "color": "#2A5CAA"
+    }
+  ],
+  "theming": {
+    "palette": "table",
+    "centerTitle": "Monopoly",
+    "centerSubtitle": "Poudlard",
+    "decks": {
+      "chance": {
+        "label": "Sortilèges",
+        "color": "#6b3fa0",
+        "glyph": "✦"
+      },
+      "community_chest": {
+        "label": "Potions",
+        "color": "#1f6f5c",
+        "glyph": "⚗"
+      }
+    }
+  }
+}

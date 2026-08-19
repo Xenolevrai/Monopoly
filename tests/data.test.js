@@ -105,8 +105,8 @@ test('toutes les cases ciblées par une carte existent', () => {
 });
 
 test('le stock de la banque et les constantes de règles sont ceux du jeu officiel', () => {
-  assert.equal(edition.money.startingAmount, 1500);
-  assert.equal(edition.money.goSalary, 200);
+  assert.equal(edition.currency.startingAmount, 1500);
+  assert.equal(edition.currency.goBonus, 200);
   assert.equal(edition.jail.bail, 50);
   assert.equal(edition.bank.houses, 32);
   assert.equal(edition.bank.hotels, 12);

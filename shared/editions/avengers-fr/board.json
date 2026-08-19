@@ -1,0 +1,638 @@
+[
+  {
+    "id": 0,
+    "name": "Départ",
+    "shortName": "Départ",
+    "type": "go",
+    "side": "bottom",
+    "corner": true
+  },
+  {
+    "id": 1,
+    "name": "Nick Fury",
+    "shortName": "Nick Fury",
+    "type": "property",
+    "group": "brown",
+    "price": 60,
+    "rent": [
+      2,
+      10,
+      30,
+      90,
+      160,
+      250
+    ],
+    "houseCost": 50,
+    "mortgage": 30,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 2,
+    "name": "Stark Industries",
+    "shortName": "Stark",
+    "type": "community_chest",
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 3,
+    "name": "Agent Maria Hill",
+    "shortName": "Maria Hill",
+    "type": "property",
+    "group": "brown",
+    "price": 60,
+    "rent": [
+      4,
+      20,
+      60,
+      180,
+      320,
+      450
+    ],
+    "houseCost": 50,
+    "mortgage": 30,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 4,
+    "name": "Accords de Sokovie",
+    "shortName": "Sokovie",
+    "type": "tax",
+    "amount": 200,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 5,
+    "name": "Le Quinjet",
+    "shortName": "Quinjet",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 200,
+    "rent": [
+      25,
+      50,
+      100,
+      200
+    ],
+    "mortgage": 100,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 6,
+    "name": "Faucon",
+    "shortName": "Faucon",
+    "type": "property",
+    "group": "lightblue",
+    "price": 100,
+    "rent": [
+      6,
+      30,
+      90,
+      270,
+      400,
+      550
+    ],
+    "houseCost": 50,
+    "mortgage": 50,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 7,
+    "name": "S.H.I.E.L.D.",
+    "shortName": "S.H.I.E.L.D.",
+    "type": "chance",
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 8,
+    "name": "Le Soldat de l'Hiver",
+    "shortName": "Soldat de l'Hiver",
+    "type": "property",
+    "group": "lightblue",
+    "price": 100,
+    "rent": [
+      6,
+      30,
+      90,
+      270,
+      400,
+      550
+    ],
+    "houseCost": 50,
+    "mortgage": 50,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 9,
+    "name": "Vision",
+    "shortName": "Vision",
+    "type": "property",
+    "group": "lightblue",
+    "price": 120,
+    "rent": [
+      8,
+      40,
+      100,
+      300,
+      450,
+      600
+    ],
+    "houseCost": 50,
+    "mortgage": 60,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 10,
+    "name": "Le Raft",
+    "shortName": "Le Raft",
+    "type": "jail",
+    "side": "left",
+    "corner": true
+  },
+  {
+    "id": 11,
+    "name": "Ant-Man",
+    "shortName": "Ant-Man",
+    "type": "property",
+    "group": "pink",
+    "price": 140,
+    "rent": [
+      10,
+      50,
+      150,
+      450,
+      625,
+      750
+    ],
+    "houseCost": 100,
+    "mortgage": 70,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 12,
+    "name": "Réacteur ARC de Stark Industries",
+    "shortName": "Réacteur ARC",
+    "type": "utility",
+    "group": "utility",
+    "price": 150,
+    "rentMultipliers": [
+      4,
+      10
+    ],
+    "mortgage": 75,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 13,
+    "name": "La Guêpe",
+    "shortName": "La Guêpe",
+    "type": "property",
+    "group": "pink",
+    "price": 140,
+    "rent": [
+      10,
+      50,
+      150,
+      450,
+      625,
+      750
+    ],
+    "houseCost": 100,
+    "mortgage": 70,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 14,
+    "name": "Black Panther",
+    "shortName": "Black Panther",
+    "type": "property",
+    "group": "pink",
+    "price": 160,
+    "rent": [
+      12,
+      60,
+      180,
+      500,
+      700,
+      900
+    ],
+    "houseCost": 100,
+    "mortgage": 80,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 15,
+    "name": "L'Héliporteur du S.H.I.E.L.D.",
+    "shortName": "Héliporteur",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 200,
+    "rent": [
+      25,
+      50,
+      100,
+      200
+    ],
+    "mortgage": 100,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 16,
+    "name": "Docteur Strange",
+    "shortName": "Dr Strange",
+    "type": "property",
+    "group": "orange",
+    "price": 180,
+    "rent": [
+      14,
+      70,
+      200,
+      550,
+      750,
+      950
+    ],
+    "houseCost": 100,
+    "mortgage": 90,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 17,
+    "name": "Stark Industries",
+    "shortName": "Stark",
+    "type": "community_chest",
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 18,
+    "name": "Spider-Man",
+    "shortName": "Spider-Man",
+    "type": "property",
+    "group": "orange",
+    "price": 180,
+    "rent": [
+      14,
+      70,
+      200,
+      550,
+      750,
+      950
+    ],
+    "houseCost": 100,
+    "mortgage": 90,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 19,
+    "name": "Captain Marvel",
+    "shortName": "Captain Marvel",
+    "type": "property",
+    "group": "orange",
+    "price": 200,
+    "rent": [
+      16,
+      80,
+      220,
+      600,
+      800,
+      1000
+    ],
+    "houseCost": 100,
+    "mortgage": 100,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 20,
+    "name": "Le Complexe des Avengers",
+    "shortName": "Complexe",
+    "type": "free_parking",
+    "side": "top",
+    "corner": true
+  },
+  {
+    "id": 21,
+    "name": "Œil-de-Faucon",
+    "shortName": "Œil-de-Faucon",
+    "type": "property",
+    "group": "red",
+    "price": 220,
+    "rent": [
+      18,
+      90,
+      250,
+      700,
+      875,
+      1050
+    ],
+    "houseCost": 150,
+    "mortgage": 110,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 22,
+    "name": "S.H.I.E.L.D.",
+    "shortName": "S.H.I.E.L.D.",
+    "type": "chance",
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 23,
+    "name": "Veuve Noire",
+    "shortName": "Veuve Noire",
+    "type": "property",
+    "group": "red",
+    "price": 220,
+    "rent": [
+      18,
+      90,
+      250,
+      700,
+      875,
+      1050
+    ],
+    "houseCost": 150,
+    "mortgage": 110,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 24,
+    "name": "Hulk",
+    "shortName": "Hulk",
+    "type": "property",
+    "group": "red",
+    "price": 240,
+    "rent": [
+      20,
+      100,
+      300,
+      750,
+      925,
+      1100
+    ],
+    "houseCost": 150,
+    "mortgage": 120,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 25,
+    "name": "La Moto de Captain America",
+    "shortName": "Moto de Cap",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 200,
+    "rent": [
+      25,
+      50,
+      100,
+      200
+    ],
+    "mortgage": 100,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 26,
+    "name": "Thor",
+    "shortName": "Thor",
+    "type": "property",
+    "group": "yellow",
+    "price": 260,
+    "rent": [
+      22,
+      110,
+      330,
+      800,
+      975,
+      1150
+    ],
+    "houseCost": 150,
+    "mortgage": 130,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 27,
+    "name": "Captain America",
+    "shortName": "Captain America",
+    "type": "property",
+    "group": "yellow",
+    "price": 260,
+    "rent": [
+      22,
+      110,
+      330,
+      800,
+      975,
+      1150
+    ],
+    "houseCost": 150,
+    "mortgage": 130,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 28,
+    "name": "Particules Pym",
+    "shortName": "Particules Pym",
+    "type": "utility",
+    "group": "utility",
+    "price": 150,
+    "rentMultipliers": [
+      4,
+      10
+    ],
+    "mortgage": 75,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 29,
+    "name": "Iron Man",
+    "shortName": "Iron Man",
+    "type": "property",
+    "group": "yellow",
+    "price": 280,
+    "rent": [
+      24,
+      120,
+      360,
+      850,
+      1025,
+      1200
+    ],
+    "houseCost": 150,
+    "mortgage": 140,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 30,
+    "name": "Direction le Raft",
+    "shortName": "Direction Raft",
+    "type": "go_to_jail",
+    "side": "right",
+    "corner": true
+  },
+  {
+    "id": 31,
+    "name": "Star-Lord",
+    "shortName": "Star-Lord",
+    "type": "property",
+    "group": "green",
+    "price": 300,
+    "rent": [
+      26,
+      130,
+      390,
+      900,
+      1100,
+      1275
+    ],
+    "houseCost": 200,
+    "mortgage": 150,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 32,
+    "name": "Gamora & Drax",
+    "shortName": "Gamora & Drax",
+    "type": "property",
+    "group": "green",
+    "price": 300,
+    "rent": [
+      26,
+      130,
+      390,
+      900,
+      1100,
+      1275
+    ],
+    "houseCost": 200,
+    "mortgage": 150,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 33,
+    "name": "Stark Industries",
+    "shortName": "Stark",
+    "type": "community_chest",
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 34,
+    "name": "Groot & Rocket Raccoon",
+    "shortName": "Groot & Rocket",
+    "type": "property",
+    "group": "green",
+    "price": 320,
+    "rent": [
+      28,
+      150,
+      450,
+      1000,
+      1200,
+      1400
+    ],
+    "houseCost": 200,
+    "mortgage": 160,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 35,
+    "name": "Le Milano des Gardiens",
+    "shortName": "Milano",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 200,
+    "rent": [
+      25,
+      50,
+      100,
+      200
+    ],
+    "mortgage": 100,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 36,
+    "name": "S.H.I.E.L.D.",
+    "shortName": "S.H.I.E.L.D.",
+    "type": "chance",
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 37,
+    "name": "Le Raft — sécurité maximale",
+    "shortName": "Raft (max)",
+    "type": "property",
+    "group": "darkblue",
+    "price": 350,
+    "rent": [
+      35,
+      175,
+      500,
+      1100,
+      1300,
+      1500
+    ],
+    "houseCost": 200,
+    "mortgage": 175,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 38,
+    "name": "Taxe d'armement",
+    "shortName": "Taxe armement",
+    "type": "tax",
+    "amount": 100,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 39,
+    "name": "La Tour des Avengers",
+    "shortName": "Tour des Avengers",
+    "type": "property",
+    "group": "darkblue",
+    "price": 400,
+    "rent": [
+      50,
+      200,
+      600,
+      1400,
+      1700,
+      2000
+    ],
+    "houseCost": 200,
+    "mortgage": 200,
+    "side": "right",
+    "corner": false
+  }
+]

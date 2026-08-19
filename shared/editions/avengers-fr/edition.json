@@ -1,0 +1,126 @@
+{
+  "id": "avengers-fr",
+  "name": "Monopoly Marvel Avengers",
+  "theme": "Les héros les plus puissants de la Terre",
+  "tagline": "Les règles classiques, en millions de dollars.",
+  "summary": "Recrutez les héros Marvel, installez des bases du S.H.I.E.L.D. et des quartiers généraux.",
+  "playerCount": {
+    "min": 2,
+    "max": 6
+  },
+  "board": {
+    "size": 40
+  },
+  "currency": {
+    "type": "money",
+    "label": "M$",
+    "startingAmount": 1500,
+    "goBonus": 200,
+    "singleDenomination": false,
+    "denominations": [
+      500,
+      100,
+      50,
+      20,
+      10,
+      5,
+      1
+    ]
+  },
+  "jail": {
+    "space": 10,
+    "bail": 50,
+    "maxTurns": 3
+  },
+  "dice": {
+    "count": 2,
+    "sides": 6,
+    "doublesToJail": 3
+  },
+  "bank": {
+    "houses": 32,
+    "hotels": 12
+  },
+  "mortgage": {
+    "enabled": true,
+    "interestRate": 0.1
+  },
+  "turnMode": "sequential",
+  "winCondition": "lastPlayerStanding",
+  "mechanics": {
+    "houses": true,
+    "hotels": true,
+    "mortgage": true,
+    "bankruptcyEliminates": true,
+    "trading": true,
+    "auctions": true,
+    "negotiableRent": true,
+    "cheatCards": false,
+    "towerMode": false,
+    "explorationMode": false,
+    "draftMode": false,
+    "battleSpaces": false,
+    "abilityTokens": false
+  },
+  "houseRules": {
+    "freeParkingPot": false,
+    "auctionOnDecline": true,
+    "evenBuildRule": true,
+    "auctionBankruptcyAssets": true
+  },
+  "buildingLabels": {
+    "house": "Base",
+    "houses": "Bases",
+    "hotel": "Quartier général",
+    "hotels": "Quartiers généraux"
+  },
+  "tokens": [
+    {
+      "id": "marteau",
+      "label": "Marteau de Thor",
+      "color": "#4a6fa5"
+    },
+    {
+      "id": "bouclier",
+      "label": "Bouclier",
+      "color": "#C6303A"
+    },
+    {
+      "id": "casque",
+      "label": "Casque Iron Man",
+      "color": "#E8862B"
+    },
+    {
+      "id": "gantelet",
+      "label": "Gantelet",
+      "color": "#D4A32B"
+    },
+    {
+      "id": "arc",
+      "label": "Arc",
+      "color": "#2E9E63"
+    },
+    {
+      "id": "quinjet",
+      "label": "Quinjet",
+      "color": "#6b6f7a"
+    }
+  ],
+  "theming": {
+    "palette": "table",
+    "centerTitle": "Monopoly",
+    "centerSubtitle": "Avengers",
+    "decks": {
+      "chance": {
+        "label": "S.H.I.E.L.D.",
+        "color": "#1f4f8f",
+        "glyph": "◈"
+      },
+      "community_chest": {
+        "label": "Stark Industries",
+        "color": "#b3242c",
+        "glyph": "⚙"
+      }
+    }
+  }
+}

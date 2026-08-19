@@ -76,7 +76,10 @@ export function rentFor(state, spaceId, opts = {}) {
 
   if (space.type === 'utility') {
     const count = utilityCount(state, prop.ownerId);
-    const factor = space.rentMultipliers[count === 2 ? 1 : 0];
+    // `utilityFactor` sert aux cartes « rendez-vous au service le plus proche et
+    // payez dix fois le jet » : le multiplicateur ne dépend alors plus du nombre
+    // de compagnies possédées, la carte l'impose.
+    const factor = opts.utilityFactor ?? space.rentMultipliers[count === 2 ? 1 : 0];
     return (opts.diceTotal ?? 0) * factor * multiplier;
   }
 

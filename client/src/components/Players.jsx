@@ -1,5 +1,5 @@
 /** Panneau des joueuses : solde, propriétés par couleur, état (prison, absente). */
-import { propertiesByGroup, euros } from '../lib/board.js';
+import { propertiesByGroup, money } from '../lib/board.js';
 import TokenIcon from './TokenIcon.jsx';
 import { BillStack } from './Money.jsx';
 
@@ -49,12 +49,12 @@ function PlayerCard({ player, state, isLocal, isActingHere, isCurrent, onFocus }
           </span>
         )}
         <span className="tabular ml-auto shrink-0 font-semibold text-[var(--color-money)]">
-          {euros(player.cash)}
+          {money(state, player.cash)}
         </span>
       </button>
 
       <div className="mt-1.5">
-        <BillStack amount={player.cash} />
+        <BillStack state={state} amount={player.cash} />
       </div>
 
       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-ink-soft">

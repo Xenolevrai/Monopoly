@@ -32,7 +32,7 @@ export function moveTo(state, playerId, target, collectGoSalary = true) {
 }
 
 function collectSalary(state, playerId) {
-  credit(state, playerId, config(state).money.goSalary, 'passage par la case Départ');
+  credit(state, playerId, config(state).currency.goBonus, 'passage par la case Départ');
 }
 
 /** Envoie en prison : pas de salaire, pas de tour supplémentaire. */
@@ -48,7 +48,7 @@ export function sendToJail(state, playerId) {
 
 /**
  * Applique l'effet de la case sur laquelle la joueuse vient d'arriver.
- * @param {{ diceTotal?: number, rentMultiplier?: number }} [ctx]
+ * @param {{ diceTotal?: number, rentMultiplier?: number, utilityFactor?: number }} [ctx]
  */
 export function resolveLanding(state, playerId, ctx = {}) {
   const player = playerById(state, playerId);
@@ -126,6 +126,7 @@ function resolveOwnable(state, player, space, ctx) {
   const rent = rentFor(state, space.id, {
     diceTotal: ctx.diceTotal ?? 0,
     multiplier: ctx.rentMultiplier ?? 1,
+    utilityFactor: ctx.utilityFactor,
   });
   if (rent <= 0) return;
 

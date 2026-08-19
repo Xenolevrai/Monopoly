@@ -5,11 +5,12 @@
  * c'est littéralement la règle « remettre la carte sous la pile ». Les deux
  * cartes « libérée de prison » quittent la file tant qu'une joueuse les détient.
  */
-import { cardsOf, getEdition } from '../../shared/index.js';
+import { cardsOf, getEdition, boardOf } from '../../shared/index.js';
 import { log, euros } from './log.js';
 import { playerById, buildingsOf, activePlayers } from './queries.js';
 import { credit, charge } from './money.js';
 import { advance, moveTo, sendToJail, resolveLanding } from './movement.js';
+import { rollDice } from './rng.js';
 
 const DECKS = ['chance', 'community_chest'];
 
@@ -82,7 +83,7 @@ export function drawCard(state, playerId, deck, ctx = {}) {
  * Applique la carte qui vient d'être retournée, et la remet sous la pile.
  * Les cartes « libérée de prison » restent en main jusqu'à leur usage.
  */
-export function applyRevealedCard(state, playerId) {
+export function applyRevealedCard(state, playerId, rng = null) {
   const payload = state.pending?.payload;
   const card = payload && cardIndex(state)[payload.cardId];
   if (!card) return { ok: false, error: 'Aucune carte à appliquer.' };
@@ -97,7 +98,7 @@ export function applyRevealedCard(state, playerId) {
   }
 
   state.pending = { kind: null, playerIds: [] };
-  applyCardAction(state, playerId, card.action, { diceTotal: payload.diceTotal ?? 0 });
+  applyCardAction(state, playerId, card.action, { diceTotal: payload.diceTotal ?? 0, rng });
   return { ok: true, card };
 }
 
@@ -149,6 +150,27 @@ export function applyCardAction(state, playerId, action, ctx = {}) {
       return;
     }
 
+    // « Avancez jusqu'à la gare la plus proche » / « au service le plus proche ».
+    // On cherche vers l'avant à partir de la case courante, donc on peut repasser
+    // par Départ et toucher le salaire, comme sur le plateau.
+    case 'nearest': {
+      const target = nearestSpaceOfType(state, player.position, action.spaceType);
+      if (target == null) {
+        log(state, 'card', `Aucune case de ce type sur ce plateau.`, { playerId });
+        return;
+      }
+      moveTo(state, playerId, target, true);
+      // Une gare atteinte par carte se paie au double du tarif ; un service se
+      // paie au multiple imposé par la carte, relancé sur un nouveau jet.
+      const reroll = action.rerollDice && ctx.rng ? rollTotal(ctx.rng, state) : (ctx.diceTotal ?? 0);
+      resolveLanding(state, playerId, {
+        diceTotal: reroll,
+        rentMultiplier: action.rentMultiplier ?? 1,
+        utilityFactor: action.utilityFactor,
+      });
+      return;
+    }
+
     case 'go_to_jail':
       sendToJail(state, playerId);
       return;
@@ -161,6 +183,18 @@ export function applyCardAction(state, playerId, action, ctx = {}) {
         return;
       }
       charge(state, playerId, total, `réparations (${houses} maison(s), ${hotels} hôtel(s))`);
+      return;
+    }
+
+    // « Vous êtes élue présidente du conseil : versez 50 à chaque joueuse. »
+    // On paie une par une, chacune étant créditée : si la somme totale dépasse
+    // le solde, `charge` ouvre une dette comme n'importe quel autre paiement.
+    case 'pay_to_each': {
+      for (const other of activePlayers(state)) {
+        if (other.id === playerId) continue;
+        charge(state, playerId, action.amount, `versement à ${other.name}`, other.id);
+        if (state.debt) return;
+      }
       return;
     }
 
@@ -194,6 +228,22 @@ export function applyCardAction(state, playerId, action, ctx = {}) {
     default:
       log(state, 'error', `Effet de carte inconnu : ${action.type}`, { action });
   }
+}
+
+/** La prochaine case d'un type donné en avançant, ou null si le plateau n'en a pas. */
+function nearestSpaceOfType(state, from, spaceType) {
+  const board = boardOf(state);
+  for (let step = 1; step <= board.length; step++) {
+    const id = (from + step) % board.length;
+    if (board[id].type === spaceType) return id;
+  }
+  return null;
+}
+
+/** Un nouveau jet, pour les cartes qui l'exigent avant de calculer un loyer. */
+function rollTotal(rng, state) {
+  const { count, sides } = getEdition(state.editionId).dice;
+  return rollDice(rng, count, sides).reduce((a, b) => a + b, 0);
 }
 
 /**

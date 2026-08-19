@@ -6,7 +6,7 @@
  * podium, le détail du patrimoine de chacune, et on repart de là — soit en
  * regardant une dernière fois le plateau, soit en quittant pour rejouer.
  */
-import { euros } from '../lib/board.js';
+import { money } from '../lib/board.js';
 import TokenIcon from './TokenIcon.jsx';
 
 const MEDALS = ['🥇', '🥈', '🥉'];
@@ -82,13 +82,13 @@ export default function GameOver({ state, onLeave, onClose }) {
                       <p className="mt-0.5 text-[11px] text-ink-soft">
                         {entry.bankrupt
                           ? 'éliminée en cours de partie'
-                          : `${euros(entry.cash)} en poche · ${entry.properties} propriété${
+                          : `${money(state, entry.cash)} en poche · ${entry.properties} propriété${
                               entry.properties > 1 ? 's' : ''
                             } · ${entry.buildings} construction${entry.buildings > 1 ? 's' : ''}`}
                       </p>
                     </div>
                     <span className="tabular ml-auto shrink-0 font-condensed text-xl text-[var(--color-money)]">
-                      {entry.bankrupt ? '—' : euros(entry.worth)}
+                      {entry.bankrupt ? '—' : money(state, entry.worth)}
                     </span>
                   </div>
                 </li>

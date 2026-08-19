@@ -181,7 +181,7 @@ export function createPlayer({ id, name, token, color, order, edition }) {
     name,
     token,
     color,
-    cash: config.money.startingAmount,
+    cash: config.currency.startingAmount,
     position: 0,
     inJail: false,
     jailTurns: 0,

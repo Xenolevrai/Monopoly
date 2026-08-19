@@ -7,7 +7,7 @@
  * la joueuse du poste à qui le jeu demande quelque chose.
  */
 import { useState } from 'react';
-import { boardOf, groupsOf, euros } from '../lib/board.js';
+import { boardOf, groupsOf, money, buildingLabels, editionFor } from '../lib/board.js';
 import { sendAction } from '../lib/socket.js';
 import TokenIcon from './TokenIcon.jsx';
 import { BillStack } from './Money.jsx';
@@ -36,18 +36,22 @@ export function PropertyCard({ state, spaceId }) {
   const space = boardOf(state)[spaceId];
   if (!space) return null;
   const color = space.group ? groupsOf(state)[space.group]?.color : null;
+  const labels = buildingLabels(state);
   const rows =
     space.type === 'property'
       ? [
           ['Loyer terrain nu', space.rent[0]],
-          ['Avec 1 maison', space.rent[1]],
-          ['Avec 2 maisons', space.rent[2]],
-          ['Avec 3 maisons', space.rent[3]],
-          ['Avec 4 maisons', space.rent[4]],
-          ['Avec hôtel', space.rent[5]],
+          [`Avec 1 ${labels.house.toLowerCase()}`, space.rent[1]],
+          [`Avec 2 ${labels.houses.toLowerCase()}`, space.rent[2]],
+          [`Avec 3 ${labels.houses.toLowerCase()}`, space.rent[3]],
+          [`Avec 4 ${labels.houses.toLowerCase()}`, space.rent[4]],
+          [`Avec ${labels.hotel.toLowerCase()}`, space.rent[5]],
         ]
       : space.type === 'railroad'
-        ? space.rent.map((r, i) => [`${i + 1} gare${i ? 's' : ''} possédée${i ? 's' : ''}`, r])
+        ? space.rent.map((r, i) => [
+            `${i + 1} ${groupsOf(state)[space.group]?.label ?? 'gare'}${i ? 's' : ''} possédée${i ? 's' : ''}`,
+            r,
+          ])
         : [];
 
   return (
@@ -70,7 +74,7 @@ export function PropertyCard({ state, spaceId }) {
               {rows.map(([label, value]) => (
                 <tr key={label}>
                   <td className="py-px text-ink-soft">{label}</td>
-                  <td className="tabular py-px text-right font-medium">{euros(value)}</td>
+                  <td className="tabular py-px text-right font-medium">{money(state, value)}</td>
                 </tr>
               ))}
             </tbody>
@@ -78,24 +82,26 @@ export function PropertyCard({ state, spaceId }) {
         )}
         {space.type === 'utility' && (
           <p className="text-[11px] text-ink-soft">
-            Loyer : 4 × le jet de dés, ou 10 × si les deux compagnies sont possédées.
+            Loyer : {space.rentMultipliers[0]} × le jet de dés, ou {space.rentMultipliers[1]} × si les
+            deux sont possédées.
           </p>
         )}
         <div className="mt-2 border-t border-black/15 pt-1.5 text-[11px] text-ink-soft">
-          <p className="tabular">Prix d'achat : {euros(space.price)}</p>
+          <p className="tabular">Prix d'achat : {money(state, space.price)}</p>
           {space.houseCost && (
             <p className="tabular">
-              Maison : {euros(space.houseCost)} · Hôtel : {euros(space.houseCost)} + 4 maisons
+              {labels.house} : {money(state, space.houseCost)} · {labels.hotel} :{' '}
+              {money(state, space.houseCost)} + 4 {labels.houses.toLowerCase()}
             </p>
           )}
-          <p className="tabular">Valeur hypothécaire : {euros(space.mortgage)}</p>
+          <p className="tabular">Valeur hypothécaire : {money(state, space.mortgage)}</p>
         </div>
       </div>
     </div>
   );
 }
 
-function Roll({ payload, actor }) {
+function Roll({ state, payload, actor }) {
   if (!payload?.inJail) {
     return <Button onClick={() => sendAction({ type: 'ROLL_DICE' }, actor)}>Lancer les dés</Button>;
   }
@@ -112,7 +118,7 @@ function Roll({ payload, actor }) {
           disabled={!payload.canPayBail}
           onClick={() => sendAction({ type: 'PAY_BAIL' }, actor)}
         >
-          Payer {euros(payload.bail)}
+          Payer {money(state, payload.bail)}
         </Button>
         {payload.hasJailCard && (
           <Button tone="ghost" onClick={() => sendAction({ type: 'USE_JAIL_CARD' }, actor)}>
@@ -135,7 +141,7 @@ function BuyOrAuction({ state, me, payload, actor }) {
       <PropertyCard state={state} spaceId={payload.spaceId} />
       <div className="flex flex-wrap gap-2">
         <Button disabled={!canAfford} onClick={() => sendAction({ type: 'BUY_PROPERTY' }, actor)}>
-          Acheter — {euros(payload.price)}
+          Acheter — {money(state, payload.price)}
         </Button>
         <Button tone="ghost" onClick={() => sendAction({ type: 'DECLINE_PROPERTY' }, actor)}>
           Refuser (enchère)
@@ -170,7 +176,7 @@ function Auction({ state, me, actor }) {
     <div className="space-y-3">
       <PropertyCard state={state} spaceId={auction.spaceId} />
       <p className="text-xs text-ink-soft">
-        Enchère en cours : <span className="tabular font-semibold">{euros(auction.highestBid)}</span>
+        Enchère en cours : <span className="tabular font-semibold">{money(state, auction.highestBid)}</span>
         {highest && <> — meilleure offre de {highest.name}</>}
       </p>
       <div className="flex flex-wrap items-center gap-2">
@@ -219,7 +225,7 @@ function Debt({ state, me, payload, actor, onOpenTrade, onOpenSettlement }) {
     <div className="space-y-2">
       <p className="text-sm">
         {creditor ? 'Loyer' : 'À payer'} :{' '}
-        <span className="tabular font-semibold text-[var(--color-accent)]">{euros(payload.amount)}</span>
+        <span className="tabular font-semibold text-[var(--color-accent)]">{money(state, payload.amount)}</span>
         {creditor ? ` pour ${creditor.name}` : ' à la banque'} ({payload.reason}).
       </p>
 
@@ -227,13 +233,13 @@ function Debt({ state, me, payload, actor, onOpenTrade, onOpenSettlement }) {
       {hasCash && (
         <div className="rounded border border-black/10 bg-white p-2">
           <p className="mb-1 text-[11px] text-ink-soft">Les billets à sortir</p>
-          <BillStack amount={payload.amount} />
+          <BillStack state={state} amount={payload.amount} />
         </div>
       )}
 
       <div className="flex flex-wrap gap-2">
         <Button disabled={!hasCash} onClick={() => sendAction({ type: 'PAY_DEBT' }, actor)}>
-          Payer {euros(payload.amount)}
+          Payer {money(state, payload.amount)}
         </Button>
         {creditor && (
           <Button tone="ghost" onClick={onOpenSettlement}>
@@ -269,6 +275,7 @@ function Manage({ state, me }) {
   if (!owned.length) return null;
   const board = boardOf(state);
   const groups = groupsOf(state);
+  const labels = buildingLabels(state);
 
   return (
     <div className="space-y-1.5">
@@ -315,7 +322,7 @@ function Manage({ state, me }) {
                     <>
                       <button
                         className={btn}
-                        title="Construire"
+                        title={`Construire (${labels.house.toLowerCase()})`}
                         onClick={() => sendAction({ type: 'BUILD_HOUSE', spaceId: prop.spaceId }, me.id)}
                       >
                         +
@@ -323,7 +330,7 @@ function Manage({ state, me }) {
                       {level > 0 && (
                         <button
                           className={btn}
-                          title="Revendre une construction"
+                          title={`Revendre (${labels.house.toLowerCase()})`}
                           onClick={() => sendAction({ type: 'SELL_BUILDING', spaceId: prop.spaceId }, me.id)}
                         >
                           −
@@ -336,7 +343,7 @@ function Manage({ state, me }) {
                       className={btn}
                       onClick={() => sendAction({ type: 'UNMORTGAGE', spaceId: prop.spaceId }, me.id)}
                     >
-                      Lever ({euros(Math.ceil(space.mortgage * 1.1))})
+                      Lever ({money(state, Math.ceil(space.mortgage * 1.1))})
                     </button>
                   ) : (
                     level === 0 && (
@@ -344,7 +351,7 @@ function Manage({ state, me }) {
                         className={btn}
                         onClick={() => sendAction({ type: 'MORTGAGE', spaceId: prop.spaceId }, me.id)}
                       >
-                        Hypothéquer ({euros(space.mortgage)})
+                        Hypothéquer ({money(state, space.mortgage)})
                       </button>
                     )
                   )}
@@ -391,7 +398,7 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
                   {player && <TokenIcon token={player.token} color={player.color} className="h-4 w-4" />}
                   <span className="font-condensed uppercase">{entry.name}</span>
                   <span className="tabular ml-auto font-semibold text-[var(--color-money)]">
-                    {euros(entry.worth)}
+                    {money(state, entry.worth)}
                   </span>
                 </li>
               );
@@ -435,11 +442,13 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
         </p>
       )}
 
-      {mineTurn && pending.kind === 'roll' && <Roll payload={pending.payload} actor={actor} />}
+      {mineTurn && pending.kind === 'roll' && (
+        <Roll state={state} payload={pending.payload} actor={actor} />
+      )}
       {mineTurn && pending.kind === 'draw_card' && (
         <div className="space-y-2">
           <p className="text-sm">
-            {pending.payload.deck === 'chance' ? 'Case Chance' : 'Caisse de Communauté'} : piochez la
+            {editionFor(state).theming?.decks?.[pending.payload.deck]?.label} : piochez la
             carte du dessus du tas, au centre du plateau.
           </p>
           <Button onClick={() => sendAction({ type: 'DRAW_CARD' }, actor)}>Piocher une carte</Button>

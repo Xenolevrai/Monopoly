@@ -1,0 +1,273 @@
+{
+  "chance": [
+    {
+      "id": "hp-sort-01",
+      "text": "Avancez jusqu'à la case Départ. Touchez 200 Gallions.",
+      "action": {
+        "type": "move_to",
+        "target": 0,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "hp-sort-02",
+      "text": "Rendez-vous à la Banque des Sorciers Gringotts.",
+      "action": {
+        "type": "move_to",
+        "target": 39,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "hp-sort-03",
+      "text": "Rendez-vous chez Fleury et Bott. Si vous passez par la case Départ, touchez 200 Gallions.",
+      "action": {
+        "type": "move_to",
+        "target": 11,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "hp-sort-04",
+      "text": "Avancez jusqu'au Terrier. Si vous passez par la case Départ, touchez 200 Gallions.",
+      "action": {
+        "type": "move_to",
+        "target": 19,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "hp-sort-05",
+      "text": "Avancez jusqu'au moyen de transport magique le plus proche. Si une joueuse le possède, payez-lui le double du tarif.",
+      "action": {
+        "type": "nearest",
+        "spaceType": "railroad",
+        "rentMultiplier": 2
+      }
+    },
+    {
+      "id": "hp-sort-06",
+      "text": "Avancez jusqu'au moyen de transport magique le plus proche. Si une joueuse le possède, payez-lui le double du tarif.",
+      "action": {
+        "type": "nearest",
+        "spaceType": "railroad",
+        "rentMultiplier": 2
+      }
+    },
+    {
+      "id": "hp-sort-07",
+      "text": "Avancez jusqu'au service magique le plus proche. Relancez les dés et payez dix fois le résultat à sa propriétaire.",
+      "action": {
+        "type": "nearest",
+        "spaceType": "utility",
+        "utilityFactor": 10,
+        "rerollDice": true
+      }
+    },
+    {
+      "id": "hp-sort-08",
+      "text": "Prenez le Poudlard Express. Si vous passez par la case Départ, touchez 200 Gallions.",
+      "action": {
+        "type": "move_to",
+        "target": 5,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "hp-sort-09",
+      "text": "Gringotts vous verse un dividende de 50 Gallions.",
+      "action": {
+        "type": "collect",
+        "amount": 50
+      }
+    },
+    {
+      "id": "hp-sort-10",
+      "text": "Vous êtes libérée d'Azkaban. Cette carte peut être conservée jusqu'à ce qu'elle soit utilisée ou vendue.",
+      "action": {
+        "type": "get_out_of_jail_free"
+      },
+      "keepable": true
+    },
+    {
+      "id": "hp-sort-11",
+      "text": "Reculez de 3 cases.",
+      "action": {
+        "type": "move_relative",
+        "offset": -3
+      }
+    },
+    {
+      "id": "hp-sort-12",
+      "text": "Allez directement à Azkaban. Ne passez pas par la case Départ, ne touchez pas 200 Gallions.",
+      "action": {
+        "type": "go_to_jail"
+      }
+    },
+    {
+      "id": "hp-sort-13",
+      "text": "Réparations magiques sur vos bâtiments : payez 25 Gallions par chaumière et 100 par château.",
+      "action": {
+        "type": "pay_per_building",
+        "perHouse": 25,
+        "perHotel": 100
+      }
+    },
+    {
+      "id": "hp-sort-14",
+      "text": "Excès de vitesse en balai volant : payez une amende de 15 Gallions.",
+      "action": {
+        "type": "pay",
+        "amount": 15
+      }
+    },
+    {
+      "id": "hp-sort-15",
+      "text": "Vous êtes élue présidente du Club de Bavboules : versez 50 Gallions à chaque joueuse.",
+      "action": {
+        "type": "pay_to_each",
+        "amount": 50
+      }
+    },
+    {
+      "id": "hp-sort-16",
+      "text": "Votre prêt de chaudron arrive à échéance : recevez 150 Gallions.",
+      "action": {
+        "type": "collect",
+        "amount": 150
+      }
+    }
+  ],
+  "community_chest": [
+    {
+      "id": "hp-potion-01",
+      "text": "Avancez jusqu'à la case Départ. Touchez 200 Gallions.",
+      "action": {
+        "type": "move_to",
+        "target": 0,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "hp-potion-02",
+      "text": "Erreur de coffre à Gringotts en votre faveur : recevez 200 Gallions.",
+      "action": {
+        "type": "collect",
+        "amount": 200
+      }
+    },
+    {
+      "id": "hp-potion-03",
+      "text": "Frais de soins à Sainte-Mangouste : payez 50 Gallions.",
+      "action": {
+        "type": "pay",
+        "amount": 50
+      }
+    },
+    {
+      "id": "hp-potion-04",
+      "text": "Vente d'ingrédients de potions : recevez 50 Gallions.",
+      "action": {
+        "type": "collect",
+        "amount": 50
+      }
+    },
+    {
+      "id": "hp-potion-05",
+      "text": "Vous êtes libérée d'Azkaban. Cette carte peut être conservée jusqu'à ce qu'elle soit utilisée ou vendue.",
+      "action": {
+        "type": "get_out_of_jail_free"
+      },
+      "keepable": true
+    },
+    {
+      "id": "hp-potion-06",
+      "text": "Allez directement à Azkaban. Ne passez pas par la case Départ, ne touchez pas 200 Gallions.",
+      "action": {
+        "type": "go_to_jail"
+      }
+    },
+    {
+      "id": "hp-potion-07",
+      "text": "Fête d'anniversaire dans la Grande Salle : chaque joueuse vous donne 10 Gallions.",
+      "action": {
+        "type": "collect_from_each",
+        "amount": 10
+      }
+    },
+    {
+      "id": "hp-potion-08",
+      "text": "Remboursement de taxe par le Ministère : recevez 20 Gallions.",
+      "action": {
+        "type": "collect",
+        "amount": 20
+      }
+    },
+    {
+      "id": "hp-potion-09",
+      "text": "Héritage d'un vieux parent sorcier : recevez 100 Gallions.",
+      "action": {
+        "type": "collect",
+        "amount": 100
+      }
+    },
+    {
+      "id": "hp-potion-10",
+      "text": "Deuxième prix au Tournoi de Quidditch : recevez 10 Gallions.",
+      "action": {
+        "type": "collect",
+        "amount": 10
+      }
+    },
+    {
+      "id": "hp-potion-11",
+      "text": "Rendez-vous à la Cabane de Hagrid. Si vous passez par la case Départ, touchez 200 Gallions.",
+      "action": {
+        "type": "move_to",
+        "target": 3,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "hp-potion-12",
+      "text": "Frais de scolarité et livres de Poudlard : payez 50 Gallions.",
+      "action": {
+        "type": "pay",
+        "amount": 50
+      }
+    },
+    {
+      "id": "hp-potion-13",
+      "text": "Bourse d'excellence en Défense contre les Forces du Mal : recevez 100 Gallions.",
+      "action": {
+        "type": "collect",
+        "amount": 100
+      }
+    },
+    {
+      "id": "hp-potion-14",
+      "text": "Taxes de voirie magique : payez 40 Gallions par chaumière et 115 par château.",
+      "action": {
+        "type": "pay_per_building",
+        "perHouse": 40,
+        "perHotel": 115
+      }
+    },
+    {
+      "id": "hp-potion-15",
+      "text": "Vente aux enchères d'objets magiques : recevez 100 Gallions.",
+      "action": {
+        "type": "collect",
+        "amount": 100
+      }
+    },
+    {
+      "id": "hp-potion-16",
+      "text": "Amende pour usage abusif de la magie : payez 100 Gallions.",
+      "action": {
+        "type": "pay",
+        "amount": 100
+      }
+    }
+  ]
+}

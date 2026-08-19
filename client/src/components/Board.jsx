@@ -11,12 +11,13 @@ import Dice from './Dice.jsx';
 /** Rotation du contenu d'une case selon son côté, comme sur le plateau papier. */
 const ROTATION = { bottom: 0, left: 90, top: 180, right: -90 };
 
-/** Les mentions imprimées sous les quatre coins. */
-const CORNER_NOTE = {
-  0: 'Recevez 200 €',
-  10: 'Simple visite',
-  30: 'Sans passer par Départ',
-};
+/** Les mentions imprimées sous les quatre coins, dans la monnaie de l'édition. */
+function cornerNote(state, id) {
+  if (id === 0) return `Recevez ${money(state, editionFor(state).currency.goBonus)}`;
+  if (id === 10) return 'Simple visite';
+  if (id === 30) return 'Sans passer par Départ';
+  return null;
+}
 
 /** Chance et Caisse de Communauté gardent leur couleur d'origine. */
 const ICON_TINT = { chance: 'text-[var(--color-accent)]', community_chest: 'text-[#2f5c8f]' };
@@ -97,16 +98,20 @@ function Space({ space, state, active, onSelect }) {
           >
             {space.shortName}
           </span>
-          {CORNER_NOTE[space.id] && (
+          {cornerNote(state, space.id) && (
             <span className="font-condensed text-[7px] uppercase leading-tight text-ink-soft">
-              {CORNER_NOTE[space.id]}
+              {cornerNote(state, space.id)}
             </span>
           )}
           {space.price != null && (
-            <span className="tabular font-condensed text-[7px] text-ink-soft">{space.price} €</span>
+            <span className="tabular font-condensed text-[7px] text-ink-soft">
+              {money(state, space.price)}
+            </span>
           )}
           {space.amount != null && (
-            <span className="tabular font-condensed text-[7px] text-ink-soft">{space.amount} €</span>
+            <span className="tabular font-condensed text-[7px] text-ink-soft">
+              {money(state, space.amount)}
+            </span>
           )}
           {prop?.mortgaged && (
             <span className="font-condensed text-[6.5px] uppercase text-[var(--color-accent)]">
@@ -230,7 +235,7 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
             className="mb-2 font-condensed text-base uppercase tracking-[0.2em]"
             style={{ color: editionFor(state).theming?.decks?.[drawnCard.deck]?.color }}
           >
-            {drawnCard.deck === 'chance' ? 'Chance' : 'Caisse de Communauté'}
+            {editionFor(state).theming?.decks?.[drawnCard.deck]?.label ?? drawnCard.deck}
           </p>
           <p className="text-sm leading-snug text-ink">{drawnCard.text}</p>
           {revealed && (

@@ -1,10 +1,13 @@
 /**
- * Les six pions, dessinés à la main en SVG.
+ * Les pions, dessinés à la main en SVG — six par édition.
  *
  * Chacun est une silhouette pleine dans `currentColor`, avec quelques détails
  * en réserve : lisibles à 14 px sur une case comme à 64 px dans le lobby.
  * Ce sont des dessins originaux, dans l'esprit des pions d'un jeu de plateau —
  * aucun visuel de marque n'est repris.
+ *
+ * Une édition qui déclare un pion sans silhouette ici retombe sur une pastille
+ * neutre : elle reste jouable, simplement moins jolie.
  */
 
 const SHAPES = {
@@ -83,13 +86,172 @@ const SHAPES = {
       <path d="M25 48h18c.9 0 1.6.7 1.6 1.6S43.9 51 43 51H25c-.9 0-1.6-.7-1.6-1.6S24.1 48 25 48z" />
     </>
   ),
+
+  // — Poudlard ————————————————————————————————————————
+
+  // Baguette : une tige effilée en diagonale, poignée baguée, étincelles.
+  baguette: (
+    <>
+      <path d="M44.8 12.6c1 1 1 2.6 0 3.6L23.4 37.6c-1 1-2.6 1-3.6 0s-1-2.6 0-3.6L41.2 12.6c1-1 2.6-1 3.6 0z" />
+      <path d="M24.6 32.4l7 7-6.4 6.4c-.6.6-1.4.9-2.2.7l-5.6-1.3-1.3-5.6c-.2-.8.1-1.7.7-2.2z" />
+      <rect x="26.4" y="30.2" width="10" height="3.2" rx="1.6" transform="rotate(-45 31.4 31.8)" fill="#fff" opacity=".45" />
+      <g fill="#fff" opacity=".75">
+        <path d="M50 20l1.1 3.1 3.1 1.1-3.1 1.1L50 28.4l-1.1-3.1-3.1-1.1 3.1-1.1z" />
+        <path d="M42 6l.8 2.2 2.2.8-2.2.8L42 12l-.8-2.2-2.2-.8 2.2-.8z" />
+      </g>
+    </>
+  ),
+
+  // Chaudron : panse ronde, large rebord, trois pieds, bulles.
+  chaudron: (
+    <>
+      <path d="M17 26h30c1 0 1.7.9 1.5 1.9l-2.8 14.6A8 8 0 0138 49H26a8 8 0 01-7.7-6.5L15.5 27.9c-.2-1 .5-1.9 1.5-1.9z" />
+      <rect x="12" y="22.6" width="40" height="5.2" rx="2.6" />
+      <path d="M21 32h22l-1.8 9.4c-.4 2-2.1 3.4-4.1 3.4h-10c-2 0-3.7-1.4-4.1-3.4z" fill="#fff" opacity=".28" />
+      <path d="M22 48.6l-2.4 4.2c-.5.9-1.9.1-1.4-.8l2.3-4.1zM42 48.6l2.4 4.2c.5.9 1.9.1 1.4-.8l-2.3-4.1zM32 49.4v4.4c0 1-1.6 1-1.6 0v-4.4z" />
+      <g fill="#fff" opacity=".7">
+        <circle cx="27" cy="17" r="2.6" />
+        <circle cx="35" cy="12.5" r="3.4" />
+        <circle cx="40.5" cy="18.5" r="1.9" />
+      </g>
+    </>
+  ),
+
+  // Vif d'or : une sphère nervurée entre deux ailes déployées.
+  vif: (
+    <>
+      <circle cx="32" cy="34" r="10" />
+      <path d="M22.6 30.4h18.8v2.2H22.6zM24 38.6h16v2.2H24z" fill="#fff" opacity=".4" />
+      <path d="M23 30c-4.6-6.4-11.6-9.6-17.4-8.4-.9.2-1.1 1.4-.3 1.9 5 3 8.6 7.8 10 13.4.2 1 1.5 1.2 2.1.4z" />
+      <path d="M41 30c4.6-6.4 11.6-9.6 17.4-8.4.9.2 1.1 1.4.3 1.9-5 3-8.6 7.8-10 13.4-.2 1-1.5 1.2-2.1.4z" />
+      <circle cx="28.6" cy="30.6" r="2.2" fill="#fff" opacity=".5" />
+    </>
+  ),
+
+  // Hibou : corps trapu, aigrettes, grands yeux ronds.
+  hibou: (
+    <>
+      <path d="M32 13c8.3 0 15 7.4 15 16.5S40.3 50 32 50s-15-11.4-15-20.5S23.7 13 32 13z" />
+      <path d="M19.6 13.4l6.4 5.2c.7.6.2 1.8-.7 1.7l-7-.9c-.6-.1-1-.7-.8-1.3l1.4-4.3c.2-.7 1.1-.9 1.7-.4zM44.4 13.4l-6.4 5.2c-.7.6-.2 1.8.7 1.7l7-.9c.6-.1 1-.7.8-1.3l-1.4-4.3c-.2-.7-1.1-.9-1.7-.4z" />
+      <g fill="#fff" opacity=".85">
+        <circle cx="26" cy="27" r="5.4" />
+        <circle cx="38" cy="27" r="5.4" />
+      </g>
+      <circle cx="26" cy="27" r="2.2" />
+      <circle cx="38" cy="27" r="2.2" />
+      <path d="M32 31.6l3 4.2c.4.6 0 1.4-.7 1.4h-4.6c-.7 0-1.1-.8-.7-1.4z" fill="#fff" opacity=".6" />
+      <path d="M26 49l-2.6 4c-.5.8-1.8.1-1.3-.8l2.4-3.9zM38 49l2.6 4c.5.8 1.8.1 1.3-.8l-2.4-3.9z" />
+    </>
+  ),
+
+  // Balai : long manche en diagonale et brindilles liées.
+  balai: (
+    <>
+      <path d="M14.4 13.6c1-1 2.6-1 3.6 0l20 20-3.6 3.6-20-20c-1-1-1-2.6 0-3.6z" />
+      <path d="M36 32.4l4 4-3.6 3.6-4-4z" fill="#fff" opacity=".45" />
+      <path d="M39.6 35.6l4.4 4.4c.6.6.7 1.6.2 2.3L36 53.4c-.7 1-2.2 1-2.9 0l-6-8.4c-.5-.7-.4-1.7.2-2.3z" />
+      <g stroke="#fff" strokeWidth="1.1" opacity=".4" fill="none">
+        <path d="M38 41l-4 10M41.5 43l-3 9M34.5 43.5l-2 8" />
+      </g>
+      <rect x="36.4" y="35.6" width="9.4" height="3.4" rx="1.7" transform="rotate(45 41.1 37.3)" fill="#fff" opacity=".55" />
+    </>
+  ),
+
+  // Choixpeau : cône avachi, large bord, pli qui fait un visage.
+  choixpeau: (
+    <>
+      <path d="M31 10c1.6-1.2 3.4.2 3.2 2l-1 9.4c2.6 5 5.6 10.4 8.4 14.8 1 1.6-.4 3.4-2.2 3l-7-1.6-6.6 2.4c-1.8.6-3.4-1.2-2.6-2.9l6.2-13.2-1.4-11c-.2-1.3.4-2.2 1-2.9z" />
+      <path d="M22.6 36.4h19.8c5.6 0 10.6 2.2 10.6 4.8s-9.4 5.6-21 5.6-21-3-21-5.6 6-4.8 11.6-4.8z" />
+      <path d="M13.6 40.6c3.2-1.6 10-2.6 18.4-2.6s15.2 1 18.4 2.6c-3.2 1.8-10.2 3-18.4 3s-15.2-1.2-18.4-3z" fill="#fff" opacity=".25" />
+      <path d="M28.4 25.6c1.8-.4 3.4.6 4.6 2.2.4.6-.2 1.4-.9 1.1-1.4-.6-2.8-.8-4-.4-.8.2-1.2-1-.6-1.5z" fill="#fff" opacity=".5" />
+      <ellipse cx="29.6" cy="21.4" rx="1.7" ry="2.2" fill="#fff" opacity=".55" />
+    </>
+  ),
+
+  // — Avengers ————————————————————————————————————————
+
+  // Marteau : tête rectangulaire massive et manche sanglé.
+  marteau: (
+    <>
+      <path d="M16 12h32c1.7 0 3 1.3 3 3v14c0 1.7-1.3 3-3 3H16c-1.7 0-3-1.3-3-3V15c0-1.7 1.3-3 3-3z" />
+      <rect x="13" y="18" width="38" height="3.6" fill="#fff" opacity=".3" />
+      <rect x="19" y="15.4" width="4" height="13.2" rx="1.4" fill="#fff" opacity=".22" />
+      <rect x="41" y="15.4" width="4" height="13.2" rx="1.4" fill="#fff" opacity=".22" />
+      <rect x="28.4" y="32" width="7.2" height="21" rx="1.6" />
+      <path d="M27.6 49.4h8.8c.7 0 1.2.6 1.2 1.3l-.4 3.4c-.1.7-.7 1.2-1.4 1.2h-7.6c-.7 0-1.3-.5-1.4-1.2l-.4-3.4c0-.7.5-1.3 1.2-1.3z" />
+      <g fill="#fff" opacity=".35">
+        <rect x="28.4" y="36" width="7.2" height="1.6" />
+        <rect x="28.4" y="41" width="7.2" height="1.6" />
+      </g>
+    </>
+  ),
+
+  // Bouclier : disque à anneaux concentriques et étoile centrale.
+  bouclier: (
+    <>
+      <circle cx="32" cy="32" r="22" />
+      <circle cx="32" cy="32" r="17" fill="#fff" opacity=".28" />
+      <circle cx="32" cy="32" r="12" />
+      <circle cx="32" cy="32" r="7.6" fill="#fff" opacity=".28" />
+      <path d="M32 25l1.9 4.2 4.6.5-3.4 3.1 1 4.5-4.1-2.3-4.1 2.3 1-4.5-3.4-3.1 4.6-.5z" fill="#fff" opacity=".9" />
+    </>
+  ),
+
+  // Casque : plastron facial et fentes lumineuses.
+  casque: (
+    <>
+      <path d="M32 10c9.4 0 15 6 15 15.4 0 7-1.4 13.6-4 19.4-1.4 3.2-4 5.2-7.4 5.2h-7.2c-3.4 0-6-2-7.4-5.2-2.6-5.8-4-12.4-4-19.4C17 16 22.6 10 32 10z" />
+      <path d="M21.6 27.4c2.6-1.6 6-2.4 10.4-2.4s7.8.8 10.4 2.4l-1.4 5c-.3 1-1.4 1.5-2.3 1l-5-2.4c-1-.5-2.3-.5-3.3 0l-5 2.4c-1 .5-2-.0-2.3-1z" fill="#fff" opacity=".85" />
+      <path d="M25.6 39h12.8c.9 0 1.5.8 1.3 1.7l-.6 2.6c-.2.8-.9 1.3-1.7 1.3h-10.8c-.8 0-1.5-.5-1.7-1.3l-.6-2.6c-.2-.9.4-1.7 1.3-1.7z" fill="#fff" opacity=".35" />
+      <path d="M22.4 13.6C25 11.4 28.2 10.4 32 10.4s7 1 9.6 3.2c-2.8 1.4-6 2.1-9.6 2.1s-6.8-.7-9.6-2.1z" fill="#fff" opacity=".22" />
+    </>
+  ),
+
+  // Gantelet : gant fermé, six pierres serties sur le dos.
+  gantelet: (
+    <>
+      <path d="M20 24h20c2.8 0 5 2.2 5 5v13c0 5-4 9-9 9h-9c-5 0-9-4-9-9V29c0-2.8 2.2-5 5-5z" />
+      <path d="M22 14.6c0-1.4 1.2-2.6 2.6-2.6s2.6 1.2 2.6 2.6V24H22zM29 12.6c0-1.4 1.2-2.6 2.6-2.6s2.6 1.2 2.6 2.6V24H29zM36 15.6c0-1.4 1.2-2.6 2.6-2.6s2.6 1.2 2.6 2.6V24H36z" />
+      <path d="M45 27.6c2.6 0 4.6 2.1 4.6 4.7S47.6 37 45 37z" />
+      <g fill="#fff" opacity=".85">
+        <circle cx="25.5" cy="31.5" r="2.1" />
+        <circle cx="32" cy="30.5" r="2.1" />
+        <circle cx="38.5" cy="31.5" r="2.1" />
+        <circle cx="25.5" cy="38.5" r="2.1" />
+        <circle cx="32" cy="37.5" r="2.1" />
+        <circle cx="38.5" cy="38.5" r="2.1" />
+      </g>
+    </>
+  ),
+
+  // Arc : arc bandé et flèche encochée.
+  arc: (
+    <>
+      <path d="M44 8c.9-.5 1.9.4 1.5 1.4C42.9 16.3 41.4 24 41.4 32s1.5 15.7 4.1 22.6c.4 1-.6 1.9-1.5 1.4-7.4-4.3-12.3-13.4-12.3-24s4.9-19.7 12.3-24zm-2.6 6.9C36.9 19.4 34.2 25.4 34.2 32s2.7 12.6 7.2 17.1A56 56 0 0138.6 32c0-6 .9-11.7 2.8-17.1z" />
+      <path d="M44.6 10.6c.7-.3 1.4.5 1 1.1L38 24.4l-1.8-1.5zM44.6 53.4c.7.3 1.4-.5 1-1.1L38 39.6l-1.8 1.5z" opacity=".8" />
+      <rect x="12" y="30.6" width="26" height="2.8" rx="1.4" />
+      <path d="M38 28l6.4 4-6.4 4z" />
+      <path d="M12.4 28.4l3.6 3.6-3.6 3.6-2.8-2.6c-.6-.6-.6-1.4 0-2z" fill="#fff" opacity=".5" />
+    </>
+  ),
+
+  // Quinjet : appareil vu de dessus, ailes en flèche et double dérive.
+  quinjet: (
+    <>
+      <path d="M32 7c2.4 0 4.4 2.6 5.2 6.6l1.6 8.4 14.4 9.6c.9.6 1.4 1.6 1.4 2.6v3.4c0 1-.9 1.7-1.9 1.4L39.4 35l-.6 8.6 5.4 4.6c.5.4.8 1 .8 1.7v2.4c0 .9-.9 1.6-1.8 1.3L32 50.4l-11.2 3.2c-.9.3-1.8-.4-1.8-1.3v-2.4c0-.7.3-1.3.8-1.7l5.4-4.6-.6-8.6-13.3 4c-1 .3-1.9-.4-1.9-1.4v-3.4c0-1 .5-2 1.4-2.6l14.4-9.6 1.6-8.4C27.6 9.6 29.6 7 32 7z" />
+      <path d="M32 12.6c1 0 1.9 1.4 2.3 3.6l1 5.4h-6.6l1-5.4c.4-2.2 1.3-3.6 2.3-3.6z" fill="#fff" opacity=".45" />
+      <rect x="29.4" y="27" width="5.2" height="12" rx="2.6" fill="#fff" opacity=".28" />
+    </>
+  ),
 };
 
 /**
  * @param {{ token: string, color?: string, className?: string, title?: string }} props
  */
 export default function TokenIcon({ token, color = 'currentColor', className = '', title }) {
-  const shape = SHAPES[token] ?? SHAPES.chapeau;
+  // Pastille neutre plutôt qu'un chapeau trompeur si l'édition invente un pion
+  // qu'on n'a pas encore dessiné.
+  const shape = SHAPES[token] ?? <circle cx="32" cy="32" r="18" />;
   return (
     <svg
       viewBox="0 0 64 64"

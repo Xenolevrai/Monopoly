@@ -1,0 +1,273 @@
+{
+  "chance": [
+    {
+      "id": "av-shield-01",
+      "text": "Rapport immédiat au QG : avancez jusqu'à la case Départ. Touchez 200 M$.",
+      "action": {
+        "type": "move_to",
+        "target": 0,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "av-shield-02",
+      "text": "Déploiement à la Tour des Avengers.",
+      "action": {
+        "type": "move_to",
+        "target": 39,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "av-shield-03",
+      "text": "Renfort tactique chez Black Panther. Si vous passez par la case Départ, touchez 200 M$.",
+      "action": {
+        "type": "move_to",
+        "target": 11,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "av-shield-04",
+      "text": "Rejoignez le camp de Captain Marvel. Si vous passez par la case Départ, touchez 200 M$.",
+      "action": {
+        "type": "move_to",
+        "target": 19,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "av-shield-05",
+      "text": "Réquisition de transport d’urgence : avancez jusqu’au véhicule tactique le plus proche. Si une joueuse le possède, payez-lui le double du tarif.",
+      "action": {
+        "type": "nearest",
+        "spaceType": "railroad",
+        "rentMultiplier": 2
+      }
+    },
+    {
+      "id": "av-shield-06",
+      "text": "Réquisition de transport d’urgence : avancez jusqu’au véhicule tactique le plus proche. Si une joueuse le possède, payez-lui le double du tarif.",
+      "action": {
+        "type": "nearest",
+        "spaceType": "railroad",
+        "rentMultiplier": 2
+      }
+    },
+    {
+      "id": "av-shield-07",
+      "text": "Inspection technologique : avancez jusqu’à la technologie la plus proche. Relancez les dés et payez dix fois le résultat à sa propriétaire.",
+      "action": {
+        "type": "nearest",
+        "spaceType": "utility",
+        "utilityFactor": 10,
+        "rerollDice": true
+      }
+    },
+    {
+      "id": "av-shield-08",
+      "text": "Vol en Quinjet. Si vous passez par la case Départ, touchez 200 M$.",
+      "action": {
+        "type": "move_to",
+        "target": 5,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "av-shield-09",
+      "text": "Dividendes des technologies Stark : la banque vous verse 50 M$.",
+      "action": {
+        "type": "collect",
+        "amount": 50
+      }
+    },
+    {
+      "id": "av-shield-10",
+      "text": "Autorisation de niveau 7 : vous sortez du Raft. Cette carte peut être conservée jusqu’à ce qu’elle soit utilisée ou vendue.",
+      "action": {
+        "type": "get_out_of_jail_free"
+      },
+      "keepable": true
+    },
+    {
+      "id": "av-shield-11",
+      "text": "Retraite tactique : reculez de 3 cases.",
+      "action": {
+        "type": "move_relative",
+        "offset": -3
+      }
+    },
+    {
+      "id": "av-shield-12",
+      "text": "Enfermée au Raft. Ne passez pas par la case Départ, ne touchez pas 200 M$.",
+      "action": {
+        "type": "go_to_jail"
+      }
+    },
+    {
+      "id": "av-shield-13",
+      "text": "Maintenance de l’armement : payez 25 M$ par base et 100 M$ par quartier général.",
+      "action": {
+        "type": "pay_per_building",
+        "perHouse": 25,
+        "perHotel": 100
+      }
+    },
+    {
+      "id": "av-shield-14",
+      "text": "Excès de vitesse en armure de vol : payez une amende de 15 M$.",
+      "action": {
+        "type": "pay",
+        "amount": 15
+      }
+    },
+    {
+      "id": "av-shield-15",
+      "text": "Financement d’urgence de la coalition : versez 50 M$ à chaque joueuse.",
+      "action": {
+        "type": "pay_to_each",
+        "amount": 50
+      }
+    },
+    {
+      "id": "av-shield-16",
+      "text": "Prime de mission intergalactique réussie : recevez 150 M$.",
+      "action": {
+        "type": "collect",
+        "amount": 150
+      }
+    }
+  ],
+  "community_chest": [
+    {
+      "id": "av-stark-01",
+      "text": "Lancement de mission planétaire : avancez jusqu'à la case Départ. Touchez 200 M$.",
+      "action": {
+        "type": "move_to",
+        "target": 0,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "av-stark-02",
+      "text": "Brevet technologique vendu par Stark : erreur de la banque en votre faveur, recevez 200 M$.",
+      "action": {
+        "type": "collect",
+        "amount": 200
+      }
+    },
+    {
+      "id": "av-stark-03",
+      "text": "Bilan médical d'aptitude au combat : payez 50 M$.",
+      "action": {
+        "type": "pay",
+        "amount": 50
+      }
+    },
+    {
+      "id": "av-stark-04",
+      "text": "Revente de métaux extraterrestres chitauri : recevez 50 M$.",
+      "action": {
+        "type": "collect",
+        "amount": 50
+      }
+    },
+    {
+      "id": "av-stark-05",
+      "text": "Passe diplomatique du Wakanda : vous sortez du Raft. Cette carte peut être conservée jusqu’à ce qu’elle soit utilisée ou vendue.",
+      "action": {
+        "type": "get_out_of_jail_free"
+      },
+      "keepable": true
+    },
+    {
+      "id": "av-stark-06",
+      "text": "Ordre d'arrestation du Secrétaire Ross : allez directement au Raft, sans passer par la case Départ.",
+      "action": {
+        "type": "go_to_jail"
+      }
+    },
+    {
+      "id": "av-stark-07",
+      "text": "Gala caritatif de la Fondation Stark : chaque joueuse vous donne 10 M$.",
+      "action": {
+        "type": "collect_from_each",
+        "amount": 10
+      }
+    },
+    {
+      "id": "av-stark-08",
+      "text": "Remboursement de taxe d'armement : recevez 20 M$.",
+      "action": {
+        "type": "collect",
+        "amount": 20
+      }
+    },
+    {
+      "id": "av-stark-09",
+      "text": "Subvention de recherche de Pym Technologies : recevez 100 M$.",
+      "action": {
+        "type": "collect",
+        "amount": 100
+      }
+    },
+    {
+      "id": "av-stark-10",
+      "text": "Deuxième place au tournoi d'entraînement : recevez 10 M$.",
+      "action": {
+        "type": "collect",
+        "amount": 10
+      }
+    },
+    {
+      "id": "av-stark-11",
+      "text": "Rapport d'évaluation chez Nick Fury : avancez jusqu'à sa case. Si vous passez par la case Départ, touchez 200 M$.",
+      "action": {
+        "type": "move_to",
+        "target": 3,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "av-stark-12",
+      "text": "Dégâts collatéraux lors d’un combat urbain : payez 50 M$ de réparations civiles.",
+      "action": {
+        "type": "pay",
+        "amount": 50
+      }
+    },
+    {
+      "id": "av-stark-13",
+      "text": "Prime pour la capture d'un agent infiltré d'Hydra : recevez 100 M$.",
+      "action": {
+        "type": "collect",
+        "amount": 100
+      }
+    },
+    {
+      "id": "av-stark-14",
+      "text": "Reconstruction post-attaque alien : payez 40 M$ par base et 115 M$ par quartier général.",
+      "action": {
+        "type": "pay_per_building",
+        "perHouse": 40,
+        "perHotel": 115
+      }
+    },
+    {
+      "id": "av-stark-15",
+      "text": "Sauvetage civil héroïque récompensé : recevez 100 M$.",
+      "action": {
+        "type": "collect",
+        "amount": 100
+      }
+    },
+    {
+      "id": "av-stark-16",
+      "text": "Infraction aux Accords de Sokovie : payez une amende de 100 M$.",
+      "action": {
+        "type": "pay",
+        "amount": 100
+      }
+    }
+  ]
+}

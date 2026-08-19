@@ -7,7 +7,7 @@
  *    du poste sont visibles et répondables tout de suite.
  */
 import { useState } from 'react';
-import { boardOf, groupsOf, euros } from '../lib/board.js';
+import { boardOf, groupsOf, money } from '../lib/board.js';
 import { sendAction } from '../lib/socket.js';
 import TokenIcon from './TokenIcon.jsx';
 import { BillPicker } from './Money.jsx';
@@ -35,6 +35,7 @@ function Side({ title, player, state, value, onChange }) {
       <div className="space-y-1">
         <p className="text-[11px] text-ink-soft">Billets posés sur la table</p>
         <BillPicker
+          state={state}
           value={value.cash}
           max={player.cash}
           onChange={(cash) => onChange({ ...value, cash })}
@@ -79,7 +80,7 @@ function Side({ title, player, state, value, onChange }) {
               )}
               <span className="truncate">{space.shortName}</span>
               {prop.mortgaged && <span className="text-[var(--color-accent)]">hyp.</span>}
-              <span className="tabular ml-auto text-ink-soft">{euros(space.price)}</span>
+              <span className="tabular ml-auto text-ink-soft">{money(state, space.price)}</span>
             </button>
           );
         })}
@@ -114,7 +115,7 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
 
   const describe = (side) =>
     [
-      side.cash ? euros(side.cash) : null,
+      side.cash ? money(state, side.cash) : null,
       ...side.spaceIds.map((id) => board[id].shortName),
       side.jailCards ? `${side.jailCards} carte(s) de prison` : null,
     ]
@@ -152,7 +153,7 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
 
         {settleMode && debt && (
           <p className="mb-4 rounded border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/8 p-3 text-xs">
-            {debtor?.name} doit <span className="tabular font-semibold">{euros(debt.amount)}</span> à{' '}
+            {debtor?.name} doit <span className="tabular font-semibold">{money(state, debt.amount)}</span> à{' '}
             {target?.name}. Proposez ce que vous voulez — des propriétés, de l'argent, une carte de
             prison. <strong>Si {target?.name} accepte, la dette est effacée</strong>, quel que soit
             le montant cédé.
@@ -181,7 +182,7 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
                     <span className="font-condensed uppercase">Pour {recipient?.name}</span>
                     {trade.settlesDebt && (
                       <span className="rounded bg-[var(--color-accent)] px-1.5 py-px text-[10px] uppercase text-white">
-                        arrangement — {euros(trade.debtAmount)}
+                        arrangement — {money(state, trade.debtAmount)}
                       </span>
                     )}
                   </p>

@@ -1,26 +1,113 @@
 /** Accueil (créer / rejoindre) puis salon d'attente avec le code à partager. */
 import { useEffect, useState } from 'react';
 import { socket } from '../lib/socket.js';
-import { getEdition, DEFAULT_EDITION } from '../lib/board.js';
+import { getEdition, listEditions, DEFAULT_EDITION } from '../lib/board.js';
 import TokenIcon from './TokenIcon.jsx';
 
-// Avant qu'une partie n'existe (accueil, salon d'attente), il n'y a pas encore
-// d'édition choisie : on affiche celle par défaut.
-const rules = getEdition(DEFAULT_EDITION);
-
-function Logo({ small = false }) {
+/**
+ * Le bandeau titre prend les couleurs de l'édition choisie : on voit à quoi on
+ * s'apprête à jouer avant même d'avoir lu le nom.
+ */
+function Logo({ edition, small = false }) {
+  const accent = edition?.theming?.decks?.chance?.color ?? 'var(--color-accent)';
   return (
     <div className="flex flex-col items-center">
-      <div className="border-y-[3px] border-ink bg-[var(--color-accent)] px-6 py-1.5 shadow-[0_3px_0_rgba(0,0,0,.3)]">
+      <div
+        className="border-y-[3px] border-ink px-6 py-1.5 shadow-[0_3px_0_rgba(0,0,0,.3)]"
+        style={{ backgroundColor: accent }}
+      >
         <p
           className={`font-condensed uppercase tracking-[0.18em] text-[#f7f4ea] ${
             small ? 'text-2xl' : 'text-4xl'
           }`}
         >
-          Monopoly
+          {edition?.theming?.centerTitle ?? 'Monopoly'}
         </p>
       </div>
-      <p className="mt-1.5 font-condensed text-[11px] uppercase tracking-[0.5em] text-ink-soft">Paris</p>
+      <p className="mt-1.5 font-condensed text-[11px] uppercase tracking-[0.5em] text-ink-soft">
+        {edition?.theming?.centerSubtitle ?? 'Paris'}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * La galerie : une carte par édition, avec ce qui change vraiment d'une boîte à
+ * l'autre. On choisit sa boîte avant de créer la partie, comme on la sort de
+ * l'étagère.
+ */
+function EditionGallery({ value, onChange }) {
+  const editions = listEditions();
+  if (editions.length < 2) return null;
+
+  return (
+    <div className="space-y-2">
+      <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
+        Quelle boîte sort-on ?
+      </p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {editions.map((edition) => {
+          const selected = edition.id === value;
+          const accent = edition.theming?.decks?.chance?.color ?? '#b3242c';
+          return (
+            <button
+              key={edition.id}
+              type="button"
+              onClick={() => onChange(edition.id)}
+              className={`flex flex-col items-start gap-1 rounded-lg border-2 p-3 text-left transition-all ${
+                selected
+                  ? 'border-ink bg-white shadow-[0_2px_0_rgba(0,0,0,.25)]'
+                  : 'border-black/12 bg-white/60 hover:bg-white'
+              }`}
+            >
+              <span className="flex w-full items-center gap-2">
+                <span
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-black/25 font-condensed text-[13px] text-white"
+                  style={{ backgroundColor: accent }}
+                >
+                  {edition.theming?.decks?.chance?.glyph ?? '?'}
+                </span>
+                <span className="font-condensed text-[15px] uppercase leading-tight">
+                  {edition.name}
+                </span>
+              </span>
+              <span className="text-[11px] text-ink-soft">{edition.theme}</span>
+              <span className="text-[11px] leading-snug">{edition.summary}</span>
+              <span className="mt-0.5 font-condensed text-[10px] uppercase tracking-wide text-ink-soft">
+                {edition.playerCount.min}–{edition.playerCount.max} joueuses · {edition.boardSize} cases
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Le rappel de ce qui distingue cette édition, pour celles qui rejoignent. */
+function EditionBriefing({ edition }) {
+  const m = edition.mechanics;
+  const points = [
+    `Monnaie : ${edition.currency.label} — ${edition.currency.startingAmount} au départ, ${edition.currency.goBonus} par tour de plateau.`,
+    edition.buildingLabels
+      ? `Constructions : ${edition.buildingLabels.houses.toLowerCase()} et ${edition.buildingLabels.hotels.toLowerCase()}.`
+      : null,
+    m.mortgage ? "L'hypothèque est autorisée." : "Pas d'hypothèque dans cette édition.",
+    m.auctions ? "Refuser d'acheter met la case aux enchères." : null,
+    `Piles : ${Object.values(edition.theming.decks).map((d) => d.label).join(' et ')}.`,
+  ].filter(Boolean);
+
+  return (
+    <div className="rounded border border-black/12 bg-white/60 p-3">
+      <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
+        {edition.name}
+      </p>
+      <p className="mb-1.5 text-[11px] text-ink-soft">{edition.theme}</p>
+      <ul className="space-y-0.5 text-[11px] leading-snug">
+        {points.map((point) => (
+          <li key={point}>· {point}</li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -28,10 +115,10 @@ function Logo({ small = false }) {
 /**
  * Choix du pion : un seul par personne, les pions déjà pris sont barrés.
  */
-function TokenPicker({ value, onChange, taken = [] }) {
+function TokenPicker({ edition, value, onChange, taken = [] }) {
   return (
     <div className="grid grid-cols-3 gap-2">
-      {rules.tokens.map((item) => {
+      {edition.tokens.map((item) => {
         const isTaken = taken.includes(item.id);
         const selected = value === item.id;
         return (
@@ -117,9 +204,18 @@ function ResumeList({ onResume }) {
 export function Home({ error }) {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
-  const [token, setToken] = useState(rules.tokens[0].id);
+  const [editionId, setEditionId] = useState(DEFAULT_EDITION);
+  const edition = getEdition(editionId);
+  const [token, setToken] = useState(edition.tokens[0].id);
 
-  const create = () => socket.emit('game:create', { name, token });
+  // Changer d'édition change la boîte de pions : on reprend le premier de la
+  // nouvelle plutôt que de garder un pion qui n'existe pas ici.
+  const chooseEdition = (id) => {
+    setEditionId(id);
+    setToken(getEdition(id).tokens[0].id);
+  };
+
+  const create = () => socket.emit('game:create', { name, token, editionId });
   const join = () => socket.emit('game:join', { code: code.toUpperCase(), name, token });
 
   /** Reprendre une partie sauvegardée : on se remet dans la peau de sa joueuse. */
@@ -134,8 +230,8 @@ export function Home({ error }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
-      <div className="panel w-full max-w-md space-y-5 rounded-xl p-7">
-        <Logo />
+      <div className="panel w-full max-w-lg space-y-5 rounded-xl p-7">
+        <Logo edition={edition} />
 
         <label className="block font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
           Votre pseudo
@@ -148,10 +244,12 @@ export function Home({ error }) {
           />
         </label>
 
+        <EditionGallery value={editionId} onChange={chooseEdition} />
+
         <div className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
           Votre pion
           <div className="mt-1.5">
-            <TokenPicker value={token} onChange={setToken} />
+            <TokenPicker edition={edition} value={token} onChange={setToken} />
           </div>
         </div>
 
@@ -161,7 +259,7 @@ export function Home({ error }) {
           onClick={create}
           className="w-full rounded bg-[var(--color-accent)] py-2.5 font-condensed text-base uppercase tracking-wide text-white transition-colors hover:bg-[var(--color-accent-deep)] disabled:bg-black/15 disabled:text-black/40"
         >
-          Créer une partie
+          Créer une partie — {edition.name}
         </button>
 
         <div className="flex items-center gap-2 font-condensed text-[10px] uppercase tracking-widest text-ink-soft">
@@ -201,10 +299,10 @@ export function Home({ error }) {
 }
 
 /** Formulaire d'ajout d'une joueuse supplémentaire sur ce même ordinateur. */
-function AddLocalPlayer({ taken, onCancel }) {
-  const free = rules.tokens.find((t) => !taken.includes(t.id));
+function AddLocalPlayer({ edition, taken, onCancel }) {
+  const free = edition.tokens.find((t) => !taken.includes(t.id));
   const [name, setName] = useState('');
-  const [token, setToken] = useState(free?.id ?? rules.tokens[0].id);
+  const [token, setToken] = useState(free?.id ?? edition.tokens[0].id);
 
   const add = () => {
     socket.emit('game:add-local', { name, token });
@@ -222,7 +320,7 @@ function AddLocalPlayer({ taken, onCancel }) {
         className="w-full rounded border border-black/20 bg-white px-3 py-2 text-sm"
         autoFocus
       />
-      <TokenPicker value={token} onChange={setToken} taken={taken} />
+      <TokenPicker edition={edition} value={token} onChange={setToken} taken={taken} />
       <div className="flex gap-2">
         <button
           type="button"
@@ -314,11 +412,12 @@ export function GameMenu({ state, mine, onLeave, onShowRecap }) {
 }
 
 export function WaitingRoom({ state, mine, onLeave }) {
+  const edition = getEdition(state.editionId);
   const localIds = new Set(mine.map((p) => p.id));
   const [copied, setCopied] = useState(false);
   const [adding, setAdding] = useState(false);
   const taken = state.players.map((p) => p.token);
-  const full = state.players.length >= rules.playerCount.max;
+  const full = state.players.length >= edition.playerCount.max;
 
   const copy = async () => {
     try {
@@ -335,7 +434,7 @@ export function WaitingRoom({ state, mine, onLeave }) {
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="panel w-full max-w-lg space-y-5 rounded-xl p-7">
-        <Logo small />
+        <Logo edition={edition} small />
 
         <div className="text-center">
           <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
@@ -355,7 +454,7 @@ export function WaitingRoom({ state, mine, onLeave }) {
 
         <div className="space-y-2">
           <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
-            Joueuses ({state.players.length}/{rules.playerCount.max})
+            Joueuses ({state.players.length}/{edition.playerCount.max})
           </p>
           {state.players.map((player) => (
             <div
@@ -385,7 +484,7 @@ export function WaitingRoom({ state, mine, onLeave }) {
           ))}
 
           {adding ? (
-            <AddLocalPlayer taken={taken} onCancel={() => setAdding(false)} />
+            <AddLocalPlayer edition={edition} taken={taken} onCancel={() => setAdding(false)} />
           ) : (
             <button
               type="button"
@@ -397,6 +496,9 @@ export function WaitingRoom({ state, mine, onLeave }) {
             </button>
           )}
         </div>
+
+        {/* Celles qui arrivent à distance découvrent l'édition choisie ici. */}
+        <EditionBriefing edition={edition} />
 
         <div className="space-y-1.5">
           <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
@@ -422,12 +524,12 @@ export function WaitingRoom({ state, mine, onLeave }) {
             qui a la souris clique. */}
         <button
           type="button"
-          disabled={state.players.length < rules.playerCount.min}
+          disabled={state.players.length < edition.playerCount.min}
           onClick={() => socket.emit('game:start')}
           className="w-full rounded bg-[var(--color-accent)] py-2.5 font-condensed text-base uppercase tracking-wide text-white transition-colors hover:bg-[var(--color-accent-deep)] disabled:bg-black/15 disabled:text-black/40"
         >
-          {state.players.length < rules.playerCount.min
-            ? `Il faut au moins ${rules.playerCount.min} joueuses`
+          {state.players.length < edition.playerCount.min
+            ? `Il faut au moins ${edition.playerCount.min} joueuses`
             : 'Lancer la partie'}
         </button>
         <p className="text-center text-[11px] text-ink-soft">

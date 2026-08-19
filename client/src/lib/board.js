@@ -95,8 +95,19 @@ export function propertiesByGroup(state, playerId) {
 
 /** Formate un montant dans la monnaie de l'édition : 1 500 €, 320 points… */
 export function money(state, amount) {
-  const label = editionFor(state).money.label ?? '€';
+  const label = editionFor(state).currency.label ?? '€';
   return `${Math.round(amount ?? 0).toLocaleString('fr-FR')} ${label}`;
+}
+
+/**
+ * Comment cette édition appelle ses constructions : maisons et hôtels au
+ * classique, chaumières et châteaux à Poudlard, bases et quartiers généraux
+ * chez les Avengers. Le moteur, lui, ne connaît que « maison » et « hôtel ».
+ */
+const DEFAULT_BUILDINGS = { house: 'Maison', houses: 'Maisons', hotel: 'Hôtel', hotels: 'Hôtels' };
+
+export function buildingLabels(state) {
+  return editionFor(state).buildingLabels ?? DEFAULT_BUILDINGS;
 }
 
 /** Raccourci pour les écrans qui n'ont pas l'état sous la main (euros). */
