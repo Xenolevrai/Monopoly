@@ -8,6 +8,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 
 import { createGame } from './engine/index.js';
 import { createRng } from './engine/rng.js';
@@ -20,7 +21,12 @@ const SAVE_DEBOUNCE_MS = 400;
 // jette que ce qui n'a plus été touché depuis un mois.
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
-const DATA_DIR = process.env.MONOPOLY_DATA_DIR ?? path.join(process.cwd(), 'server', 'data');
+// Ancré sur l'emplacement de ce fichier, pas sur le répertoire de lancement :
+// `npm start` depuis un raccourci, un autre terminal ou un autre dossier ne
+// doit jamais faire pointer vers un dossier de sauvegarde différent de celui
+// d'hier — sans quoi les parties « disparaissent » sans la moindre erreur.
+const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
+const DATA_DIR = process.env.MONOPOLY_DATA_DIR ?? path.join(MODULE_DIR, 'data');
 
 /** @type {Map<string, { state: object, rng: object, savedAt: number, timer: any }>} */
 const games = new Map();

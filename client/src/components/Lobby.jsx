@@ -222,20 +222,31 @@ function TokenPicker({ edition, value, onChange, taken = [] }) {
  * sans avoir noté le code la semaine dernière.
  */
 function ResumeList({ t, locale }) {
-  const [games, setGames] = useState([]);
+  // `null` = jamais chargé, `[]` = chargé mais vide : les deux ont un rendu
+  // différent, pour ne pas laisser croire qu'un chargement raté est une liste
+  // vide. On expose un onglet à cliquer plutôt qu'un chargement automatique et
+  // silencieux : sans lui, une partie introuvable ne laissait paraître
+  // strictement rien à l'écran, pas même une erreur.
+  const [expanded, setExpanded] = useState(false);
+  const [games, setGames] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [openCode, setOpenCode] = useState(null);
   const [picked, setPicked] = useState([]);
 
-  // On relit la liste à chaque ouverture de l'accueil : une partie quittée il y
-  // a cinq minutes doit apparaître tout de suite.
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
     fetch('/api/games')
       .then((r) => r.json())
       .then((data) => setGames(data.games ?? []))
-      .catch(() => setGames([]));
-  }, []);
+      .catch(() => setGames([]))
+      .finally(() => setLoading(false));
+  };
 
-  if (!games.length) return null;
+  // On relit la liste à chaque ouverture de l'onglet : une partie quittée il y
+  // a cinq minutes doit apparaître tout de suite.
+  useEffect(() => {
+    if (expanded) load();
+  }, [expanded]);
 
   const when = (at) => {
     if (!at) return '';
@@ -264,78 +275,111 @@ function ResumeList({ t, locale }) {
 
   return (
     <div className="space-y-2">
-      <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center justify-between rounded border border-black/15 bg-white/70 px-3 py-2 font-condensed text-[11px] uppercase tracking-widest text-ink-soft hover:bg-white"
+        aria-expanded={expanded}
+      >
         {t('resumeGame')}
-      </p>
+        <span aria-hidden="true">{expanded ? '▲' : '▼'}</span>
+      </button>
 
-      {games.slice(0, 6).map((game) => {
-        const isOpen = game.code === openCode;
-        return (
-          <div key={game.code} className="overflow-hidden rounded border border-black/12 bg-white/70">
+      {expanded && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="font-condensed text-[10px] uppercase tracking-widest text-ink-soft">
+              {t('seeGamesInProgress')}
+            </p>
             <button
               type="button"
-              onClick={() => open(game.code)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-white"
+              onClick={load}
+              disabled={loading}
+              className="rounded border border-black/15 bg-white px-2 py-0.5 font-condensed text-[10px] uppercase hover:bg-black/5 disabled:opacity-50"
             >
-              <span className="tabular font-condensed text-lg tracking-[0.15em]">{game.code}</span>
-              <span className="flex -space-x-1">
-                {game.players.map((p) => (
-                  <TokenIcon
-                    key={p.id}
-                    token={p.token}
-                    color={p.color}
-                    className="h-5 w-5"
-                    title={p.name}
-                  />
-                ))}
-              </span>
-              <span className="ml-auto text-right text-[11px] leading-tight text-ink-soft">
-                {getEdition(game.editionId, game.locale).name}
-                <br />
-                {t('turn')} {game.turnCount} · {when(game.lastPlayed)}
-              </span>
+              {t('refresh')}
             </button>
+          </div>
 
-            {/* On reprend sa place en se désignant : ni pseudo à retaper, ni code
-                à retrouver, et ça marche depuis un téléphone qui n'a jamais joué. */}
-            {isOpen && (
-              <div className="space-y-2 border-t border-black/10 px-3 py-2.5">
-                <p className="text-[11px] text-ink-soft">
-                  {t('whoResumes')}
-                </p>
-                <div className="space-y-1">
-                  {game.players.map((player) => {
-                    const selected = picked.includes(player.id);
-                    return (
-                      <button
-                        key={player.id}
-                        type="button"
-                        onClick={() => toggle(player.id)}
-                        className={`flex w-full items-center gap-2 rounded border px-2 py-1.5 text-left transition-colors ${
-                          selected
-                            ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10'
-                            : 'border-black/10 bg-white hover:bg-black/5'
-                        }`}
-                      >
-                        <span
-                          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border text-[10px] leading-none text-white ${
-                            selected ? 'border-[var(--color-accent)] bg-[var(--color-accent)]' : 'border-black/25'
+          {loading && games === null && (
+            <p className="text-[11px] text-ink-soft">{t('loadingGames')}</p>
+          )}
+
+          {games !== null && !games.length && (
+            <div className="space-y-1 rounded border border-black/12 bg-white/70 px-3 py-2.5">
+              <p className="text-[11px] text-ink-soft">{t('noGamesFound')}</p>
+              <p className="text-[10px] text-ink-soft">{t('noGamesHint')}</p>
+            </div>
+          )}
+
+          {games?.slice(0, 6).map((game) => {
+          const isOpen = game.code === openCode;
+          return (
+            <div key={game.code} className="overflow-hidden rounded border border-black/12 bg-white/70">
+              <button
+                type="button"
+                onClick={() => open(game.code)}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-white"
+              >
+                <span className="tabular font-condensed text-lg tracking-[0.15em]">{game.code}</span>
+                <span className="flex -space-x-1">
+                  {game.players.map((p) => (
+                    <TokenIcon
+                      key={p.id}
+                      token={p.token}
+                      color={p.color}
+                      className="h-5 w-5"
+                      title={p.name}
+                    />
+                  ))}
+                </span>
+                <span className="ml-auto text-right text-[11px] leading-tight text-ink-soft">
+                  {getEdition(game.editionId, game.locale).name}
+                  <br />
+                  {t('turn')} {game.turnCount} · {when(game.lastPlayed)}
+                </span>
+              </button>
+
+              {/* On reprend sa place en se désignant : ni pseudo à retaper, ni code
+                  à retrouver, et ça marche depuis un téléphone qui n'a jamais joué. */}
+              {isOpen && (
+                <div className="space-y-2 border-t border-black/10 px-3 py-2.5">
+                  <p className="text-[11px] text-ink-soft">
+                    {t('whoResumes')}
+                  </p>
+                  <div className="space-y-1">
+                    {game.players.map((player) => {
+                      const selected = picked.includes(player.id);
+                      return (
+                        <button
+                          key={player.id}
+                          type="button"
+                          onClick={() => toggle(player.id)}
+                          className={`flex w-full items-center gap-2 rounded border px-2 py-1.5 text-left transition-colors ${
+                            selected
+                              ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10'
+                              : 'border-black/10 bg-white hover:bg-black/5'
                           }`}
                         >
-                          {selected ? '✓' : ''}
-                        </span>
-                        <TokenIcon token={player.token} color={player.color} className="h-5 w-5" />
-                        <span className="font-condensed text-sm uppercase">{player.name}</span>
-                        {player.bankrupt && (
-                          <span className="text-[10px] text-ink-soft">{t('eliminated')}</span>
-                        )}
-                        {player.connected && !player.bankrupt && (
-                          <span className="ml-auto text-[10px] text-[var(--color-money)]">
-                            {t('alreadyBack')}
+                          <span
+                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border text-[10px] leading-none text-white ${
+                              selected ? 'border-[var(--color-accent)] bg-[var(--color-accent)]' : 'border-black/25'
+                            }`}
+                          >
+                            {selected ? '✓' : ''}
                           </span>
-                        )}
-                      </button>
-                    );
+                          <TokenIcon token={player.token} color={player.color} className="h-5 w-5" />
+                          <span className="font-condensed text-sm uppercase">{player.name}</span>
+                          {player.bankrupt && (
+                            <span className="text-[10px] text-ink-soft">{t('eliminated')}</span>
+                          )}
+                          {player.connected && !player.bankrupt && (
+                            <span className="ml-auto text-[10px] text-[var(--color-money)]">
+                              {t('alreadyBack')}
+                            </span>
+                          )}
+                        </button>
+                      );
                   })}
                 </div>
                 <button
@@ -350,7 +394,9 @@ function ResumeList({ t, locale }) {
             )}
           </div>
         );
-      })}
+          })}
+        </div>
+      )}
     </div>
   );
 }

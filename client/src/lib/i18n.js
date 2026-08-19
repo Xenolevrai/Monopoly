@@ -22,6 +22,13 @@ const FR = {
   resumeGame: 'Reprendre une partie',
   resumeHint:
     "Une partie interrompue vous attend ici, même des jours plus tard et même si personne n'est connecté : ouvrez-la et désignez votre joueuse.",
+  seeGamesInProgress: 'Voir les parties en cours',
+  hideGamesInProgress: 'Masquer les parties en cours',
+  loadingGames: 'Recherche des parties…',
+  noGamesFound: 'Aucune partie trouvée sur ce serveur.',
+  noGamesHint:
+    "Si votre partie d'hier n'apparaît pas, c'est probablement un autre serveur : celui qui l'a sauvegardée doit être relancé pour qu'elle réapparaisse ici.",
+  refresh: 'Actualiser',
   whoResumes: 'Qui reprend sur cet appareil ? Cochez chaque joueuse qui jouera ici.',
   resumeMine: 'Reprendre ma place',
   resumeSeveral: (n) => `Reprendre à ${n} sur cet écran`,
@@ -171,6 +178,13 @@ const EN = {
   resumeGame: 'Resume a game',
   resumeHint:
     'An unfinished game waits for you here, days later and even if nobody is connected: open it and pick your player.',
+  seeGamesInProgress: 'See games in progress',
+  hideGamesInProgress: 'Hide games in progress',
+  loadingGames: 'Looking for games…',
+  noGamesFound: 'No game found on this server.',
+  noGamesHint:
+    "If yesterday's game isn't listed, it's probably a different server: the one that saved it needs to be running again for it to show up here.",
+  refresh: 'Refresh',
   whoResumes: 'Who is resuming on this device? Tick every player who will play here.',
   resumeMine: 'Take my seat back',
   resumeSeveral: (n) => `Resume with ${n} players on this screen`,
