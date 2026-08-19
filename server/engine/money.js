@@ -6,7 +6,7 @@
  * jeu se met en attente (`pending.kind === 'pay_debt'`) : elle doit hypothéquer,
  * revendre, échanger — ou déclarer faillite.
  */
-import { getSpace, cards } from '../../shared/index.js';
+import { getSpace, cardsOf } from '../../shared/index.js';
 import { log, euros } from './log.js';
 import { playerById, propertiesOf, maxRaisable, activePlayers, netWorth } from './queries.js';
 
@@ -177,7 +177,7 @@ export function declareBankruptcy(state, playerId) {
  */
 function returnJailCardsToDecks(state, count) {
   if (count <= 0) return;
-  for (const [deck, list] of Object.entries(cards)) {
+  for (const [deck, list] of Object.entries(cardsOf(state))) {
     const cardId = list.find((c) => c.keepable)?.id;
     if (cardId && !state.decks[deck].includes(cardId)) {
       state.decks[deck].push(cardId);
@@ -271,7 +271,7 @@ export function checkGameOver(state) {
 
 /** Montant total des loyers dus sur une case donnée — utilitaire de debug. */
 export function describeProperty(state, spaceId) {
-  const space = getSpace(spaceId);
+  const space = getSpace(state, spaceId);
   const prop = state.properties[spaceId];
   return `${space.name} — ${prop.ownerId ? playerById(state, prop.ownerId).name : 'banque'}${prop.mortgaged ? ' (hypothéquée)' : ''}`;
 }

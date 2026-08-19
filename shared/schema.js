@@ -89,6 +89,7 @@
  * @typedef {Object} GameState
  * @property {string} code            - code de partie à partager (ex. « PARIS7 »)
  * @property {string} hostId
+ * @property {string} editionId       - quelle édition fait tourner cette partie
  * @property {GamePhase} phase
  * @property {Player[]} players
  * @property {number} currentPlayerIndex
@@ -114,7 +115,7 @@
  * @property {number} version         - incrémenté à chaque mutation (détection de désync)
  */
 
-import { ownableSpaces, rules } from './index.js';
+import { ownableSpaces, getEdition, DEFAULT_EDITION } from './index.js';
 
 /**
  * Construit l'état initial d'une partie (phase lobby, sans joueuses).
@@ -122,10 +123,12 @@ import { ownableSpaces, rules } from './index.js';
  * @param {string} hostId
  * @returns {GameState}
  */
-export function createGameState(code, hostId) {
+export function createGameState(code, hostId, editionId = DEFAULT_EDITION) {
+  const edition = getEdition(editionId);
+
   /** @type {Record<number, PropertyState>} */
   const properties = {};
-  for (const space of ownableSpaces()) {
+  for (const space of ownableSpaces(edition.id)) {
     properties[space.id] = {
       spaceId: space.id,
       ownerId: null,
@@ -138,13 +141,14 @@ export function createGameState(code, hostId) {
   return {
     code,
     hostId,
+    editionId: edition.id,
     phase: 'lobby',
     players: [],
     currentPlayerIndex: 0,
     turnCount: 0,
-    dice: { values: null, doublesCount: 0, rolled: false, extraRoll: false },
+    dice: { values: null, doublesCount: 0, rolled: false, extraRoll: false, rollId: 0 },
     properties,
-    bank: { houses: rules.housesInBank, hotels: rules.hotelsInBank },
+    bank: { houses: edition.bank.houses, hotels: edition.bank.hotels },
     decks: { chance: [], community_chest: [] },
     drawnCardId: null,
     freeParkingPot: 0,
@@ -156,8 +160,10 @@ export function createGameState(code, hostId) {
     trades: [],
     debt: null,
     log: [],
+    logSeq: 0,
     chat: [],
-    settings: { ...rules.houseRules },
+    chatSeq: 0,
+    settings: { ...edition.houseRules },
     standings: [],
     winnerId: null,
     version: 0,
@@ -168,14 +174,15 @@ export function createGameState(code, hostId) {
  * Crée une joueuse prête à être ajoutée au lobby.
  * @returns {Player}
  */
-export function createPlayer({ id, name, token, color, order }) {
+export function createPlayer({ id, name, token, color, order, edition }) {
+  const config = edition ?? getEdition();
   return {
     id,
     name,
     token,
     color,
-    cash: rules.startingCash,
-    position: rules.goSpace,
+    cash: config.money.startingAmount,
+    position: 0,
     inJail: false,
     jailTurns: 0,
     getOutOfJailCards: 0,

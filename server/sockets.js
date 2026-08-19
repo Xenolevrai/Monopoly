@@ -21,7 +21,7 @@ import {
   playerById,
 } from './engine/index.js';
 import { createRoom, getRoom, newPlayerId, scheduleSave } from './rooms.js';
-import { rules } from '../shared/index.js';
+import { listEditions, DEFAULT_EDITION } from '../shared/index.js';
 
 /** Nettoie un pseudo saisi par une joueuse. */
 function cleanName(name) {
@@ -62,12 +62,12 @@ export function registerSocketHandlers(io) {
     const currentRoom = () => (session ? getRoom(session.code) : null);
 
     // — Créer une partie ————————————————————————————————————
-    socket.on('game:create', ({ name, token, settings } = {}) => {
+    socket.on('game:create', ({ name, token, settings, editionId } = {}) => {
       const pseudo = cleanName(name);
       if (!pseudo) return fail('Choisissez un pseudo.');
 
       const playerId = newPlayerId();
-      const room = createRoom(playerId);
+      const room = createRoom(playerId, editionId ?? DEFAULT_EDITION);
       const added = addPlayer(room, { id: playerId, name: pseudo, token });
       if (!added.ok) return fail(added.error);
       if (settings) updateSettings(room, playerId, settings);
@@ -211,12 +211,7 @@ export function resolveActor(state, playerIds, requested) {
   return awaited ?? playerIds[0] ?? null;
 }
 
-/** Métadonnées utiles au client avant même d'entrer dans une partie. */
+/** Le catalogue des éditions, pour la galerie de sélection. */
 export function lobbyInfo() {
-  return {
-    tokens: rules.tokens,
-    minPlayers: rules.minPlayers,
-    maxPlayers: rules.maxPlayers,
-    houseRules: rules.houseRules,
-  };
+  return { editions: listEditions(), defaultEdition: DEFAULT_EDITION };
 }

@@ -31,9 +31,10 @@ function validateSide(state, playerId, side) {
     return `${player.name} n'a pas ${side.jailCards} carte(s) « libérée de prison ».`;
   for (const spaceId of side.spaceIds) {
     const prop = state.properties[spaceId];
-    if (!prop || prop.ownerId !== playerId) return `${getSpace(spaceId).name} n'appartient pas à ${player.name}.`;
+    if (!prop || prop.ownerId !== playerId)
+      return `${getSpace(state, spaceId).name} n'appartient pas à ${player.name}.`;
     if (buildingLevel(prop) > 0)
-      return `${getSpace(spaceId).name} est construite : revendez les maisons avant de l'échanger.`;
+      return `${getSpace(state, spaceId).name} est construite : revendez les maisons avant de l'échanger.`;
   }
   return null;
 }
@@ -175,7 +176,7 @@ function executeTrade(state, trade) {
   const describe = (side) =>
     [
       side.cash ? euros(side.cash) : null,
-      ...side.spaceIds.map((id) => getSpace(id).name),
+      ...side.spaceIds.map((id) => getSpace(state, id).name),
       side.jailCards ? `${side.jailCards} carte(s) de prison` : null,
     ]
       .filter(Boolean)

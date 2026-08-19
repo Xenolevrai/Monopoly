@@ -5,39 +5,40 @@
  * emprunté (dés, carte, sortie de prison), on retombe toujours ici, donc une
  * règle de case n'est écrite qu'une seule fois.
  */
-import { getSpace, board, rules } from '../../shared/index.js';
+import { getSpace, boardOf } from '../../shared/index.js';
 import { log, euros } from './log.js';
-import { playerById, rentFor } from './queries.js';
+import { playerById, rentFor, config } from './queries.js';
 import { credit, charge } from './money.js';
 
 /** Avance de `steps` cases, en encaissant le salaire si on passe par Départ. */
 export function advance(state, playerId, steps) {
   const player = playerById(state, playerId);
-  const from = player.position;
-  const raw = from + steps;
-  player.position = ((raw % board.length) + board.length) % board.length;
-  if (steps > 0 && raw >= board.length) collectSalary(state, playerId);
+  const size = boardOf(state).length;
+  const raw = player.position + steps;
+  player.position = ((raw % size) + size) % size;
+  if (steps > 0 && raw >= size) collectSalary(state, playerId);
   return player.position;
 }
 
 /** Va directement sur une case, en avançant (donc en franchissant Départ si besoin). */
 export function moveTo(state, playerId, target, collectGoSalary = true) {
   const player = playerById(state, playerId);
-  const steps = (((target - player.position) % board.length) + board.length) % board.length;
-  const passes = steps > 0 && player.position + steps >= board.length;
+  const size = boardOf(state).length;
+  const steps = (((target - player.position) % size) + size) % size;
+  const passes = steps > 0 && player.position + steps >= size;
   player.position = target;
   if (passes && collectGoSalary) collectSalary(state, playerId);
   return target;
 }
 
 function collectSalary(state, playerId) {
-  credit(state, playerId, rules.goSalary, 'passage par la case Départ');
+  credit(state, playerId, config(state).money.goSalary, 'passage par la case Départ');
 }
 
 /** Envoie en prison : pas de salaire, pas de tour supplémentaire. */
 export function sendToJail(state, playerId) {
   const player = playerById(state, playerId);
-  player.position = rules.jailSpace;
+  player.position = config(state).jail.space;
   player.inJail = true;
   player.jailTurns = 0;
   state.dice.extraRoll = false;
@@ -51,7 +52,7 @@ export function sendToJail(state, playerId) {
  */
 export function resolveLanding(state, playerId, ctx = {}) {
   const player = playerById(state, playerId);
-  const space = getSpace(player.position);
+  const space = getSpace(state, player.position);
   log(state, 'land', `${player.name} arrive sur ${space.name}.`, { playerId, spaceId: space.id });
 
   switch (space.type) {

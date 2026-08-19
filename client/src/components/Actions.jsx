@@ -7,7 +7,7 @@
  * la joueuse du poste à qui le jeu demande quelque chose.
  */
 import { useState } from 'react';
-import { board, euros, groups } from '../lib/board.js';
+import { boardOf, groupsOf, euros } from '../lib/board.js';
 import { sendAction } from '../lib/socket.js';
 import TokenIcon from './TokenIcon.jsx';
 import { BillStack } from './Money.jsx';
@@ -32,10 +32,10 @@ function Button({ children, onClick, tone = 'primary', disabled, className = '' 
 }
 
 /** Le titre de propriété, dans l'esprit des cartes du jeu. */
-export function PropertyCard({ spaceId }) {
-  const space = board[spaceId];
+export function PropertyCard({ state, spaceId }) {
+  const space = boardOf(state)[spaceId];
   if (!space) return null;
-  const color = space.group ? groups[space.group]?.color : null;
+  const color = space.group ? groupsOf(state)[space.group]?.color : null;
   const rows =
     space.type === 'property'
       ? [
@@ -124,21 +124,27 @@ function Roll({ payload, actor }) {
   );
 }
 
-function BuyOrAuction({ payload, actor }) {
+function BuyOrAuction({ state, me, payload, actor }) {
+  // `payload.canAfford` est figé au moment où la case a été résolue : si l'on
+  // hypothèque un bien entre-temps pour réunir la somme, il faut relire le
+  // solde courant plutôt que ce cliché, sans quoi le bouton reste grisé alors
+  // que l'argent est là.
+  const canAfford = me.cash >= payload.price;
   return (
     <div className="space-y-3">
-      <PropertyCard spaceId={payload.spaceId} />
+      <PropertyCard state={state} spaceId={payload.spaceId} />
       <div className="flex flex-wrap gap-2">
-        <Button disabled={!payload.canAfford} onClick={() => sendAction({ type: 'BUY_PROPERTY' }, actor)}>
+        <Button disabled={!canAfford} onClick={() => sendAction({ type: 'BUY_PROPERTY' }, actor)}>
           Acheter — {euros(payload.price)}
         </Button>
         <Button tone="ghost" onClick={() => sendAction({ type: 'DECLINE_PROPERTY' }, actor)}>
           Refuser (enchère)
         </Button>
       </div>
-      {!payload.canAfford && (
+      {!canAfford && (
         <p className="text-xs text-[var(--color-accent)]">
-          Fonds insuffisants : la propriété partira aux enchères.
+          Fonds insuffisants : hypothéquez ou revendez ci-dessous pour réunir la somme, ou refusez pour la
+          mettre aux enchères.
         </p>
       )}
     </div>
@@ -147,29 +153,38 @@ function BuyOrAuction({ payload, actor }) {
 
 function Auction({ state, me, actor }) {
   const auction = state.auction;
-  const [amount, setAmount] = useState(auction ? auction.highestBid + 10 : 10);
+  const [amount, setAmount] = useState(auction ? String(auction.highestBid + 10) : '10');
   if (!auction) return null;
   const highest = state.players.find((p) => p.id === auction.highestBidderId);
+  const numericAmount = amount === '' ? 0 : Number(amount);
+
+  // Un <input type="number"> contrôlé par un state numérique laisse parfois un
+  // zéro de tête sur mobile (« 0350 ») : on travaille en chaîne de chiffres et on
+  // nettoie nous-mêmes, ce qui marche pareil sur tous les claviers.
+  const handleChange = (e) => {
+    const digits = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+    setAmount(digits);
+  };
 
   return (
     <div className="space-y-3">
-      <PropertyCard spaceId={auction.spaceId} />
+      <PropertyCard state={state} spaceId={auction.spaceId} />
       <p className="text-xs text-ink-soft">
         Enchère en cours : <span className="tabular font-semibold">{euros(auction.highestBid)}</span>
         {highest && <> — meilleure offre de {highest.name}</>}
       </p>
       <div className="flex flex-wrap items-center gap-2">
         <input
-          type="number"
-          min={auction.highestBid + 1}
-          max={me?.cash ?? 0}
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
           value={amount}
-          onChange={(e) => setAmount(Number(e.target.value))}
+          onChange={handleChange}
           className="tabular w-28 rounded border border-black/20 bg-white px-2 py-2 text-sm"
         />
         <Button
-          disabled={amount <= auction.highestBid || amount > (me?.cash ?? 0)}
-          onClick={() => sendAction({ type: 'AUCTION_BID', amount }, actor)}
+          disabled={numericAmount <= auction.highestBid || numericAmount > (me?.cash ?? 0)}
+          onClick={() => sendAction({ type: 'AUCTION_BID', amount: numericAmount }, actor)}
         >
           Miser
         </Button>
@@ -252,6 +267,8 @@ function Debt({ state, me, payload, actor, onOpenTrade, onOpenSettlement }) {
 function Manage({ state, me }) {
   const owned = Object.values(state.properties).filter((p) => p.ownerId === me.id);
   if (!owned.length) return null;
+  const board = boardOf(state);
+  const groups = groupsOf(state);
 
   return (
     <div className="space-y-1.5">
@@ -264,11 +281,17 @@ function Manage({ state, me }) {
           .map((prop) => {
             const space = board[prop.spaceId];
             const level = prop.hotel ? 5 : prop.houses;
-            const btn = 'rounded border border-black/15 bg-white px-1.5 py-0.5 hover:bg-black/5';
+            const btn = 'rounded border border-black/15 bg-white px-1.5 py-1 hover:bg-black/5';
+            // Les infobulles (`title`) ne s'affichent jamais au doigt : le prix doit
+            // être écrit en toutes lettres sur le bouton, pas seulement au survol.
             return (
               <div
                 key={prop.spaceId}
-                className="flex items-center gap-1.5 rounded border border-black/10 bg-white/70 px-2 py-1 text-[11px]"
+                className={`flex flex-wrap items-center gap-1.5 rounded border px-2 py-1.5 text-[11px] ${
+                  prop.mortgaged
+                    ? 'border-dashed border-[var(--color-accent)]/50 bg-[var(--color-accent)]/5'
+                    : 'border-black/10 bg-white/70'
+                }`}
               >
                 {space.group && (
                   <span
@@ -282,7 +305,11 @@ function Manage({ state, me }) {
                     {prop.hotel ? '▮' : '▪'.repeat(prop.houses)}
                   </span>
                 )}
-                {prop.mortgaged && <span className="text-[var(--color-accent)]">hyp.</span>}
+                {prop.mortgaged && (
+                  <span className="rounded-sm bg-[var(--color-accent)] px-1 py-0.5 font-condensed text-[9px] uppercase tracking-wide text-white">
+                    Hypothéquée
+                  </span>
+                )}
                 <span className="ml-auto flex gap-1">
                   {space.type === 'property' && !prop.mortgaged && (
                     <>
@@ -307,19 +334,17 @@ function Manage({ state, me }) {
                   {prop.mortgaged ? (
                     <button
                       className={btn}
-                      title={`Lever l'hypothèque (${euros(Math.ceil(space.mortgage * 1.1))})`}
                       onClick={() => sendAction({ type: 'UNMORTGAGE', spaceId: prop.spaceId }, me.id)}
                     >
-                      lever
+                      Lever ({euros(Math.ceil(space.mortgage * 1.1))})
                     </button>
                   ) : (
                     level === 0 && (
                       <button
                         className={btn}
-                        title={`Hypothéquer (${euros(space.mortgage)})`}
                         onClick={() => sendAction({ type: 'MORTGAGE', spaceId: prop.spaceId }, me.id)}
                       >
-                        hyp.
+                        Hypothéquer ({euros(space.mortgage)})
                       </button>
                     )
                   )}
@@ -427,7 +452,7 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
         </div>
       )}
       {mineTurn && pending.kind === 'buy_or_auction' && (
-        <BuyOrAuction payload={pending.payload} actor={actor} />
+        <BuyOrAuction state={state} me={me} payload={pending.payload} actor={actor} />
       )}
       {mineTurn && pending.kind === 'auction_bid' && <Auction state={state} me={me} actor={actor} />}
       {mineTurn && pending.kind === 'card_choice' && <CardChoice payload={pending.payload} actor={actor} />}

@@ -12,7 +12,7 @@ import { credit, refreshDebtPending } from './money.js';
 
 /** Achat à la banque au prix affiché. */
 export function buyProperty(state, playerId, spaceId, price = null) {
-  const space = getSpace(spaceId);
+  const space = getSpace(state, spaceId);
   const prop = state.properties[spaceId];
   const player = playerById(state, playerId);
   const cost = price ?? space.price;
@@ -33,7 +33,7 @@ export function buyProperty(state, playerId, spaceId, price = null) {
 
 /** Hypothèque : encaisse la valeur, la propriété ne rapporte plus de loyer. */
 export function mortgage(state, playerId, spaceId) {
-  const space = getSpace(spaceId);
+  const space = getSpace(state, spaceId);
   const prop = state.properties[spaceId];
   if (!prop || prop.ownerId !== playerId) return { ok: false, error: "Cette propriété n'est pas à vous." };
   if (prop.mortgaged) return { ok: false, error: 'Déjà hypothéquée.' };
@@ -48,7 +48,7 @@ export function mortgage(state, playerId, spaceId) {
 
 /** Levée d'hypothèque : montant + 10 % d'intérêt. */
 export function unmortgage(state, playerId, spaceId) {
-  const space = getSpace(spaceId);
+  const space = getSpace(state, spaceId);
   const prop = state.properties[spaceId];
   const player = playerById(state, playerId);
   if (!prop || prop.ownerId !== playerId) return { ok: false, error: "Cette propriété n'est pas à vous." };
@@ -72,7 +72,7 @@ export function buildHouse(state, playerId, spaceId) {
   const check = canBuild(state, playerId, spaceId);
   if (!check.ok) return { ok: false, error: check.reason };
 
-  const space = getSpace(spaceId);
+  const space = getSpace(state, spaceId);
   const prop = state.properties[spaceId];
   const player = playerById(state, playerId);
   player.cash -= check.cost;
@@ -105,7 +105,7 @@ export function sellBuilding(state, playerId, spaceId) {
   const check = canSellBuilding(state, playerId, spaceId);
   if (!check.ok) return { ok: false, error: check.reason };
 
-  const space = getSpace(spaceId);
+  const space = getSpace(state, spaceId);
   const prop = state.properties[spaceId];
 
   if (check.fromHotel) {

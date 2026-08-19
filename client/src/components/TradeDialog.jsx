@@ -7,12 +7,14 @@
  *    du poste sont visibles et répondables tout de suite.
  */
 import { useState } from 'react';
-import { board, euros, groups } from '../lib/board.js';
+import { boardOf, groupsOf, euros } from '../lib/board.js';
 import { sendAction } from '../lib/socket.js';
 import TokenIcon from './TokenIcon.jsx';
 import { BillPicker } from './Money.jsx';
 
 function Side({ title, player, state, value, onChange }) {
+  const board = boardOf(state);
+  const groups = groupsOf(state);
   const owned = Object.values(state.properties)
     .filter((p) => p.ownerId === player.id && !p.hotel && p.houses === 0)
     .sort((a, b) => a.spaceId - b.spaceId);
@@ -104,6 +106,7 @@ export default function TradeDialog({ state, me, mine, onClose, settleMode = fal
 
   const [give, setGive] = useState(EMPTY);
   const [receive, setReceive] = useState(EMPTY);
+  const board = boardOf(state);
 
   // Toutes les propositions adressées à une joueuse de ce poste.
   const incoming = state.trades.filter((t) => t.status === 'pending' && localIds.includes(t.toPlayerId));

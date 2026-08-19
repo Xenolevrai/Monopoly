@@ -41,9 +41,9 @@ export function newPlayerId() {
 }
 
 /** Crée une partie et son hôte. */
-export function createRoom(hostId) {
+export function createRoom(hostId, editionId) {
   const code = generateCode();
-  const game = createGame(code, hostId);
+  const game = createGame(code, hostId, { editionId });
   games.set(code, { ...game, savedAt: 0, timer: null });
   return games.get(code);
 }
@@ -110,6 +110,16 @@ export async function restoreRooms() {
       }
       // Tout le monde est déconnecté au redémarrage : on attend les reconnexions.
       for (const player of raw.state.players) player.connected = false;
+      // Migration : les parties sauvegardées avant l'ajout du compteur de journal
+      // n'en ont pas. On le fait repartir après le plus grand id déjà écrit, pour
+      // qu'aucune nouvelle entrée ne réutilise une clé déjà affichée.
+      if (raw.state.logSeq == null) {
+        const maxId = raw.state.log.reduce((max, entry) => {
+          const n = Number(String(entry.id).replace(/^e/, ''));
+          return Number.isFinite(n) && n > max ? n : max;
+        }, 0);
+        raw.state.logSeq = maxId;
+      }
       games.set(raw.state.code, {
         state: raw.state,
         rng: createRng(Date.now()),
@@ -132,6 +142,7 @@ export function listRooms() {
   return [...games.values()]
     .map((room) => ({
       code: room.state.code,
+      editionId: room.state.editionId,
       phase: room.state.phase,
       turnCount: room.state.turnCount,
       lastPlayed: room.state.log.at(-1)?.at ?? room.savedAt,

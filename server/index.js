@@ -14,7 +14,7 @@ import { Server } from 'socket.io';
 
 import { registerSocketHandlers, lobbyInfo } from './sockets.js';
 import { restoreRooms, purgeStaleRooms, getRoom, roomCount, listRooms } from './rooms.js';
-import { board, groups } from '../shared/index.js';
+import { getEdition, DEFAULT_EDITION } from '../shared/index.js';
 
 const PORT = Number(process.env.PORT ?? 3000);
 const HOST = process.env.HOST ?? '0.0.0.0';
@@ -28,8 +28,11 @@ const io = new Server(server, { cors: { origin: true } });
 // — API minimale ————————————————————————————————————————
 app.get('/api/health', (req, res) => res.json({ ok: true, games: roomCount() }));
 
-/** Données du plateau : le client les charge une fois au démarrage. */
-app.get('/api/board', (req, res) => res.json({ board, groups, rules: lobbyInfo() }));
+/** Données du plateau d'une édition. Le client les a déjà, c'est un point d'inspection. */
+app.get('/api/board', (req, res) => {
+  const edition = getEdition(req.query.edition ?? DEFAULT_EDITION);
+  res.json({ board: edition.board, groups: edition.groups, rules: lobbyInfo() });
+});
 
 /** Les parties en cours, pour reprendre une soirée interrompue. */
 app.get('/api/games', (req, res) => res.json({ games: listRooms() }));

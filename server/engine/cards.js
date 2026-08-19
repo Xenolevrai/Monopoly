@@ -5,7 +5,7 @@
  * c'est littéralement la règle « remettre la carte sous la pile ». Les deux
  * cartes « libérée de prison » quittent la file tant qu'une joueuse les détient.
  */
-import { cards } from '../../shared/index.js';
+import { cardsOf, getEdition } from '../../shared/index.js';
 import { log, euros } from './log.js';
 import { playerById, buildingsOf, activePlayers } from './queries.js';
 import { credit, charge } from './money.js';
@@ -13,21 +13,37 @@ import { advance, moveTo, sendToJail, resolveLanding } from './movement.js';
 
 const DECKS = ['chance', 'community_chest'];
 
-const DECK_LABEL = { chance: 'Chance', community_chest: 'Caisse de Communauté' };
+/** Index des cartes par identifiant, calculé une fois par édition. */
+const INDEX_CACHE = new Map();
 
-/** Index de toutes les cartes par id, tous decks confondus. */
-const CARD_INDEX = Object.fromEntries(
-  DECKS.flatMap((deck) => cards[deck].map((card) => [card.id, { ...card, deck }])),
-);
-
-export function getCard(cardId) {
-  return CARD_INDEX[cardId];
+function cardIndex(state) {
+  const editionId = state.editionId ?? 'classic-fr';
+  if (!INDEX_CACHE.has(editionId)) {
+    const decks = cardsOf(state);
+    INDEX_CACHE.set(
+      editionId,
+      Object.fromEntries(
+        DECKS.flatMap((deck) => (decks[deck] ?? []).map((card) => [card.id, { ...card, deck }])),
+      ),
+    );
+  }
+  return INDEX_CACHE.get(editionId);
 }
 
-/** Mélange les deux piles au début de la partie. */
+/** Le nom que cette édition donne à chaque pile. */
+function deckLabel(state, deck) {
+  return getEdition(state.editionId).theming?.decks?.[deck]?.label ?? deck;
+}
+
+export function getCard(state, cardId) {
+  return cardIndex(state)[cardId];
+}
+
+/** Mélange les piles au début de la partie. */
 export function buildDecks(state, rng) {
+  const decks = cardsOf(state);
   for (const deck of DECKS) {
-    state.decks[deck] = rng.shuffle(cards[deck].map((c) => c.id));
+    state.decks[deck] = rng.shuffle((decks[deck] ?? []).map((c) => c.id));
   }
 }
 
@@ -45,10 +61,10 @@ export function drawCard(state, playerId, deck, ctx = {}) {
   if (!queue.length) return null;
 
   const cardId = queue[0];
-  const card = CARD_INDEX[cardId];
+  const card = cardIndex(state)[cardId];
   const player = playerById(state, playerId);
   state.drawnCardId = cardId;
-  log(state, 'card', `${player.name} pioche une carte ${DECK_LABEL[deck]} : « ${card.text} »`, {
+  log(state, 'card', `${player.name} pioche une carte ${deckLabel(state, deck)} : « ${card.text} »`, {
     playerId,
     deck,
     cardId,
@@ -68,7 +84,7 @@ export function drawCard(state, playerId, deck, ctx = {}) {
  */
 export function applyRevealedCard(state, playerId) {
   const payload = state.pending?.payload;
-  const card = payload && CARD_INDEX[payload.cardId];
+  const card = payload && cardIndex(state)[payload.cardId];
   if (!card) return { ok: false, error: 'Aucune carte à appliquer.' };
 
   const queue = state.decks[payload.deck];
@@ -90,8 +106,9 @@ export function returnJailCard(state, playerId) {
   const player = playerById(state, playerId);
   if (player.getOutOfJailCards <= 0) return false;
   player.getOutOfJailCards -= 1;
+  const decks = cardsOf(state);
   for (const deck of DECKS) {
-    const cardId = cards[deck].find((c) => c.keepable)?.id;
+    const cardId = (decks[deck] ?? []).find((c) => c.keepable)?.id;
     if (cardId && !state.decks[deck].includes(cardId)) {
       state.decks[deck].push(cardId);
       return true;

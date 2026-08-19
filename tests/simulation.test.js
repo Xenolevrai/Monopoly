@@ -11,7 +11,10 @@ import assert from 'node:assert/strict';
 import { createGame, addPlayer, startGame, dispatch } from '../server/engine/index.js';
 import { createRng } from '../server/engine/rng.js';
 import { activePlayers, buildingLevel, maxRaisable, canBuild } from '../server/engine/queries.js';
-import { rules } from '../shared/index.js';
+import { log } from '../server/engine/log.js';
+import { getEdition } from '../shared/index.js';
+
+const edition = getEdition('classic-fr');
 
 /** Vérifie les invariants qui doivent tenir après chaque action. */
 function checkInvariants(state, step) {
@@ -36,12 +39,12 @@ function checkInvariants(state, step) {
   }
   assert.equal(
     housesOnBoard + state.bank.houses,
-    rules.housesInBank,
+    edition.bank.houses,
     `étape ${step} : maisons perdues ou dupliquées`,
   );
   assert.equal(
     hotelsOnBoard + state.bank.hotels,
-    rules.hotelsInBank,
+    edition.bank.hotels,
     `étape ${step} : hôtels perdus ou dupliqués`,
   );
 
@@ -61,7 +64,7 @@ function pickAction(state, playerId, rng) {
     case 'roll':
       if (player.inJail && player.getOutOfJailCards > 0 && rng.next() < 0.5)
         return { type: 'USE_JAIL_CARD' };
-      if (player.inJail && player.cash >= rules.jailBail && rng.next() < 0.3) return { type: 'PAY_BAIL' };
+      if (player.inJail && player.cash >= edition.jail.bail && rng.next() < 0.3) return { type: 'PAY_BAIL' };
       return { type: 'ROLL_DICE' };
 
     case 'buy_or_auction':
@@ -169,4 +172,20 @@ test('une partie à 6 joueuses tient la distance', () => {
 test('le journal reste borné même sur une longue partie', () => {
   const { game } = playGame(5, 4, 4000);
   assert.ok(game.state.log.length <= 500, 'le journal doit être tronqué');
+});
+
+test('une partie reprise après redémarrage ne réutilise aucun identifiant de journal', () => {
+  // Le compteur vit dans la partie, pas dans le processus : sinon un redémarrage
+  // du serveur repart de « e1 » et le journal restauré se retrouve avec des clés
+  // React en double, ce qui fige son affichage jusqu'au rechargement de la page.
+  const { game } = playGame(11, 3, 400);
+
+  // Aller-retour par le disque, comme le fait `restoreRooms`.
+  const revived = JSON.parse(JSON.stringify(game.state));
+  log(revived, 'turn', 'après redémarrage');
+  log(revived, 'turn', 'et encore une');
+
+  const ids = new Set(revived.log.map((entry) => entry.id));
+  assert.equal(ids.size, revived.log.length, 'identifiants dupliqués dans le journal restauré');
+  assert.equal(revived.log.at(-1).text, 'et encore une');
 });

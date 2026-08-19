@@ -1,8 +1,8 @@
 /** Déroulé d'un tour : lancer, prison, doubles, fin de tour. */
-import { rules } from '../../shared/index.js';
+
 import { rollDice } from './rng.js';
 import { log, euros } from './log.js';
-import { playerById, currentPlayer, activePlayers } from './queries.js';
+import { playerById, currentPlayer, activePlayers, config } from './queries.js';
 import { charge, checkGameOver } from './money.js';
 import { advance, resolveLanding, sendToJail } from './movement.js';
 import { returnJailCard } from './cards.js';
@@ -12,7 +12,7 @@ import { startQueuedAuction } from './auction.js';
 export function startTurn(state) {
   const player = currentPlayer(state);
   if (!player) return;
-  state.dice = { values: null, doublesCount: 0, rolled: false, extraRoll: false };
+  state.dice = { values: null, doublesCount: 0, rolled: false, extraRoll: false, rollId: state.dice?.rollId ?? 0 };
   state.pending = {
     kind: 'roll',
     playerIds: [player.id],
@@ -20,9 +20,9 @@ export function startTurn(state) {
       ? {
           inJail: true,
           jailTurns: player.jailTurns,
-          canPayBail: player.cash >= rules.jailBail,
+          canPayBail: player.cash >= config(state).jail.bail,
           hasJailCard: player.getOutOfJailCards > 0,
-          bail: rules.jailBail,
+          bail: config(state).jail.bail,
         }
       : {},
   };
@@ -32,11 +32,12 @@ export function startTurn(state) {
 /** Lancer de dés — gère aussi les tentatives de sortie de prison. */
 export function roll(state, playerId, rng) {
   const player = playerById(state, playerId);
-  const values = rollDice(rng, rules.diceCount, rules.diceSides);
+  const values = rollDice(rng, config(state).dice.count, config(state).dice.sides);
   const total = values.reduce((a, b) => a + b, 0);
   const isDouble = values.every((v) => v === values[0]);
   state.dice.values = values;
   state.dice.rolled = true;
+  state.dice.rollId = (state.dice.rollId ?? 0) + 1;
   // Le jet est consommé : la résolution de la case décidera de la suite, et à
   // défaut `finishResolution` proposera la fin de tour.
   state.pending = { kind: null, playerIds: [] };
@@ -50,7 +51,7 @@ export function roll(state, playerId, rng) {
   if (player.inJail) return rollInJail(state, player, total, isDouble);
 
   state.dice.doublesCount = isDouble ? state.dice.doublesCount + 1 : 0;
-  if (state.dice.doublesCount >= rules.doublesToJail) {
+  if (state.dice.doublesCount >= config(state).dice.doublesToJail) {
     log(state, 'jail', `${player.name} fait un troisième double d'affilée.`, { playerId });
     sendToJail(state, playerId);
     return finishResolution(state);
@@ -73,17 +74,17 @@ function rollInJail(state, player, total, isDouble) {
   }
 
   player.jailTurns += 1;
-  if (player.jailTurns >= rules.maxJailTurns) {
-    log(state, 'jail', `${player.name} a passé ${rules.maxJailTurns} tours en prison : elle paie la caution.`, {
+  if (player.jailTurns >= config(state).jail.maxTurns) {
+    log(state, 'jail', `${player.name} a passé ${config(state).jail.maxTurns} tours en prison : elle paie la caution.`, {
       playerId: player.id,
     });
-    charge(state, player.id, rules.jailBail, 'caution de sortie de prison');
+    charge(state, player.id, config(state).jail.bail, 'caution de sortie de prison');
     player.inJail = false;
     player.jailTurns = 0;
     advance(state, player.id, total);
     resolveLanding(state, player.id, { diceTotal: total });
   } else {
-    log(state, 'jail', `${player.name} reste en prison (tentative ${player.jailTurns}/${rules.maxJailTurns}).`, {
+    log(state, 'jail', `${player.name} reste en prison (tentative ${player.jailTurns}/${config(state).jail.maxTurns}).`, {
       playerId: player.id,
     });
   }
@@ -94,11 +95,11 @@ function rollInJail(state, player, total, isDouble) {
 export function payBail(state, playerId) {
   const player = playerById(state, playerId);
   if (!player.inJail) return { ok: false, error: "Vous n'êtes pas en prison." };
-  if (player.cash < rules.jailBail) return { ok: false, error: 'Fonds insuffisants pour la caution.' };
-  player.cash -= rules.jailBail;
+  if (player.cash < config(state).jail.bail) return { ok: false, error: 'Fonds insuffisants pour la caution.' };
+  player.cash -= config(state).jail.bail;
   player.inJail = false;
   player.jailTurns = 0;
-  log(state, 'jail', `${player.name} paie ${euros(rules.jailBail)} de caution et sort de prison.`, { playerId });
+  log(state, 'jail', `${player.name} paie ${euros(config(state).jail.bail)} de caution et sort de prison.`, { playerId });
   state.pending = { kind: 'roll', playerIds: [playerId], payload: {} };
   return { ok: true };
 }
@@ -141,7 +142,7 @@ export function endTurn(state, playerId) {
 
   if (state.dice.extraRoll) {
     const doublesCount = state.dice.doublesCount;
-    state.dice = { values: state.dice.values, doublesCount, rolled: false, extraRoll: false };
+    state.dice = { values: state.dice.values, doublesCount, rolled: false, extraRoll: false, rollId: state.dice.rollId };
     state.pending = { kind: 'roll', playerIds: [playerId], payload: {} };
     log(state, 'turn', `${playerById(state, playerId).name} rejoue (double).`, { playerId });
     return { ok: true };
@@ -168,7 +169,7 @@ export function nextPlayer(state) {
 /** Ordre de jeu : chaque joueuse lance les dés, le plus haut score commence. */
 export function determineTurnOrder(state, rng) {
   const rolls = state.players.map((player) => {
-    const values = rollDice(rng, rules.diceCount, rules.diceSides);
+    const values = rollDice(rng, config(state).dice.count, config(state).dice.sides);
     return { player, total: values.reduce((a, b) => a + b, 0), values };
   });
   rolls.sort((a, b) => b.total - a.total);

@@ -9,7 +9,7 @@
  *
  * Le moteur ne connaît ni Socket.io ni React : il se teste seul (voir tests/).
  */
-import { rules } from '../../shared/index.js';
+import { getEdition, DEFAULT_EDITION, listEditions } from '../../shared/index.js';
 import { createGameState, createPlayer } from '../../shared/schema.js';
 import { createRng } from './rng.js';
 import { log } from './log.js';
@@ -25,16 +25,20 @@ export * from './queries.js';
 export { createGameState, createPlayer };
 
 /** Crée une partie et son générateur aléatoire. */
-export function createGame(code, hostId, { seed } = {}) {
-  const state = createGameState(code, hostId);
+export function createGame(code, hostId, { seed, editionId = DEFAULT_EDITION } = {}) {
+  const state = createGameState(code, hostId, editionId);
   return { state, rng: createRng(seed ?? Date.now()) };
 }
+
+export { listEditions, getEdition };
 
 /** Ajoute une joueuse au lobby. */
 export function addPlayer(game, { id, name, token }) {
   const { state } = game;
+  const edition = getEdition(state.editionId);
   if (state.phase !== 'lobby') return { ok: false, error: 'La partie a déjà commencé.' };
-  if (state.players.length >= rules.maxPlayers) return { ok: false, error: 'La partie est complète.' };
+  if (state.players.length >= edition.playerCount.max)
+    return { ok: false, error: 'La partie est complète.' };
   if (state.players.some((p) => p.name.toLowerCase() === name.toLowerCase()))
     return { ok: false, error: 'Ce pseudo est déjà pris.' };
 
@@ -43,8 +47,8 @@ export function addPlayer(game, { id, name, token }) {
   // peut pas savoir qui a pris quoi avant d'être arrivée.
   const taken = new Set(state.players.map((p) => p.token));
   const tokenDef =
-    rules.tokens.find((t) => t.id === token && !taken.has(t.id)) ??
-    rules.tokens.find((t) => !taken.has(t.id));
+    edition.tokens.find((t) => t.id === token && !taken.has(t.id)) ??
+    edition.tokens.find((t) => !taken.has(t.id));
   if (!tokenDef) return { ok: false, error: 'Tous les pions sont déjà pris.' };
   const swapped = token && tokenDef.id !== token;
   const player = createPlayer({
@@ -53,6 +57,7 @@ export function addPlayer(game, { id, name, token }) {
     token: tokenDef.id,
     color: tokenDef.color,
     order: state.players.length,
+    edition,
   });
   state.players.push(player);
   log(
@@ -102,8 +107,9 @@ export function startGame(game, playerId) {
   const { state, rng } = game;
   if (state.phase !== 'lobby') return { ok: false, error: 'La partie a déjà commencé.' };
   if (!playerById(state, playerId)) return { ok: false, error: 'Joueuse inconnue.' };
-  if (state.players.length < rules.minPlayers)
-    return { ok: false, error: `Il faut au moins ${rules.minPlayers} joueuses.` };
+  const minPlayers = getEdition(state.editionId).playerCount.min;
+  if (state.players.length < minPlayers)
+    return { ok: false, error: `Il faut au moins ${minPlayers} joueuses.` };
 
   log(state, 'setup', `${playerById(state, playerId).name} lance la partie.`, { playerId });
   buildDecks(state, rng);
@@ -324,8 +330,12 @@ function refuse(error) {
 export function sendChat(state, playerId, text) {
   const clean = String(text ?? '').trim().slice(0, 300);
   if (!clean) return { ok: false, error: 'Message vide.' };
+  // Compteur porté par la partie, et non la longueur de la liste : celle-ci est
+  // plafonnée à 200, donc l'indice repasserait sur des identifiants déjà
+  // affichés et le chat se figerait sur des clés en double.
+  state.chatSeq = (state.chatSeq ?? state.chat.length) + 1;
   state.chat.push({
-    id: `c${state.chat.length + 1}`,
+    id: `c${state.chatSeq}`,
     playerId,
     text: clean,
     at: Date.now(),

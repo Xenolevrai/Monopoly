@@ -1,57 +1,73 @@
 /**
- * Point d'entrée unique des données de jeu partagées entre le serveur et le client.
+ * Accès aux données de jeu, partagé entre le serveur et le client.
  *
- * Les données (plateau, cartes, règles) sont volontairement en JSON pur :
- * on peut corriger un loyer ou un texte de carte sans toucher au code du moteur.
+ * Tout passe par l'édition de la partie en cours : ces fonctions prennent donc
+ * l'état (ou un identifiant d'édition) en premier argument. C'est ce qui permet
+ * à un même moteur de faire tourner plusieurs éditions sans se dupliquer.
  */
-import board from './data/board.json' with { type: 'json' };
-import groups from './data/groups.json' with { type: 'json' };
-import cards from './data/cards.json' with { type: 'json' };
-import rules from './data/rules.json' with { type: 'json' };
+import { getEdition, editionOf, EDITIONS, DEFAULT_EDITION, listEditions, OWNABLE_TYPES } from './editions.js';
 
-export { board, groups, cards, rules };
+export { getEdition, editionOf, EDITIONS, DEFAULT_EDITION, listEditions, OWNABLE_TYPES };
 
-/** Types de cases achetables. */
-export const OWNABLE_TYPES = ['property', 'railroad', 'utility'];
+/** Accepte indifféremment un état de partie ou un identifiant d'édition. */
+function resolve(source) {
+  if (typeof source === 'string') return getEdition(source);
+  return editionOf(source);
+}
 
-/** @param {number} id */
-export function getSpace(id) {
+/** Le plateau de cette édition. */
+export function boardOf(source) {
+  return resolve(source).board;
+}
+
+/** Les règles chiffrées et les mécaniques activées. */
+export function rulesOf(source) {
+  return resolve(source);
+}
+
+/** Les deux piles de cartes. */
+export function cardsOf(source) {
+  return resolve(source).cards;
+}
+
+/** Une case, par son numéro (l'index tourne autour du plateau). */
+export function getSpace(source, id) {
+  const board = boardOf(source);
   return board[((id % board.length) + board.length) % board.length];
 }
 
-/** @param {string} groupId */
-export function getGroup(groupId) {
-  return groups[groupId];
+/** Un groupe de couleur (ou les gares, ou les compagnies). */
+export function getGroup(source, groupId) {
+  return resolve(source).groups[groupId];
 }
 
-/** Toutes les cases achetables (terrains + gares + compagnies). */
-export function ownableSpaces() {
-  return board.filter((s) => OWNABLE_TYPES.includes(s.type));
+/** Toutes les cases achetables : terrains, gares, compagnies. */
+export function ownableSpaces(source) {
+  return boardOf(source).filter((s) => OWNABLE_TYPES.includes(s.type));
 }
 
-/** Les cases d'un groupe de couleur, dans l'ordre du plateau. */
-export function spacesOfGroup(groupId) {
-  return groups[groupId].spaces.map(getSpace);
+/** Les cases d'un groupe, dans l'ordre du plateau. */
+export function spacesOfGroup(source, groupId) {
+  return getGroup(source, groupId).spaces.map((id) => getSpace(source, id));
 }
 
-/** @param {number} id */
-export function isOwnable(id) {
-  return OWNABLE_TYPES.includes(getSpace(id).type);
+/** @returns {boolean} */
+export function isOwnable(source, id) {
+  return OWNABLE_TYPES.includes(getSpace(source, id).type);
 }
 
-/**
- * Nombre de cases à parcourir de `from` à `to` en avançant (sens du jeu).
- * Sert à savoir si on passe par la case Départ.
- */
-export function forwardDistance(from, to) {
-  return (((to - from) % board.length) + board.length) % board.length;
+/** Nombre de cases à parcourir de `from` à `to` en avançant. */
+export function forwardDistance(source, from, to) {
+  const size = boardOf(source).length;
+  return (((to - from) % size) + size) % size;
 }
 
 /**
  * Vrai si un déplacement de `from` vers `to` en avançant franchit (ou atteint)
  * la case Départ. Un déplacement nul ne compte pas.
  */
-export function passesGo(from, to) {
-  const steps = forwardDistance(from, to);
-  return steps > 0 && from + steps >= board.length;
+export function passesGo(source, from, to) {
+  const size = boardOf(source).length;
+  const steps = forwardDistance(source, from, to);
+  return steps > 0 && from + steps >= size;
 }

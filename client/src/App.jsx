@@ -11,11 +11,14 @@ import TradeDialog from './components/TradeDialog.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import GameOver from './components/GameOver.jsx';
 import { PropertyCard } from './components/Actions.jsx';
-import cards from '../../shared/data/cards.json';
+import { editionFor } from './lib/board.js';
 
-const ALL_CARDS = Object.fromEntries(
-  Object.entries(cards).flatMap(([deck, list]) => list.map((card) => [card.id, { ...card, deck }])),
-);
+function allCardsOf(state) {
+  const cards = editionFor(state).cards;
+  return Object.fromEntries(
+    Object.entries(cards).flatMap(([deck, list]) => list.map((card) => [card.id, { ...card, deck }])),
+  );
+}
 
 export default function App() {
   const { state, me, mine, error, connected, setError, leave, focusOn } = useGame();
@@ -57,7 +60,7 @@ export default function App() {
 
   // La carte n'est montrée que le temps de la piocher et de la valider.
   const revealed = state.pending?.kind === 'card_reveal';
-  const drawnCard = revealed && state.drawnCardId ? ALL_CARDS[state.drawnCardId] : null;
+  const drawnCard = revealed && state.drawnCardId ? allCardsOf(state)[state.drawnCardId] : null;
   const myTurnToDraw = state.pending?.kind === 'draw_card' && me && state.pending.playerIds.includes(me.id);
   const revealedIsMine = revealed && me && state.pending.playerIds.includes(me.id);
 
@@ -151,7 +154,7 @@ export default function App() {
           onClick={() => setInspected(null)}
         >
           <div className="w-full max-w-xs" onClick={(e) => e.stopPropagation()}>
-            <PropertyCard spaceId={inspected} />
+            <PropertyCard state={state} spaceId={inspected} />
             <button
               onClick={() => setInspected(null)}
               className="mt-2 w-full rounded border border-black/15 bg-white py-2 font-condensed text-sm uppercase hover:bg-black/5"

@@ -21,25 +21,33 @@ const TONE = {
 };
 
 function Journal({ log }) {
-  const bottom = useRef(null);
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: 'smooth' }), [log.length]);
+  const list = useRef(null);
+  // On ne descend que dans ce panneau : `scrollIntoView` remonte toute la chaîne
+  // de conteneurs défilants (jusqu'à la page entière sur mobile), ce qui faisait
+  // sauter tout l'écran vers le bas à chaque nouvelle ligne du journal.
+  useEffect(() => {
+    const el = list.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [log.length]);
 
   return (
-    <div className="scroll-thin flex-1 space-y-1 overflow-y-auto pr-1 text-[12px] leading-snug">
+    <div ref={list} className="scroll-thin flex-1 space-y-1 overflow-y-auto pr-1 text-[12px] leading-snug">
       {log.map((entry) => (
         <p key={entry.id} className={TONE[entry.type] ?? 'text-ink'}>
           {entry.text}
         </p>
       ))}
-      <div ref={bottom} />
     </div>
   );
 }
 
 function Chat({ state, actor }) {
   const [text, setText] = useState('');
-  const bottom = useRef(null);
-  useEffect(() => bottom.current?.scrollIntoView({ behavior: 'smooth' }), [state.chat.length]);
+  const list = useRef(null);
+  useEffect(() => {
+    const el = list.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [state.chat.length]);
 
   const send = (event) => {
     event.preventDefault();
@@ -50,7 +58,7 @@ function Chat({ state, actor }) {
 
   return (
     <>
-      <div className="scroll-thin flex-1 space-y-1 overflow-y-auto pr-1 text-[12px]">
+      <div ref={list} className="scroll-thin flex-1 space-y-1 overflow-y-auto pr-1 text-[12px]">
         {state.chat.map((message) => {
           const author = state.players.find((p) => p.id === message.playerId);
           return (
@@ -62,7 +70,6 @@ function Chat({ state, actor }) {
             </p>
           );
         })}
-        <div ref={bottom} />
       </div>
       <form onSubmit={send} className="mt-2 flex gap-2">
         <input

@@ -6,7 +6,7 @@
  * les animer — un pion qu'on déplace de case en case, comme à la main.
  */
 import { useEffect, useRef, useState } from 'react';
-import { spaceRect } from '../lib/board.js';
+import { spaceRect, boardOf } from '../lib/board.js';
 import TokenIcon from './TokenIcon.jsx';
 
 const STEP_MS = 260; // durée d'un pas — on prend le temps de voir le pion avancer
@@ -19,7 +19,7 @@ const DIRECT_JUMP = 13; // au-delà, on saute directement (prison, carte « recu
  * sont relues à chaque battement dans une ref : un déplacement qui arrive au
  * milieu d'une animation est donc pris en compte, au lieu de la bloquer.
  */
-function useWalk(players, hold) {
+function useWalk(state, players, hold) {
   const [shown, setShown] = useState({});
   const targets = useRef({});
   // Tant que les dés roulent, on garde les anciennes cibles : le pion ne part
@@ -48,8 +48,9 @@ function useWalk(players, hold) {
         for (const [id, target] of Object.entries(targets.current)) {
           const current = prev[id];
           if (current === undefined || current === target) continue;
-          const forward = (target - current + 40) % 40;
-          const step = forward > 0 && forward < DIRECT_JUMP ? (current + 1) % 40 : target;
+          const size = boardOf(state).length;
+          const forward = (target - current + size) % size;
+          const step = forward > 0 && forward < DIRECT_JUMP ? (current + 1) % size : target;
           if (next === prev) next = { ...prev };
           next[id] = step;
         }
@@ -62,8 +63,8 @@ function useWalk(players, hold) {
   return shown;
 }
 
-export default function Pawns({ players, hold = false }) {
-  const shown = useWalk(players, hold);
+export default function Pawns({ state, players, hold = false }) {
+  const shown = useWalk(state, players, hold);
 
   // Plusieurs pions sur la même case : on les décale en éventail.
   const perSpace = {};
@@ -77,7 +78,7 @@ export default function Pawns({ players, hold = false }) {
       {players.map((player) => {
         const space = shown[player.id] ?? player.position;
         const moving = space !== player.position;
-        const rect = spaceRect(space);
+        const rect = spaceRect(state, space);
         const group = perSpace[space];
         const spread =
           group.length > 1 ? (group.indexOf(player.id) - (group.length - 1) / 2) * (rect.w * 0.52) : 0;

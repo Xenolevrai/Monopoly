@@ -25,7 +25,7 @@ export function startAuction(state, spaceId, openerId = null) {
     minimumRaise: 1,
   };
   state.pending = { kind: 'auction_bid', playerIds: [bidders[startIndex]], payload: { spaceId } };
-  log(state, 'auction', `${getSpace(spaceId).name} est mise aux enchères.`, { spaceId });
+  log(state, 'auction', `${getSpace(state, spaceId).name} est mise aux enchères.`, { spaceId });
   return { ok: true };
 }
 
@@ -89,7 +89,7 @@ function advanceAuction(state) {
 /** Attribue le lot, ou le laisse à la banque si personne n'a misé. */
 function closeAuction(state) {
   const { spaceId, highestBid, highestBidderId } = state.auction;
-  const space = getSpace(spaceId);
+  const space = getSpace(state, spaceId);
   state.auction = null;
   state.pending = { kind: null, playerIds: [] };
 

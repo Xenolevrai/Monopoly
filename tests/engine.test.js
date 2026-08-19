@@ -31,6 +31,26 @@ test('acheter débite le solde et inscrit la propriétaire', () => {
   assert.equal(game.state.pending.kind, 'end_turn');
 });
 
+test('on peut hypothéquer pour réunir de quoi acheter la case où l\'on vient de tomber', () => {
+  const game = newGame();
+  give(game, 'p0', [1]); // Boulevard de Belleville, hypothèque 30 €
+  setCash(game, 'p0', 80); // il manque 20 € pour la Rue de Vaugirard (100 €)
+  forceDice(game, [2, 4]);
+  act(game, 'p0', { type: 'ROLL_DICE' });
+
+  assert.equal(game.state.pending.kind, 'buy_or_auction');
+  assert.equal(game.state.pending.payload.canAfford, false);
+
+  // Hypothéquer ne fait pas perdre la main : la proposition d'achat tient.
+  act(game, 'p0', { type: 'MORTGAGE', spaceId: 1 });
+  assert.equal(playerById(game.state, 'p0').cash, 110);
+  assert.equal(game.state.pending.kind, 'buy_or_auction', 'la proposition d\'achat doit rester ouverte');
+
+  act(game, 'p0', { type: 'BUY_PROPERTY' });
+  assert.equal(game.state.properties[6].ownerId, 'p0');
+  assert.equal(playerById(game.state, 'p0').cash, 10);
+});
+
 test('passer par la case Départ rapporte 200 €', () => {
   const game = newGame();
   place(game, 'p0', 38);

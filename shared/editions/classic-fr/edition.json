@@ -1,0 +1,60 @@
+{
+  "id": "classic-fr",
+  "name": "Monopoly Classique",
+  "theme": "Rues de Paris",
+  "tagline": "Les règles d'origine, plateau parisien.",
+  "summary": "Achetez des rues, construisez, encaissez les loyers, ruinez les autres.",
+  "playerCount": { "min": 2, "max": 6 },
+  "board": { "size": 40 },
+  "money": {
+    "label": "€",
+    "startingAmount": 1500,
+    "goSalary": 200,
+    "singleDenomination": false,
+    "denominations": [500, 100, 50, 20, 10, 5, 1]
+  },
+  "jail": { "space": 10, "bail": 50, "maxTurns": 3 },
+  "dice": { "count": 2, "sides": 6, "doublesToJail": 3 },
+  "bank": { "houses": 32, "hotels": 12 },
+  "mortgage": { "enabled": true, "interestRate": 0.1 },
+  "turnMode": "sequential",
+  "winCondition": "lastPlayerStanding",
+  "mechanics": {
+    "houses": true,
+    "hotels": true,
+    "mortgage": true,
+    "bankruptcyEliminates": true,
+    "trading": true,
+    "auctions": true,
+    "negotiableRent": true,
+    "cheatCards": false,
+    "towerMode": false,
+    "explorationMode": false,
+    "draftMode": false,
+    "battleSpaces": false
+  },
+  "houseRules": {
+    "freeParkingPot": false,
+    "auctionOnDecline": true,
+    "collectGoOnGoToLyon": true,
+    "evenBuildRule": true,
+    "auctionBankruptcyAssets": true
+  },
+  "tokens": [
+    { "id": "chapeau", "label": "Chapeau", "color": "#C6303A" },
+    { "id": "chat", "label": "Chat", "color": "#2A5CAA" },
+    { "id": "bateau", "label": "Bateau", "color": "#2E9E63" },
+    { "id": "brouette", "label": "Brouette", "color": "#E8862B" },
+    { "id": "de", "label": "Dé à coudre", "color": "#D45A93" },
+    { "id": "lanterne", "label": "Lanterne", "color": "#7B4FA8" }
+  ],
+  "theming": {
+    "palette": "table",
+    "centerTitle": "Monopoly",
+    "centerSubtitle": "Paris",
+    "decks": {
+      "chance": { "label": "Chance", "color": "#b3242c", "glyph": "?" },
+      "community_chest": { "label": "Caisse de Communauté", "color": "#2f5c8f", "glyph": "▤" }
+    }
+  }
+}

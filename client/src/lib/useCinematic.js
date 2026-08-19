@@ -18,7 +18,9 @@ const ROLL_MS = 1100; // le temps que les dés roulent avant de se poser
 
 export function useCinematic(state) {
   const values = state?.dice?.values ?? null;
-  const key = values ? `${state.version}:${values.join('-')}` : null;
+  // La clé ne doit changer que pour un *nouveau lancer* — pas à chaque action qui
+  // suit (achat, chat…), sans quoi les dés rejouent leur animation à chaque fois.
+  const key = values ? `${state.dice.rollId ?? 0}` : null;
 
   const lastRoll = useRef(undefined);
   const until = useRef(0);

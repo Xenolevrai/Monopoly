@@ -3,7 +3,10 @@
  * tout ce qui peut se recalculer (loyer, groupe complet, valeur du patrimoine)
  * est calculé, jamais stocké — c'est ce qui évite les incohérences.
  */
-import { getSpace, getGroup, board, rules } from '../../shared/index.js';
+import { getSpace, getGroup, boardOf, rulesOf } from '../../shared/index.js';
+
+/** Les règles chiffrées de l'édition en cours. */
+export const config = (state) => rulesOf(state);
 
 export function playerById(state, playerId) {
   return state.players.find((p) => p.id === playerId) ?? null;
@@ -25,14 +28,14 @@ export function propertiesOf(state, playerId) {
 
 /** Vrai si la joueuse possède tout le groupe de couleur de cette case. */
 export function ownsFullGroup(state, playerId, groupId) {
-  const group = getGroup(groupId);
+  const group = getGroup(state, groupId);
   if (!group) return false;
   return group.spaces.every((id) => state.properties[id].ownerId === playerId);
 }
 
 /** Vrai si aucune case du groupe n'est hypothéquée. */
 export function groupIsClear(state, groupId) {
-  return getGroup(groupId).spaces.every((id) => !state.properties[id].mortgaged);
+  return getGroup(state, groupId).spaces.every((id) => !state.properties[id].mortgaged);
 }
 
 /** Niveau de construction d'une case : 0-4 maisons, 5 = hôtel. */
@@ -42,12 +45,14 @@ export function buildingLevel(prop) {
 
 /** Nombre de gares possédées par une joueuse. */
 export function railroadCount(state, playerId) {
-  return getGroup('railroad').spaces.filter((id) => state.properties[id].ownerId === playerId).length;
+  return (getGroup(state, 'railroad')?.spaces ?? []).filter((id) => state.properties[id].ownerId === playerId)
+    .length;
 }
 
 /** Nombre de compagnies possédées par une joueuse. */
 export function utilityCount(state, playerId) {
-  return getGroup('utility').spaces.filter((id) => state.properties[id].ownerId === playerId).length;
+  return (getGroup(state, 'utility')?.spaces ?? []).filter((id) => state.properties[id].ownerId === playerId)
+    .length;
 }
 
 /**
@@ -58,7 +63,7 @@ export function utilityCount(state, playerId) {
  * @returns {number} 0 si la case est libre, hypothéquée, ou appartient au visiteur
  */
 export function rentFor(state, spaceId, opts = {}) {
-  const space = getSpace(spaceId);
+  const space = getSpace(state, spaceId);
   const prop = state.properties[spaceId];
   if (!prop || !prop.ownerId || prop.mortgaged) return 0;
 
@@ -100,7 +105,7 @@ export function buildingsOf(state, playerId) {
  * @returns {{ ok: boolean, reason?: string, cost?: number, isHotel?: boolean }}
  */
 export function canBuild(state, playerId, spaceId) {
-  const space = getSpace(spaceId);
+  const space = getSpace(state, spaceId);
   const prop = state.properties[spaceId];
   if (!prop || space.type !== 'property') return { ok: false, reason: 'Cette case ne se construit pas.' };
   if (prop.ownerId !== playerId) return { ok: false, reason: "Cette propriété n'est pas à vous." };
@@ -117,7 +122,7 @@ export function canBuild(state, playerId, spaceId) {
     return { ok: false, reason: "Il n'y a plus de maison disponible à la banque." };
 
   // Répartition égale : on ne construit que sur le terrain le moins bâti du groupe.
-  const levels = getGroup(space.group).spaces.map((id) => buildingLevel(state.properties[id]));
+  const levels = getGroup(state, space.group).spaces.map((id) => buildingLevel(state.properties[id]));
   if (buildingLevel(prop) > Math.min(...levels))
     return { ok: false, reason: 'La construction doit être répartie également sur le groupe.' };
 
@@ -133,13 +138,13 @@ export function canBuild(state, playerId, spaceId) {
  * @returns {{ ok: boolean, reason?: string, refund?: number, fromHotel?: boolean, razeHotel?: boolean }}
  */
 export function canSellBuilding(state, playerId, spaceId) {
-  const space = getSpace(spaceId);
+  const space = getSpace(state, spaceId);
   const prop = state.properties[spaceId];
   if (!prop || space.type !== 'property') return { ok: false, reason: 'Cette case ne se construit pas.' };
   if (prop.ownerId !== playerId) return { ok: false, reason: "Cette propriété n'est pas à vous." };
   if (buildingLevel(prop) === 0) return { ok: false, reason: 'Aucune construction à revendre.' };
 
-  const levels = getGroup(space.group).spaces.map((id) => buildingLevel(state.properties[id]));
+  const levels = getGroup(state, space.group).spaces.map((id) => buildingLevel(state.properties[id]));
   if (buildingLevel(prop) < Math.max(...levels))
     return { ok: false, reason: 'La revente doit être répartie également sur le groupe.' };
 
@@ -155,7 +160,7 @@ export function canSellBuilding(state, playerId, spaceId) {
 
 /** Coût pour lever une hypothèque : montant + 10 % d'intérêt, arrondi au supérieur. */
 export function unmortgageCost(state, spaceId) {
-  return Math.ceil(getSpace(spaceId).mortgage * (1 + rules.mortgageInterestRate));
+  return Math.ceil(getSpace(state, spaceId).mortgage * (1 + config(state).mortgage.interestRate));
 }
 
 /**
@@ -167,7 +172,7 @@ export function maxRaisable(state, playerId) {
   const player = playerById(state, playerId);
   let total = player.cash;
   for (const prop of propertiesOf(state, playerId)) {
-    const space = getSpace(prop.spaceId);
+    const space = getSpace(state, prop.spaceId);
     const level = buildingLevel(prop);
     if (level > 0) total += level * (space.houseCost / 2);
     if (!prop.mortgaged) total += space.mortgage;
@@ -180,7 +185,7 @@ export function netWorth(state, playerId) {
   const player = playerById(state, playerId);
   let total = player.cash;
   for (const prop of propertiesOf(state, playerId)) {
-    const space = getSpace(prop.spaceId);
+    const space = getSpace(state, prop.spaceId);
     total += prop.mortgaged ? space.mortgage : space.price;
     // Les gares et compagnies n'ont pas de coût de maison : sans ce garde-fou,
     // `0 * undefined` donnait NaN et emportait tout le patrimoine avec lui.
@@ -191,5 +196,5 @@ export function netWorth(state, playerId) {
 
 /** Toutes les cases achetables encore libres. */
 export function unownedSpaces(state) {
-  return board.filter((s) => state.properties[s.id]?.ownerId == null && state.properties[s.id]);
+  return boardOf(state).filter((s) => state.properties[s.id]?.ownerId == null && state.properties[s.id]);
 }

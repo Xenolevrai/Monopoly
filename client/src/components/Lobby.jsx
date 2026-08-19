@@ -1,8 +1,12 @@
 /** Accueil (créer / rejoindre) puis salon d'attente avec le code à partager. */
 import { useEffect, useState } from 'react';
 import { socket } from '../lib/socket.js';
-import rules from '../../../shared/data/rules.json';
+import { getEdition, DEFAULT_EDITION } from '../lib/board.js';
 import TokenIcon from './TokenIcon.jsx';
+
+// Avant qu'une partie n'existe (accueil, salon d'attente), il n'y a pas encore
+// d'édition choisie : on affiche celle par défaut.
+const rules = getEdition(DEFAULT_EDITION);
 
 function Logo({ small = false }) {
   return (
@@ -314,7 +318,7 @@ export function WaitingRoom({ state, mine, onLeave }) {
   const [copied, setCopied] = useState(false);
   const [adding, setAdding] = useState(false);
   const taken = state.players.map((p) => p.token);
-  const full = state.players.length >= rules.maxPlayers;
+  const full = state.players.length >= rules.playerCount.max;
 
   const copy = async () => {
     try {
@@ -351,7 +355,7 @@ export function WaitingRoom({ state, mine, onLeave }) {
 
         <div className="space-y-2">
           <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
-            Joueuses ({state.players.length}/{rules.maxPlayers})
+            Joueuses ({state.players.length}/{rules.playerCount.max})
           </p>
           {state.players.map((player) => (
             <div
@@ -418,12 +422,12 @@ export function WaitingRoom({ state, mine, onLeave }) {
             qui a la souris clique. */}
         <button
           type="button"
-          disabled={state.players.length < rules.minPlayers}
+          disabled={state.players.length < rules.playerCount.min}
           onClick={() => socket.emit('game:start')}
           className="w-full rounded bg-[var(--color-accent)] py-2.5 font-condensed text-base uppercase tracking-wide text-white transition-colors hover:bg-[var(--color-accent-deep)] disabled:bg-black/15 disabled:text-black/40"
         >
-          {state.players.length < rules.minPlayers
-            ? `Il faut au moins ${rules.minPlayers} joueuses`
+          {state.players.length < rules.playerCount.min
+            ? `Il faut au moins ${rules.playerCount.min} joueuses`
             : 'Lancer la partie'}
         </button>
         <p className="text-center text-[11px] text-ink-soft">

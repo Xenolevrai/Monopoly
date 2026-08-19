@@ -2,17 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  board,
-  groups,
-  cards,
-  rules,
+  getEdition,
   getSpace,
   ownableSpaces,
   spacesOfGroup,
   forwardDistance,
   passesGo,
 } from '../shared/index.js';
+
 import { createGameState, createPlayer } from '../shared/schema.js';
+
+const EDITION = 'classic-fr';
+const edition = getEdition(EDITION);
+const { board, groups, cards } = edition;
 
 test('le plateau contient 40 cases numérotées de 0 à 39', () => {
   assert.equal(board.length, 40);
@@ -35,15 +37,15 @@ test('chaque groupe de couleur référence les bonnes cases', () => {
   for (const group of Object.values(groups)) {
     assert.equal(group.spaces.length, group.size, `taille du groupe ${group.id}`);
     for (const id of group.spaces) {
-      assert.equal(getSpace(id).group, group.id, `case ${id} → groupe ${group.id}`);
+      assert.equal(getSpace(EDITION, id).group, group.id, `case ${id} → groupe ${group.id}`);
     }
   }
   // Inversement : toute case achetable appartient à un groupe déclaré.
-  for (const space of ownableSpaces()) {
+  for (const space of ownableSpaces(EDITION)) {
     assert.ok(groups[space.group], `groupe manquant pour la case ${space.id}`);
     assert.ok(groups[space.group].spaces.includes(space.id));
   }
-  assert.equal(ownableSpaces().length, 28);
+  assert.equal(ownableSpaces(EDITION).length, 28);
 });
 
 test('les terrains ont 6 paliers de loyer croissants et une hypothèque = prix / 2', () => {
@@ -71,12 +73,12 @@ test('gares et compagnies suivent les tarifs officiels', () => {
 });
 
 test('les taxes et les coins sont aux bons emplacements', () => {
-  assert.equal(getSpace(4).amount, 200);
-  assert.equal(getSpace(38).amount, 100);
-  assert.equal(getSpace(0).type, 'go');
-  assert.equal(getSpace(10).type, 'jail');
-  assert.equal(getSpace(20).type, 'free_parking');
-  assert.equal(getSpace(30).type, 'go_to_jail');
+  assert.equal(getSpace(EDITION, 4).amount, 200);
+  assert.equal(getSpace(EDITION, 38).amount, 100);
+  assert.equal(getSpace(EDITION, 0).type, 'go');
+  assert.equal(getSpace(EDITION, 10).type, 'jail');
+  assert.equal(getSpace(EDITION, 20).type, 'free_parking');
+  assert.equal(getSpace(EDITION, 30).type, 'go_to_jail');
 });
 
 test('les deux piles comptent 16 cartes avec des identifiants uniques', () => {
@@ -103,23 +105,23 @@ test('toutes les cases ciblées par une carte existent', () => {
 });
 
 test('le stock de la banque et les constantes de règles sont ceux du jeu officiel', () => {
-  assert.equal(rules.startingCash, 1500);
-  assert.equal(rules.goSalary, 200);
-  assert.equal(rules.jailBail, 50);
-  assert.equal(rules.housesInBank, 32);
-  assert.equal(rules.hotelsInBank, 12);
-  assert.equal(rules.mortgageInterestRate, 0.1);
-  assert.equal(rules.tokens.length, rules.maxPlayers);
+  assert.equal(edition.money.startingAmount, 1500);
+  assert.equal(edition.money.goSalary, 200);
+  assert.equal(edition.jail.bail, 50);
+  assert.equal(edition.bank.houses, 32);
+  assert.equal(edition.bank.hotels, 12);
+  assert.equal(edition.mortgage.interestRate, 0.1);
+  assert.equal(edition.tokens.length, edition.playerCount.max);
 });
 
 test('forwardDistance et passesGo gèrent le tour du plateau', () => {
-  assert.equal(forwardDistance(0, 5), 5);
-  assert.equal(forwardDistance(38, 2), 4);
-  assert.equal(passesGo(38, 2), true);
-  assert.equal(passesGo(5, 15), false);
-  assert.equal(passesGo(22, 15), true, 'Chance 22 → Gare de Lyon repasse par Départ');
-  assert.equal(passesGo(7, 39), false, 'Chance 7 → Rue de la Paix ne repasse pas par Départ');
-  assert.equal(passesGo(10, 10), false, 'un déplacement nul ne paie pas le salaire');
+  assert.equal(forwardDistance(EDITION, 0, 5), 5);
+  assert.equal(forwardDistance(EDITION, 38, 2), 4);
+  assert.equal(passesGo(EDITION, 38, 2), true);
+  assert.equal(passesGo(EDITION, 5, 15), false);
+  assert.equal(passesGo(EDITION, 22, 15), true, 'Chance 22 → Gare de Lyon repasse par Départ');
+  assert.equal(passesGo(EDITION, 7, 39), false, 'Chance 7 → Rue de la Paix ne repasse pas par Départ');
+  assert.equal(passesGo(EDITION, 10, 10), false, 'un déplacement nul ne paie pas le salaire');
 });
 
 test('l\'état initial couvre les 28 propriétés et le stock de la banque', () => {
@@ -141,7 +143,7 @@ test('une joueuse démarre avec 1500 € sur la case Départ', () => {
 
 test('spacesOfGroup renvoie les terrains dans l\'ordre du plateau', () => {
   assert.deepEqual(
-    spacesOfGroup('orange').map((s) => s.shortName),
+    spacesOfGroup(EDITION, 'orange').map((s) => s.shortName),
     ['Mozart', 'Saint-Michel', 'Pigalle'],
   );
 });

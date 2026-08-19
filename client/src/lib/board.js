@@ -1,62 +1,80 @@
 /**
- * Données du plateau côté client et placement dans la grille 11 × 11.
+ * Données de plateau côté client, lues dans l'édition de la partie en cours.
  *
- * Le plateau est importé directement depuis `shared/` : le client et le serveur
- * lisent exactement les mêmes prix et les mêmes loyers.
+ * Les éditions sont importées depuis `shared/` : le client et le serveur lisent
+ * exactement les mêmes prix, les mêmes loyers et les mêmes cartes.
  */
-import board from '../../../shared/data/board.json';
-import groups from '../../../shared/data/groups.json';
+import { getEdition, listEditions, DEFAULT_EDITION } from '../../../shared/editions.js';
 
-export { board, groups };
+export { getEdition, listEditions, DEFAULT_EDITION };
 
-export const SIZE = 11;
+/** L'édition d'une partie (ou le classique tant qu'on n'est dans aucune partie). */
+export function editionFor(state) {
+  return getEdition(state?.editionId);
+}
+
+export function boardOf(state) {
+  return editionFor(state).board;
+}
+
+export function groupsOf(state) {
+  return editionFor(state).groups;
+}
+
+/** Le côté de la grille : 11 pour un plateau de 40 cases, 6 pour 20. */
+export function gridSize(state) {
+  return boardOf(state).length / 4 + 1;
+}
 
 /**
  * Position d'une case dans la grille CSS.
- * Départ en bas à droite, on tourne dans le sens du jeu (sens anti-horaire).
- * @returns {{ col: number, row: number, side: string }}
+ * Départ en bas à droite, on tourne dans le sens du jeu.
  */
-export function gridPosition(id) {
-  if (id <= 10) return { col: SIZE - id, row: SIZE, side: 'bottom' };
-  if (id <= 20) return { col: 1, row: SIZE - (id - 10), side: 'left' };
-  if (id <= 30) return { col: 1 + (id - 20), row: 1, side: 'top' };
-  return { col: SIZE, row: 1 + (id - 30), side: 'right' };
+export function gridPosition(state, id) {
+  const size = gridSize(state);
+  const side = size - 1; // cases par côté, coin de départ inclus
+  if (id <= side) return { col: size - id, row: size, side: 'bottom' };
+  if (id <= side * 2) return { col: 1, row: size - (id - side), side: 'left' };
+  if (id <= side * 3) return { col: 1 + (id - side * 2), row: 1, side: 'top' };
+  return { col: size, row: 1 + (id - side * 3), side: 'right' };
 }
 
-/**
- * Centre d'une case, en pourcentage du plateau.
- *
- * La grille vaut `1.55fr` pour les coins et `1fr` pour les autres : on refait le
- * même calcul ici pour poser les pions dans une couche flottante au-dessus du
- * plateau. C'est ce qui permet de les déplacer en glissant plutôt qu'en sautant
- * d'une case à l'autre.
- */
+/** Les coins sont plus grands que les cases de bord, comme sur le plateau papier. */
 const CORNER_SPAN = 1.55;
-const TOTAL_SPAN = CORNER_SPAN * 2 + 9;
 
-/** Bord gauche (en %) et largeur (en %) de la colonne/ligne `index` (1 à 11). */
-function track(index) {
+function track(index, size) {
+  const total = CORNER_SPAN * 2 + (size - 2);
   const before = index === 1 ? 0 : CORNER_SPAN + (index - 2);
-  const size = index === 1 || index === SIZE ? CORNER_SPAN : 1;
-  return { start: (before / TOTAL_SPAN) * 100, size: (size / TOTAL_SPAN) * 100 };
+  const span = index === 1 || index === size ? CORNER_SPAN : 1;
+  return { start: (before / total) * 100, size: (span / total) * 100 };
 }
 
-/** @returns {{ x: number, y: number, w: number, h: number }} en % du plateau */
-export function spaceRect(id) {
-  const { col, row } = gridPosition(id);
-  const c = track(col);
-  const r = track(row);
+/** Centre et dimensions d'une case, en pourcentage du plateau. */
+export function spaceRect(state, id) {
+  const size = gridSize(state);
+  const { col, row } = gridPosition(state, id);
+  const c = track(col, size);
+  const r = track(row, size);
   return { x: c.start + c.size / 2, y: r.start + r.size / 2, w: c.size, h: r.size };
 }
 
+/** Le gabarit `grid-template` correspondant à cette édition. */
+export function gridTemplate(state) {
+  const size = gridSize(state);
+  return `${CORNER_SPAN}fr repeat(${size - 2}, 1fr) ${CORNER_SPAN}fr`;
+}
+
 /** Couleur du groupe d'une case, ou null. */
-export function groupColor(space) {
-  return space.group ? groups[space.group]?.color ?? null : null;
+export function groupColor(state, space) {
+  return space.group ? (groupsOf(state)[space.group]?.color ?? null) : null;
 }
 
 /** Les cases achetables d'une joueuse, regroupées par couleur. */
 export function propertiesByGroup(state, playerId) {
+  const board = boardOf(state);
+  const groups = groupsOf(state);
   const owned = Object.values(state.properties ?? {}).filter((p) => p.ownerId === playerId);
+
   const byGroup = new Map();
   for (const prop of owned) {
     const space = board[prop.spaceId];
@@ -64,6 +82,7 @@ export function propertiesByGroup(state, playerId) {
     list.push({ ...prop, space });
     byGroup.set(space.group, list);
   }
+
   // Ordre du plateau, pour que l'affichage soit stable.
   return [...byGroup.entries()]
     .sort((a, b) => groups[a[0]].spaces[0] - groups[b[0]].spaces[0])
@@ -74,12 +93,13 @@ export function propertiesByGroup(state, playerId) {
     }));
 }
 
-/** Formate un montant : 1 500 €. */
-export function euros(amount) {
-  return `${Math.round(amount ?? 0).toLocaleString('fr-FR')} €`;
+/** Formate un montant dans la monnaie de l'édition : 1 500 €, 320 points… */
+export function money(state, amount) {
+  const label = editionFor(state).money.label ?? '€';
+  return `${Math.round(amount ?? 0).toLocaleString('fr-FR')} ${label}`;
 }
 
-/** Nom court d'une case, pour les listes serrées. */
-export function shortName(spaceId) {
-  return board[spaceId]?.shortName ?? '';
+/** Raccourci pour les écrans qui n'ont pas l'état sous la main (euros). */
+export function euros(amount) {
+  return `${Math.round(amount ?? 0).toLocaleString('fr-FR')} €`;
 }

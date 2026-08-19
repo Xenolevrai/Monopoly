@@ -3,7 +3,7 @@
  * cernées d'un filet noir, bandeaux de couleur pleins, et — comme sur la vraie
  * boîte — les textes orientés vers le centre selon le côté du plateau.
  */
-import { board, gridPosition, groupColor, euros } from '../lib/board.js';
+import { boardOf, gridPosition, gridTemplate, groupColor, editionFor, money } from '../lib/board.js';
 import { iconFor } from './SpaceIcons.jsx';
 import Pawns from './Pawns.jsx';
 import Dice from './Dice.jsx';
@@ -47,8 +47,8 @@ function Buildings({ prop }) {
 }
 
 function Space({ space, state, active, onSelect }) {
-  const { col, row, side } = gridPosition(space.id);
-  const color = groupColor(space);
+  const { col, row, side } = gridPosition(state, space.id);
+  const color = groupColor(state, space);
   const prop = state.properties?.[space.id];
   const owner = prop?.ownerId ? state.players.find((p) => p.id === prop.ownerId) : null;
   const Icon = iconFor(space);
@@ -131,10 +131,11 @@ function Space({ space, state, active, onSelect }) {
  * Les deux tas de cartes, posés au centre comme sur le plateau.
  * Quand c'est à nous de piocher, le tas concerné s'anime et devient cliquable.
  */
-function CardPiles({ canDraw, deckToDraw, onDraw }) {
+function CardPiles({ state, canDraw, deckToDraw, onDraw }) {
+  const decks = editionFor(state).theming?.decks ?? {};
   const piles = [
-    { id: 'chance', label: 'Chance', color: 'var(--color-accent)', tilt: -4 },
-    { id: 'community_chest', label: 'Caisse de Communauté', color: '#2f5c8f', tilt: 3 },
+    { id: 'chance', tilt: -4, ...decks.chance },
+    { id: 'community_chest', tilt: 3, ...decks.community_chest },
   ];
 
   return (
@@ -192,15 +193,17 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
         style={{ opacity: drawnCard ? 0 : 1 }}
       >
         <div className="border-y-2 border-ink bg-[var(--color-accent)] px-8 py-1.5 shadow-[0_3px_0_rgba(0,0,0,.35)]">
-          <p className="font-condensed text-3xl uppercase tracking-[0.18em] text-[#f7f4ea]">Monopoly</p>
+          <p className="font-condensed text-3xl uppercase tracking-[0.18em] text-[#f7f4ea]">
+            {editionFor(state).theming?.centerTitle ?? 'Monopoly'}
+          </p>
         </div>
         <p className="mt-1 text-center font-condensed text-[11px] uppercase tracking-[0.45em] text-ink-soft">
-          Paris
+          {editionFor(state).theming?.centerSubtitle ?? ''}
         </p>
       </div>
 
       <div className="absolute top-4 left-1/2 -translate-x-1/2">
-        <CardPiles canDraw={canDraw} deckToDraw={deckToDraw} onDraw={onDraw} />
+        <CardPiles state={state} canDraw={canDraw} deckToDraw={deckToDraw} onDraw={onDraw} />
       </div>
 
       <div className="absolute bottom-5 left-1/2 flex w-full -translate-x-1/2 flex-col items-center gap-3 px-4">
@@ -213,23 +216,19 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
         {state.settings?.freeParkingPot && state.freeParkingPot > 0 && (
           <p className="tabular text-[11px] text-ink-soft">
             Cagnotte du Parc Gratuit :{' '}
-            <span className="font-semibold text-[var(--color-money)]">{euros(state.freeParkingPot)}</span>
+            <span className="font-semibold text-[var(--color-money)]">{money(state, state.freeParkingPot)}</span>
           </p>
         )}
       </div>
 
       {drawnCard && (
         <div
-          className={`card-flip absolute left-1/2 top-1/2 w-[min(70%,320px)] -translate-x-1/2 -translate-y-1/2 border-[3px] p-4 text-center shadow-[0_18px_40px_-16px_rgba(0,0,0,.8)] ${
-            drawnCard.deck === 'chance'
-              ? 'border-[var(--color-accent)] bg-[#fdf6f0]'
-              : 'border-[#2f5c8f] bg-[#f2f6fb]'
-          }`}
+          className="card-flip absolute left-1/2 top-1/2 w-[min(70%,320px)] -translate-x-1/2 -translate-y-1/2 border-[3px] bg-[#fdfaf4] p-4 text-center shadow-[0_18px_40px_-16px_rgba(0,0,0,.8)]"
+          style={{ borderColor: editionFor(state).theming?.decks?.[drawnCard.deck]?.color }}
         >
           <p
-            className={`mb-2 font-condensed text-base uppercase tracking-[0.2em] ${
-              drawnCard.deck === 'chance' ? 'text-[var(--color-accent)]' : 'text-[#2f5c8f]'
-            }`}
+            className="mb-2 font-condensed text-base uppercase tracking-[0.2em]"
+            style={{ color: editionFor(state).theming?.decks?.[drawnCard.deck]?.color }}
           >
             {drawnCard.deck === 'chance' ? 'Chance' : 'Caisse de Communauté'}
           </p>
@@ -267,12 +266,9 @@ export default function Board({
       {/* Les quatre coins sont plus grands que les cases de bord, comme sur le plateau papier. */}
       <div
         className="relative grid h-full w-full"
-        style={{
-          gridTemplateColumns: '1.55fr repeat(9, 1fr) 1.55fr',
-          gridTemplateRows: '1.55fr repeat(9, 1fr) 1.55fr',
-        }}
+        style={{ gridTemplateColumns: gridTemplate(state), gridTemplateRows: gridTemplate(state) }}
       >
-        {board.map((space) => (
+        {boardOf(state).map((space) => (
           <Space
             key={space.id}
             space={space}
@@ -291,7 +287,7 @@ export default function Board({
           revealed={revealed}
           onAcknowledge={onAcknowledge}
         />
-        <Pawns players={state.players} hold={rolling} />
+        <Pawns state={state} players={state.players} hold={rolling} />
       </div>
     </div>
   );
