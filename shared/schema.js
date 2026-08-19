@@ -166,7 +166,10 @@ export function createGameState(code, hostId, editionId = DEFAULT_EDITION, local
     dice: { values: null, doublesCount: 0, rolled: false, extraRoll: false, rollId: 0 },
     properties,
     bank: { houses: edition.bank.houses, hotels: edition.bank.hotels },
-    decks: { chance: [], community_chest: [] },
+    // Un objet par paquet déclaré par l'édition fusionnée (extensions comprises),
+    // pas seulement chance/community_chest : une extension peut retirer ces deux-là
+    // et en ajouter d'autres (spin, corruption…).
+    decks: Object.fromEntries(Object.keys(merged.cards ?? {}).map((deck) => [deck, []])),
     drawnCardId: null,
     freeParkingPot: 0,
     pending: { kind: null, playerIds: [] },
@@ -180,7 +183,9 @@ export function createGameState(code, hostId, editionId = DEFAULT_EDITION, local
     logSeq: 0,
     chat: [],
     chatSeq: 0,
-    settings: { ...edition.houseRules },
+    // Les extensions peuvent changer des règles maison (ex. cagnotte Parc Gratuit
+    // toujours active) : on part de l'édition déjà fusionnée, pas de l'originale.
+    settings: { ...merged.houseRules },
     standings: [],
     winnerId: null,
     version: 0,

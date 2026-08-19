@@ -8,11 +8,47 @@ import { advance, resolveLanding, sendToJail } from './movement.js';
 import { returnJailCard } from './cards.js';
 import { startQueuedAuction } from './auction.js';
 
+/**
+ * La caution et le paquet de cartes qui s'appliquent à une joueuse en prison,
+ * selon la geôle où elle se trouve (`jailTier`). Générique : sans geôle
+ * sévère déclarée par l'édition (`jail.superBail`/`jail.superDeck`), retombe
+ * toujours sur la prison classique.
+ */
+function jailContext(state, player) {
+  const jail = config(state).jail;
+  const isSuper = player.jailTier === 'super';
+  return {
+    bail: isSuper ? (jail.superBail ?? jail.bail) : jail.bail,
+    deck: isSuper ? (jail.superDeck ?? jail.deck) : jail.deck,
+  };
+}
+
 /** Prépare le tour de la joueuse courante. */
 export function startTurn(state) {
   const player = currentPlayer(state);
   if (!player) return;
   state.dice = { values: null, doublesCount: 0, rolled: false, extraRoll: false, rollId: state.dice?.rollId ?? 0 };
+
+  // Une édition/extension qui déclare `jail.deck` remplace le jet de dés pour
+  // tenter les doubles par un choix explicite : payer, ou tirer une carte du
+  // paquet propre à cette geôle (Corruption / Super Corruption…).
+  const jail = jailContext(state, player);
+  if (player.inJail && jail.deck) {
+    state.pending = {
+      kind: 'card_choice',
+      playerIds: [player.id],
+      payload: {
+        options: [
+          { index: 0, label: say(state, 'jailPayOption', { amount: amountText(state, jail.bail) }) },
+          { index: 1, label: say(state, 'jailDrawOption') },
+        ],
+        actions: [{ type: 'pay_bail' }, { type: 'draw_card', deck: jail.deck }],
+      },
+    };
+    log(state, 'turn', say(state, 'turnOf', { name: player.name }), { playerId: player.id, turn: state.turnCount });
+    return;
+  }
+
   state.pending = {
     kind: 'roll',
     playerIds: [player.id],
@@ -20,9 +56,9 @@ export function startTurn(state) {
       ? {
           inJail: true,
           jailTurns: player.jailTurns,
-          canPayBail: player.cash >= config(state).jail.bail,
+          canPayBail: player.cash >= jail.bail,
           hasJailCard: player.getOutOfJailCards > 0,
-          bail: config(state).jail.bail,
+          bail: jail.bail,
         }
       : {},
   };
@@ -51,7 +87,10 @@ export function roll(state, playerId, rng) {
   if (player.inJail) return rollInJail(state, player, total, isDouble);
 
   state.dice.doublesCount = isDouble ? state.dice.doublesCount + 1 : 0;
-  if (state.dice.doublesCount >= config(state).dice.doublesToJail) {
+  // Une extension peut désactiver l'envoi en prison au bout de trois doubles :
+  // on relance et on continue d'avancer, comme n'importe quel double normal.
+  const doublesJailEnabled = !config(state).mechanics?.doublesNeverJail;
+  if (doublesJailEnabled && state.dice.doublesCount >= config(state).dice.doublesToJail) {
     log(state, 'jail', say(state, 'thirdDouble', { name: player.name }), { playerId });
     sendToJail(state, playerId);
     return finishResolution(state);
@@ -95,11 +134,12 @@ function rollInJail(state, player, total, isDouble) {
 export function payBail(state, playerId) {
   const player = playerById(state, playerId);
   if (!player.inJail) return { ok: false, error: "Vous n'êtes pas en prison." };
-  if (player.cash < config(state).jail.bail) return { ok: false, error: 'Fonds insuffisants pour la caution.' };
-  player.cash -= config(state).jail.bail;
+  const bail = jailContext(state, player).bail;
+  if (player.cash < bail) return { ok: false, error: 'Fonds insuffisants pour la caution.' };
+  player.cash -= bail;
   player.inJail = false;
   player.jailTurns = 0;
-  log(state, 'jail', say(state, 'jailBail', { name: player.name, amount: amountText(state, config(state).jail.bail) }), { playerId });
+  log(state, 'jail', say(state, 'jailBail', { name: player.name, amount: amountText(state, bail) }), { playerId });
   state.pending = { kind: 'roll', playerIds: [playerId], payload: {} };
   return { ok: true };
 }

@@ -67,6 +67,8 @@ const FR = {
     `${name} a passé ${max} tours en prison : elle paie la caution.`,
   jailBail: ({ name, amount }) => `${name} paie ${amount} de caution et sort de prison.`,
   jailCard: ({ name }) => `${name} utilise sa carte « libérée de prison ».`,
+  jailPayOption: ({ amount }) => `Payer ${amount} et sortir`,
+  jailDrawOption: () => 'Rester et tirer une carte',
   thirdDouble: ({ name }) => `${name} fait un troisième double d'affilée.`,
 
   draws: ({ name, deck, text }) => `${name} pioche une carte ${deck} : « ${text} »`,
@@ -172,6 +174,8 @@ const EN = {
   jailMaxed: ({ name, max }) => `${name} has spent ${max} turns in jail and pays the fine.`,
   jailBail: ({ name, amount }) => `${name} pays ${amount} and leaves jail.`,
   jailCard: ({ name }) => `${name} uses a "get out of jail free" card.`,
+  jailPayOption: ({ amount }) => `Pay ${amount} and leave`,
+  jailDrawOption: () => 'Stay and draw a card',
   thirdDouble: ({ name }) => `${name} rolls a third double in a row.`,
 
   draws: ({ name, deck, text }) => `${name} draws a ${deck} card: "${text}"`,
