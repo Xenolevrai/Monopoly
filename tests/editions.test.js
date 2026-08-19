@@ -75,6 +75,34 @@ test('chaque pictogramme et chaque couleur réclamés par une édition existent'
   }
 });
 
+test('chaque illustration de case réclamée par une édition existe', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const source = await readFile(new URL('../client/src/components/SpaceArt.jsx', import.meta.url), 'utf8');
+  // Les entrées de la bibliothèque : `cauldron: Cauldron`, plusieurs par ligne.
+  const library = new Set([...source.matchAll(/\b([a-zA-Z]+): [A-Z]\w+[,\s}]/g)].map((m) => m[1]));
+
+  for (const [id, edition] of ALL) {
+    const art = edition.theming?.art ?? {};
+    for (const [spaceId, name] of Object.entries(art)) {
+      assert.ok(library.has(name), `${id} : illustration « ${name} » (case ${spaceId}) absente`);
+      assert.ok(
+        edition.board[Number(spaceId)],
+        `${id} : illustration posée sur la case ${spaceId}, hors plateau`,
+      );
+    }
+  }
+});
+
+test('chaque édition déclare la matière de son plateau', () => {
+  const SKINS = ['table', 'parchment', 'night', 'tech'];
+  for (const [id, edition] of ALL) {
+    assert.ok(
+      SKINS.includes(edition.theming?.skin),
+      `${id} : matière « ${edition.theming?.skin} » inconnue`,
+    );
+  }
+});
+
 test('le plateau est numéroté sans trou et annoncé à la bonne taille', () => {
   for (const [id, edition] of ALL) {
     assert.equal(edition.board.length, edition.board.size ?? edition.board.length);

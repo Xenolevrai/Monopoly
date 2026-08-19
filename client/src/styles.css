@@ -80,11 +80,76 @@ body {
     0 26px 60px -20px rgb(0 0 0 / 0.75);
 }
 
+/* Parchemin : le papier est plus chaud au centre, taché vers les bords. */
+.board-parchment {
+  background-image:
+    radial-gradient(80% 70% at 50% 42%, rgb(255 246 220 / 0.75), transparent 70%),
+    radial-gradient(28% 24% at 12% 88%, rgb(120 82 30 / 0.16), transparent 70%),
+    radial-gradient(24% 20% at 88% 14%, rgb(120 82 30 / 0.14), transparent 70%);
+  border-color: rgb(74 48 22 / 0.9);
+}
+
+/* Nuit : un halo doré monte du bas, comme la lumière des fenêtres. */
+.board-night {
+  background-image:
+    radial-gradient(70% 55% at 50% 100%, rgb(211 166 37 / 0.16), transparent 72%),
+    radial-gradient(90% 80% at 50% 0%, rgb(60 92 160 / 0.22), transparent 70%);
+  border-color: rgb(150 118 44 / 0.55);
+}
+
+/* Acier : dégradé froid et arête métallique. */
+.board-tech {
+  background-image:
+    linear-gradient(160deg, rgb(120 160 205 / 0.12), transparent 55%),
+    radial-gradient(70% 60% at 50% 50%, rgb(90 130 180 / 0.1), transparent 75%);
+  border-color: rgb(90 122 158 / 0.55);
+}
+
 /* Une case : crème, filet noir, léger relief papier. */
 .space-tile {
   background: var(--color-space);
   border: 1px solid var(--color-ink);
   font-family: var(--font-tile);
+}
+
+/* Sur les plateaux imprimés, une case n'est pas un aplat : le papier prend la
+   lumière au centre et se salit vers les bords. Ce dégradé très doux suffit à
+   faire « objet » plutôt que « rectangle de couleur ». */
+.board-parchment .space-tile,
+.board-night .space-tile,
+.board-tech .space-tile {
+  background-image:
+    radial-gradient(120% 90% at 50% 18%, rgb(255 255 255 / 0.5), transparent 62%),
+    linear-gradient(180deg, transparent 62%, rgb(0 0 0 / 0.07));
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.35);
+}
+
+/* Parchemin : le filet du cadre est un double trait sépia, pas un noir franc. */
+.board-parchment .space-tile {
+  border-color: rgb(90 58 22 / 0.75);
+}
+
+/* Acier : liseré froid et arête lumineuse en haut de case. */
+.board-tech .space-tile {
+  border-color: rgb(20 32 46 / 0.9);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.55),
+    inset 0 0 0 0.5px rgb(120 160 205 / 0.25);
+}
+
+/* Nuit : les cases sont des vitraux éclairés au-dessus du bleu profond. */
+.board-night .space-tile {
+  border-color: rgb(60 44 16 / 0.8);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
+    0 0 6px rgb(211 166 37 / 0.12);
+}
+
+/* Le bandeau de couleur : une vraie bande imprimée, avec son ombre portée. */
+.color-band {
+  box-shadow:
+    inset 0 -1px 0 rgb(0 0 0 / 0.45),
+    inset 0 2px 3px rgb(255 255 255 / 0.28);
 }
 
 .panel {

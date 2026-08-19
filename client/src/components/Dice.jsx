@@ -65,6 +65,7 @@ export default function Dice({ values, rolling = false }) {
         className={`tabular font-condensed text-2xl transition-opacity duration-200 ${
           rolling ? 'opacity-0' : 'opacity-100'
         }`}
+        style={{ color: 'var(--color-board-ink)' }}
       >
         {total ?? ''}
       </span>

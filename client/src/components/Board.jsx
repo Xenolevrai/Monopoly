@@ -5,7 +5,10 @@
  */
 import { boardOf, gridPosition, gridTemplate, gridSize, groupColor, editionFor, money } from '../lib/board.js';
 import { iconFor } from './SpaceIcons.jsx';
+import { artFor } from './SpaceArt.jsx';
 import { translator } from '../lib/i18n.js';
+import { PaperGrain, BoardWatermark, BoardFrame, BoardVignette } from './BoardSkin.jsx';
+import Centerpiece from './Centerpiece.jsx';
 import Pawns from './Pawns.jsx';
 import Dice from './Dice.jsx';
 
@@ -57,7 +60,10 @@ function Space({ space, state, active, onSelect }) {
   const color = groupColor(state, space);
   const prop = state.properties?.[space.id];
   const owner = prop?.ownerId ? state.players.find((p) => p.id === prop.ownerId) : null;
-  const Icon = iconFor(editionFor(state), space);
+  // L'illustration propre à la case prime sur le pictogramme de son type :
+  // c'est elle qui fait reconnaître un lieu d'un coup d'œil.
+  const edition = editionFor(state);
+  const Icon = artFor(edition, space) ?? iconFor(edition, space);
   const corner = space.corner;
 
   return (
@@ -81,7 +87,7 @@ function Space({ space, state, active, onSelect }) {
       >
         {color && (
           <span
-            className="flex w-full shrink-0 items-end justify-center border-b border-black/80 pb-px"
+            className="color-band flex w-full shrink-0 items-end justify-center border-b border-black/80 pb-px"
             style={{ backgroundColor: color, height: '26%' }}
           >
             <Buildings prop={prop} />
@@ -91,8 +97,12 @@ function Space({ space, state, active, onSelect }) {
         <span className="flex flex-1 flex-col items-center justify-center gap-0.5 px-1 text-center">
           {Icon && (
             <Icon
-              className={`${corner ? 'h-7 w-7' : 'h-4 w-4'} text-ink`}
-              style={deckTint(state, space.type) ? { color: deckTint(state, space.type) } : undefined}
+              className={`${corner ? 'h-8 w-8' : 'h-[44%] w-[44%] min-h-4 min-w-4'} text-ink`}
+              style={
+                !artFor(edition, space) && deckTint(state, space.type)
+                  ? { color: deckTint(state, space.type) }
+                  : undefined
+              }
             />
           )}
           <span
@@ -196,23 +206,14 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
       style={{ gridColumn: `2 / ${gridSize(state)}`, gridRow: `2 / ${gridSize(state)}` }}
       className="relative flex flex-col items-center justify-center gap-4 p-4"
     >
-      {/* Le cartouche du titre, posé en diagonale comme sur le plateau.
-          Il s'efface quand une carte est retournée, pour ne pas dépasser derrière. */}
-      <div
-        className="-rotate-[45deg] transition-opacity duration-200"
-        style={{ opacity: drawnCard ? 0 : 1 }}
-      >
-        <div className="border-y-2 border-ink bg-[var(--color-accent)] px-8 py-1.5 shadow-[0_3px_0_rgba(0,0,0,.35)]">
-          <p className="font-condensed text-3xl uppercase tracking-[0.18em] text-[#f7f4ea]">
-            {editionFor(state).theming?.centerTitle ?? 'Monopoly'}
-          </p>
-        </div>
-        <p
-          className="mt-1 text-center font-condensed text-[11px] uppercase tracking-[0.45em] opacity-75"
-          style={{ color: 'var(--color-board-ink)' }}
-        >
-          {editionFor(state).theming?.centerSubtitle ?? ''}
-        </p>
+      {/* La pièce maîtresse de l'édition. Elle s'efface quand une carte est
+          retournée, pour ne pas dépasser derrière. */}
+      <div className="flex w-full justify-center transition-opacity duration-200" style={{ opacity: drawnCard ? 0 : 1 }}>
+        <Centerpiece
+          skin={editionFor(state).theming?.skin ?? 'table'}
+          title={editionFor(state).theming?.centerTitle ?? 'Monopoly'}
+          subtitle={editionFor(state).theming?.centerSubtitle ?? ''}
+        />
       </div>
 
       <div className="absolute top-4 left-1/2 -translate-x-1/2">
@@ -293,9 +294,16 @@ export default function Board({
   onAcknowledge,
 }) {
   const activeSpace = state.players[state.currentPlayerIndex]?.position;
+  const skin = editionFor(state).theming?.skin ?? 'table';
 
   return (
-    <div className="board-surface aspect-square w-full max-w-[900px] shrink-0 p-1.5 xl:h-full xl:w-auto">
+    <div className={`board-surface board-${skin} relative aspect-square w-full max-w-[900px] shrink-0 overflow-hidden p-1.5 xl:h-full xl:w-auto`}>
+      {/* Le décor : filigrane sous les cases, grain de papier, cadre, vignetage. */}
+      <BoardWatermark skin={skin} />
+      {skin === 'parchment' && <PaperGrain opacity={0.42} scale={0.9} />}
+      <BoardVignette />
+      <BoardFrame skin={skin} />
+
       {/* Les quatre coins sont plus grands que les cases de bord, comme sur le plateau papier. */}
       <div
         className="relative grid h-full w-full"

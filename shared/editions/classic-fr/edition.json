@@ -134,6 +134,7 @@
         "glyph": "▤"
       }
     },
-    "display": "serif"
+    "display": "serif",
+    "skin": "table"
   }
 }
