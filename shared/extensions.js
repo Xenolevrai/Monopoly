@@ -26,14 +26,126 @@
  * @property {Record<string, unknown>} [addsMechanics]
  * @property {number[]} [touchesPositions] - cases sur lesquelles elle agit, pour
  *   détecter les conflits entre deux extensions activées ensemble
+ * @property {Object} [jail]           - fusion superficielle sur `edition.jail` (caution, case…)
+ * @property {Object} [dice]           - fusion superficielle sur `edition.dice` (doublesToJail…)
+ * @property {Object} [houseRules]     - fusion superficielle sur `edition.houseRules`
+ * @property {Record<string, object>} [deckTheming] - étiquettes/couleurs ajoutées à
+ *   `edition.theming.decks` pour les nouveaux paquets (générique : le moteur ne lit jamais ceci,
+ *   seul l'écran de règles/le thème client s'en sert)
  */
 
 /** @type {Record<string, Extension>} */
 export const EXTENSIONS = {
-  // Remplies aux étapes suivantes : 'go-to-jail', 'free-parking-jackpot',
-  // 'buy-everything'. Le registre reste vide tant qu'aucune n'est codée — c'est
-  // ce qui permet de vérifier ici même, avant d'en coder une seule, que le
-  // système de fusion ne change rien à une partie qui n'active rien.
+  'free-parking-jackpot': {
+    id: 'free-parking-jackpot',
+    name: 'Parc Gratuit Jackpot',
+    summary:
+      "Chance et Caisse de communauté deviennent des cases Spin ; les pénalités vont dans une cagnotte gagnée en tombant pile sur le Parc Gratuit.",
+    requires: ['chanceDeck', 'communityChestDeck', 'freeParkingSpace', 'sequentialTurns'],
+    // NB : les noms de case (« Chance », « Parc Gratuit »…) restent ceux de
+    // l'édition de base — les renommer en « Spin »/« Jackpot » demanderait une
+    // surcouche par langue que ce système de fusion ne porte pas encore
+    // (`boardOverrides` s'applique après la traduction). Le paquet et son
+    // thème (`deckTheming`) portent le nom Spin ; seule l'étiquette de la case
+    // elle-même n'est pas encore renommée.
+    boardOverrides: [
+      { position: 2, changes: { type: 'spin' } },
+      { position: 7, changes: { type: 'spin' } },
+      { position: 17, changes: { type: 'spin' } },
+      { position: 22, changes: { type: 'spin' } },
+      { position: 33, changes: { type: 'spin' } },
+      { position: 36, changes: { type: 'spin' } },
+    ],
+    removesDecks: ['chance', 'community_chest'],
+    addsDecks: {
+      spin: [
+        // 4 secteurs rouges : payer un montant précis à la cagnotte plutôt qu'à la banque.
+        { id: 'spin-red-01', text: 'Secteur rouge : versez 50 € à la cagnotte du Jackpot.', action: { type: 'pay_to_pot', amount: 50 } },
+        { id: 'spin-red-02', text: 'Secteur rouge : versez 75 € à la cagnotte du Jackpot.', action: { type: 'pay_to_pot', amount: 75 } },
+        { id: 'spin-red-03', text: 'Secteur rouge : versez 100 € à la cagnotte du Jackpot.', action: { type: 'pay_to_pot', amount: 100 } },
+        { id: 'spin-red-04', text: 'Secteur rouge : versez 150 € à la cagnotte du Jackpot.', action: { type: 'pay_to_pot', amount: 150 } },
+        // 3 secteurs verts : effet positif.
+        { id: 'spin-green-01', text: 'Secteur vert : la banque vous verse 100 €.', action: { type: 'collect', amount: 100 } },
+        { id: 'spin-green-02', text: 'Secteur vert : avancez de 3 cases.', action: { type: 'move_relative', offset: 3 } },
+        { id: 'spin-green-03', text: 'Secteur vert : remportez la cagnotte du Jackpot.', action: { type: 'collect_from_pot' } },
+        // 1 secteur « Jackpot ! » : toute la cagnotte, plus un bonus fixe (représente
+        // l'achat gratuit d'une propriété libre au choix, simplifié en espèces).
+        { id: 'spin-jackpot', text: 'JACKPOT ! Remportez toute la cagnotte, plus 200 € de bonus.', action: { type: 'jackpot', bonus: 200 } },
+      ],
+    },
+    addsMechanics: { jackpotPot: true },
+    houseRules: { freeParkingPot: true },
+    deckTheming: { spin: { label: 'Spin', color: '#c9962c', glyph: '★' } },
+    touchesPositions: [2, 7, 17, 20, 22, 33, 36],
+  },
+
+  'go-to-jail': {
+    id: 'go-to-jail',
+    name: 'Prison',
+    summary:
+      "Les deux cases taxes envoient en prison ; l'ancienne case « Allez en prison » devient une geôle plus sévère (Super Jail). Trois doubles n'envoient plus en prison.",
+    // ⚠️ Détails relevés sur des sources secondaires (pas le livret Hasbro
+    // officiel) : caution à 100 €, geôle « Super Jail » à la case 30 avec un
+    // paquet Super Corruption, cases Chance/Caisse de communauté remplacées
+    // par des tirages Évasion/Casse. À vérifier contre une boîte physique si
+    // l'utilisateur en possède une — voir CLAUDE.md §10.
+    requires: ['chanceDeck', 'communityChestDeck', 'taxSpaces', 'jailSpace', 'sequentialTurns'],
+    boardOverrides: [
+      { position: 4, changes: { type: 'go_to_jail' } },
+      { position: 38, changes: { type: 'go_to_jail' } },
+      { position: 30, changes: { type: 'super_jail' } },
+      { position: 7, changes: { type: 'escape' } },
+      { position: 22, changes: { type: 'escape' } },
+      { position: 36, changes: { type: 'escape' } },
+      { position: 2, changes: { type: 'heist' } },
+      { position: 17, changes: { type: 'heist' } },
+      { position: 33, changes: { type: 'heist' } },
+    ],
+    removesDecks: ['chance', 'community_chest'],
+    addsDecks: {
+      // Piochées en case « Évasion » : tenter d'échapper à une conséquence.
+      escape: [
+        { id: 'escape-01', text: 'Vous semez la police : rien à payer cette fois.', action: { type: 'collect', amount: 0 } },
+        { id: 'escape-02', text: 'Fausse alerte : la banque vous verse 25 €.', action: { type: 'collect', amount: 25 } },
+        { id: 'escape-03', text: 'Course-poursuite ratée : direction la prison.', action: { type: 'go_to_jail' } },
+        { id: 'escape-04', text: 'Vous glissez une carte « libérée de prison » dans votre manche.', action: { type: 'get_out_of_jail_free' }, keepable: true },
+        { id: 'escape-05', text: 'Amende pour excès de vitesse : payez 40 €.', action: { type: 'pay', amount: 40 } },
+        { id: 'escape-06', text: 'Vous filez : avancez de 2 cases.', action: { type: 'move_relative', offset: 2 } },
+      ],
+      // Piochées en case « Casse » : voler de l'argent, à la banque ou à une autre joueuse.
+      heist: [
+        { id: 'heist-01', text: 'Casse réussie : la banque vous verse 75 €.', action: { type: 'collect', amount: 75 } },
+        { id: 'heist-02', text: 'Casse ratée : payez 60 € de dommages.', action: { type: 'pay', amount: 60 } },
+        { id: 'heist-03', text: 'Chacune des autres joueuses vous verse 20 €.', action: { type: 'collect_from_each', amount: 20 } },
+        { id: 'heist-04', text: 'Vous êtes repérée : direction la prison.', action: { type: 'go_to_jail' } },
+        { id: 'heist-05', text: 'Butin partagé : versez 25 € à chaque joueuse.', action: { type: 'pay_to_each', amount: 25 } },
+        { id: 'heist-06', text: 'Casse discrète : la banque vous verse 50 €.', action: { type: 'collect', amount: 50 } },
+      ],
+      // Piochées en Jail, quand on choisit de rester plutôt que de payer 100 €.
+      corruption: [
+        { id: 'corruption-01', text: 'Vous graissez une patte : sortez de prison gratuitement.', action: { type: 'pay_bail' } },
+        { id: 'corruption-02', text: 'Un gardien vous surveille de plus près : payez 30 € d’amende.', action: { type: 'pay', amount: 30 } },
+        { id: 'corruption-03', text: 'Rien à signaler : vous restez en cellule.', action: { type: 'collect', amount: 0 } },
+        { id: 'corruption-04', text: 'Un complice glisse 40 € sous la porte.', action: { type: 'collect', amount: 40 } },
+      ],
+      // Piochées en Super Jail : effets plus lourds, plus rares.
+      super_corruption: [
+        { id: 'super-corruption-01', text: 'Le juge est clément : sortez de prison gratuitement.', action: { type: 'pay_bail' } },
+        { id: 'super-corruption-02', text: 'Fouille de cellule : payez 100 € d’amende.', action: { type: 'pay', amount: 100 } },
+        { id: 'super-corruption-03', text: 'Isolement : rien ne se passe, vous restez enfermée.', action: { type: 'collect', amount: 0 } },
+        { id: 'super-corruption-04', text: 'Un ancien complice vous fait parvenir 80 €.', action: { type: 'collect', amount: 80 } },
+      ],
+    },
+    addsMechanics: { doublesNeverJail: true },
+    jail: { bail: 100, deck: 'corruption', superSpace: 30, superBail: 200, superDeck: 'super_corruption' },
+    deckTheming: {
+      escape: { label: 'Évasion', color: '#3d7a4f', glyph: '⚡' },
+      heist: { label: 'Casse', color: '#5a3d7a', glyph: '⛓' },
+      corruption: { label: 'Corruption', color: '#7a3d3d', glyph: '⚖' },
+      super_corruption: { label: 'Super Corruption', color: '#4a1414', glyph: '⚖' },
+    },
+    touchesPositions: [2, 4, 7, 17, 22, 30, 33, 36, 38],
+  },
 };
 
 /** Ce que chaque `requires` vérifie sur une édition donnée. */
@@ -92,6 +204,13 @@ function mergeOne(edition, extension) {
     board,
     cards,
     mechanics: { ...edition.mechanics, ...(extension.addsMechanics ?? {}) },
+    jail: { ...edition.jail, ...(extension.jail ?? {}) },
+    dice: { ...edition.dice, ...(extension.dice ?? {}) },
+    houseRules: { ...edition.houseRules, ...(extension.houseRules ?? {}) },
+    theming: {
+      ...edition.theming,
+      decks: { ...edition.theming?.decks, ...(extension.deckTheming ?? {}) },
+    },
     // Trace de ce qui a été appliqué : utile à l'écran de règles et au débogage,
     // sans que le moteur n'ait besoin d'y regarder.
     activeExtensions: [...(edition.activeExtensions ?? []), extension.id],

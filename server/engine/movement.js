@@ -45,11 +45,18 @@ function homeSpaceOf(state, player) {
   return faction?.homeSpace ?? null;
 }
 
-/** Envoie en prison : pas de salaire, pas de tour supplémentaire. */
-export function sendToJail(state, playerId) {
+/**
+ * Envoie en prison : pas de salaire, pas de tour supplémentaire.
+ * @param {'normal'|'super'} tier - une extension (Prison Hasbro) peut définir
+ *   `jail.superSpace`/`jail.superBail`/`jail.superDeck` pour une geôle plus
+ *   sévère ; sans ça, `tier` n'a aucun effet et tout retombe sur `jail.space`.
+ */
+export function sendToJail(state, playerId, tier = 'normal') {
   const player = playerById(state, playerId);
-  player.position = config(state).jail.space;
+  const jail = config(state).jail;
+  player.position = (tier === 'super' && jail.superSpace != null) ? jail.superSpace : jail.space;
   player.inJail = true;
+  player.jailTier = tier;
   player.jailTurns = 0;
   state.dice.extraRoll = false;
   state.dice.doublesCount = 0;
@@ -79,15 +86,11 @@ export function resolveLanding(state, playerId, ctx = {}) {
       sendToJail(state, playerId);
       return;
 
-    case 'chance':
-    case 'community_chest':
-      // On ne pioche pas à la place de la joueuse : elle doit tirer la carte
-      // elle-même, comme on prend une carte sur le tas.
-      state.pending = {
-        kind: 'draw_card',
-        playerIds: [playerId],
-        payload: { deck: space.type, diceTotal: ctx.diceTotal ?? 0 },
-      };
+    // Geôle plus sévère qu'une extension peut ajouter en plus de `go_to_jail`
+    // (case et paquet distincts, caution plus haute) : générique, jamais lié à
+    // un nom d'extension — juste un second niveau de sévérité.
+    case 'super_jail':
+      sendToJail(state, playerId, 'super');
       return;
 
     case 'free_parking':
@@ -100,8 +103,21 @@ export function resolveLanding(state, playerId, ctx = {}) {
 
     case 'go':
     case 'jail':
-    default:
       return; // Départ (salaire déjà versé) et simple visite : rien à faire.
+
+    default:
+      // Toute case dont le type nomme un paquet de cartes existant (chance,
+      // community_chest, mais aussi les paquets ajoutés par une extension —
+      // spin, évasion, casse…) déclenche un tirage. On ne pioche pas à la
+      // place de la joueuse : elle doit tirer la carte elle-même.
+      if (state.decks?.[space.type]) {
+        state.pending = {
+          kind: 'draw_card',
+          playerIds: [playerId],
+          payload: { deck: space.type, diceTotal: ctx.diceTotal ?? 0 },
+        };
+      }
+      return;
   }
 }
 

@@ -12,20 +12,28 @@ import { credit, charge } from './money.js';
 import { advance, moveTo, sendToJail, resolveLanding } from './movement.js';
 import { rollDice } from './rng.js';
 
-const DECKS = ['chance', 'community_chest'];
+/**
+ * Les paquets ne sont plus figés à Chance/Caisse de communauté : une extension
+ * peut les retirer et en ajouter d'autres (Spin, Corruption, Bonus…). On lit
+ * donc la liste des paquets sur l'édition déjà fusionnée, jamais un nom en dur —
+ * c'est ce qui permet au moteur de rester ignorant des extensions.
+ */
+function decksOf(state) {
+  return Object.keys(cardsOf(state));
+}
 
-/** Index des cartes par identifiant, calculé une fois par édition. */
+/** Index des cartes par identifiant, calculé une fois par édition (+ extensions actives). */
 const INDEX_CACHE = new Map();
 
 function cardIndex(state) {
-  // La clé porte la langue : le texte d'une carte en dépend.
-  const editionId = `${state.editionId ?? 'classic-fr'}:${state.locale ?? 'fr'}`;
+  // La clé porte la langue et les extensions actives : le texte et les paquets en dépendent.
+  const editionId = `${state.editionId ?? 'classic-fr'}:${state.locale ?? 'fr'}:${(state.extensionIds ?? []).join(',')}`;
   if (!INDEX_CACHE.has(editionId)) {
     const decks = cardsOf(state);
     INDEX_CACHE.set(
       editionId,
       Object.fromEntries(
-        DECKS.flatMap((deck) => (decks[deck] ?? []).map((card) => [card.id, { ...card, deck }])),
+        decksOf(state).flatMap((deck) => (decks[deck] ?? []).map((card) => [card.id, { ...card, deck }])),
       ),
     );
   }
@@ -44,7 +52,7 @@ export function getCard(state, cardId) {
 /** Mélange les piles au début de la partie. */
 export function buildDecks(state, rng) {
   const decks = cardsOf(state);
-  for (const deck of DECKS) {
+  for (const deck of decksOf(state)) {
     state.decks[deck] = rng.shuffle((decks[deck] ?? []).map((c) => c.id));
   }
 }
@@ -109,7 +117,7 @@ export function returnJailCard(state, playerId) {
   if (player.getOutOfJailCards <= 0) return false;
   player.getOutOfJailCards -= 1;
   const decks = cardsOf(state);
-  for (const deck of DECKS) {
+  for (const deck of decksOf(state)) {
     const cardId = (decks[deck] ?? []).find((c) => c.keepable)?.id;
     if (cardId && !state.decks[deck].includes(cardId)) {
       state.decks[deck].push(cardId);
@@ -210,6 +218,47 @@ export function applyCardAction(state, playerId, action, ctx = {}) {
     case 'get_out_of_jail_free':
       log(state, 'card', say(state, 'keepsJailCard', { name: player.name }), { playerId });
       return;
+
+    // Paie la caution courante (celle de la geôle où se trouve la joueuse — la
+    // sévère si `jailTier === 'super'`) et la libère. Générique : lu sur
+    // `edition.jail`, jamais sur un nom d'extension.
+    case 'pay_bail': {
+      const jail = editionOf(state).jail;
+      const amount = player.jailTier === 'super' ? (jail.superBail ?? jail.bail) : jail.bail;
+      charge(state, playerId, amount, say(state, 'reasonBail'));
+      player.inJail = false;
+      player.jailTurns = 0;
+      return;
+    }
+
+    // Cagnotte commune (Parc Gratuit Jackpot, ou toute édition qui l'active) :
+    // au lieu d'aller à la banque, au lieu d'en venir.
+    case 'pay_to_pot': {
+      // Ne grossit la cagnotte que si la somme a bien quitté la joueuse tout de
+      // suite : en cas de dette ouverte, l'argent n'a pas encore bougé.
+      const result = charge(state, playerId, action.amount, say(state, 'reasonCard'));
+      if (result.paid) state.freeParkingPot += action.amount;
+      return;
+    }
+
+    case 'collect_from_pot': {
+      const pot = state.freeParkingPot;
+      state.freeParkingPot = 0;
+      credit(state, playerId, pot, say(state, 'reasonParking'));
+      return;
+    }
+
+    // Le secteur « Jackpot ! » de la roulette : toute la cagnotte, plus un bonus
+    // fixe porté par la carte (représente l'achat gratuit d'une propriété libre,
+    // simplifié en espèces — voir la note dans buy-everything.notes si le rendu
+    // exact d'un achat gratuit devient nécessaire plus tard).
+    case 'jackpot': {
+      const pot = state.freeParkingPot;
+      state.freeParkingPot = 0;
+      if (pot > 0) credit(state, playerId, pot, say(state, 'reasonParking'));
+      if (action.bonus) credit(state, playerId, action.bonus, say(state, 'reasonCard'));
+      return;
+    }
 
     case 'draw_card':
       drawCard(state, playerId, action.deck, ctx);
