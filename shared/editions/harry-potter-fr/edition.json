@@ -1,9 +1,9 @@
 {
   "id": "harry-potter-fr",
-  "name": "Monopoly Harry Potter",
+  "name": "Monopoly Harry Potter — Gallions",
   "theme": "Poudlard et le monde des sorciers",
-  "tagline": "Les règles classiques, en Gallions.",
-  "summary": "Explorez Poudlard, le Chemin de Traverse et Pré-au-Lard. Chaumières et châteaux remplacent maisons et hôtels.",
+  "tagline": "La boîte à billets : règles classiques, monnaie sorcière.",
+  "summary": "Les règles du Monopoly d'origine sur le plateau de Poudlard : on achète, on bâtit chaumières et châteaux, on hypothèque, et la dernière solvable gagne.",
   "playerCount": {
     "min": 2,
     "max": 6

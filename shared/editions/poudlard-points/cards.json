@@ -18,7 +18,7 @@
     },
     {
       "id": "hibou-03",
-      "text": "Duel d’entraînement remporté : 30 points de maison.",
+      "text": "Duel d'entraînement remporté : 30 points de maison.",
       "action": {
         "type": "collect",
         "amount": 30
@@ -26,15 +26,15 @@
     },
     {
       "id": "hibou-04",
-      "text": "Devoir rendu en retard : votre maison perd 20 points.",
+      "text": "Le professeur Flitwick récompense votre sortilège : 10 points.",
       "action": {
-        "type": "pay",
-        "amount": 20
+        "type": "collect",
+        "amount": 10
       }
     },
     {
       "id": "hibou-05",
-      "text": "Retournez Voie 9¾ et touchez vos 20 points de passage.",
+      "text": "Retournez à la case Départ et touchez vos 20 points de passage.",
       "action": {
         "type": "move_to",
         "target": 0,
@@ -52,17 +52,20 @@
     },
     {
       "id": "hibou-07",
-      "text": "Une retenue vous attend : direction le bureau de Rusard.",
+      "text": "Alohomora : la porte cède, avancez jusqu’à la Chambre des Secrets.",
       "action": {
-        "type": "go_to_jail"
+        "type": "move_to",
+        "target": 31,
+        "collectGoSalary": true
       }
     },
     {
       "id": "hibou-08",
-      "text": "Beuglante à la table du petit-déjeuner : 40 points en moins.",
+      "text": "Accio ! Le Magicobus vous emporte.",
       "action": {
-        "type": "pay",
-        "amount": 40
+        "type": "move_to",
+        "target": 35,
+        "collectGoSalary": true
       }
     },
     {
@@ -75,10 +78,11 @@
     },
     {
       "id": "hibou-10",
-      "text": "Le professeur Flitwick récompense votre sortilège : 10 points.",
+      "text": "Un thé chez Hagrid : rendez-vous à sa cabane.",
       "action": {
-        "type": "collect",
-        "amount": 10
+        "type": "move_to",
+        "target": 3,
+        "collectGoSalary": true
       }
     },
     {
@@ -91,33 +95,25 @@
     },
     {
       "id": "hibou-12",
-      "text": "Course jusqu'à la salle commune la plus proche.",
+      "text": "Le Poudlard Express siffle : montez au transport magique le plus proche.",
       "action": {
         "type": "nearest",
         "spaceType": "railroad",
-        "rentMultiplier": 1
+        "rentMultiplier": 2
       }
     },
     {
       "id": "hibou-13",
-      "text": "Un sortilège vous emporte : rendez-vous au sortilège le plus proche.",
+      "text": "Un sortilège vous emporte vers le service magique le plus proche. Relancez les dés et payez dix fois le résultat.",
       "action": {
         "type": "nearest",
         "spaceType": "utility",
-        "utilityFactor": 4,
+        "utilityFactor": 10,
         "rerollDice": true
       }
     },
     {
       "id": "hibou-14",
-      "text": "Beuglante de vos parents : versez 10 points à chaque autre maison.",
-      "action": {
-        "type": "pay_to_each",
-        "amount": 10
-      }
-    },
-    {
-      "id": "hibou-15",
       "text": "Fête dans la salle commune : chaque joueuse vous donne 10 points.",
       "action": {
         "type": "collect_from_each",
@@ -125,15 +121,7 @@
       }
     },
     {
-      "id": "hibou-16",
-      "text": "Points retirés par le professeur Rogue : 30 points en moins.",
-      "action": {
-        "type": "pay",
-        "amount": 30
-      }
-    },
-    {
-      "id": "hibou-17",
+      "id": "hibou-15",
       "text": "Vous aidez une camarade en Potions : 20 points de maison.",
       "action": {
         "type": "collect",
@@ -141,23 +129,7 @@
       }
     },
     {
-      "id": "hibou-18",
-      "text": "Retour à la Cabane de Hagrid pour un thé.",
-      "action": {
-        "type": "move_to",
-        "target": 1,
-        "collectGoSalary": true
-      }
-    },
-    {
-      "id": "hibou-19",
-      "text": "Beuglante : convoquée sur-le-champ chez Rusard.",
-      "action": {
-        "type": "go_to_jail"
-      }
-    },
-    {
-      "id": "hibou-20",
+      "id": "hibou-16",
       "text": "Excellence en Défense contre les Forces du Mal : 40 points.",
       "action": {
         "type": "collect",
@@ -165,33 +137,7 @@
       }
     },
     {
-      "id": "hibou-21",
-      "text": "Vous cassez une fiole rare : payez 10 points par blason posé.",
-      "action": {
-        "type": "pay_per_building",
-        "perHouse": 10,
-        "perHotel": 30
-      }
-    },
-    {
-      "id": "hibou-22",
-      "text": "Le Choixpeau vous souffle un conseil : rendez-vous à la Grande Salle.",
-      "action": {
-        "type": "move_to",
-        "target": 20,
-        "collectGoSalary": true
-      }
-    },
-    {
-      "id": "hibou-23",
-      "text": "Beuglante : 25 points retirés à votre maison.",
-      "action": {
-        "type": "pay",
-        "amount": 25
-      }
-    },
-    {
-      "id": "hibou-24",
+      "id": "hibou-17",
       "text": "Victoire au Quidditch : 50 points de maison.",
       "action": {
         "type": "collect",
@@ -199,16 +145,16 @@
       }
     },
     {
-      "id": "hibou-25",
-      "text": "Vous découvrez un passage secret : avancez à la Chambre des Secrets.",
+      "id": "hibou-18",
+      "text": "Le Choixpeau vous souffle un conseil : rendez-vous à la Grande Salle.",
       "action": {
         "type": "move_to",
-        "target": 34,
+        "target": 26,
         "collectGoSalary": true
       }
     },
     {
-      "id": "hibou-26",
+      "id": "hibou-19",
       "text": "Le professeur McGonagall salue votre travail : 30 points.",
       "action": {
         "type": "collect",
@@ -216,7 +162,7 @@
       }
     },
     {
-      "id": "hibou-27",
+      "id": "hibou-20",
       "text": "Vous êtes dispensée de retenue. Gardez cette carte jusqu’à son usage.",
       "action": {
         "type": "get_out_of_jail_free"
@@ -224,24 +170,7 @@
       "keepable": true
     },
     {
-      "id": "hibou-28",
-      "text": "Beuglante : versez 20 points au fonds des Quatre Maisons.",
-      "action": {
-        "type": "pay",
-        "amount": 20
-      }
-    },
-    {
-      "id": "hibou-29",
-      "text": "Entretien des lieux que vous avez explorés : 10 points par blason.",
-      "action": {
-        "type": "pay_per_building",
-        "perHouse": 10,
-        "perHotel": 25
-      }
-    },
-    {
-      "id": "hibou-30",
+      "id": "hibou-21",
       "text": "Un hibou vous apporte un colis de Honeydukes : 15 points.",
       "action": {
         "type": "collect",
@@ -249,8 +178,16 @@
       }
     },
     {
-      "id": "hibou-31",
-      "text": "Rendez-vous à la Coupe des Quatre Maisons.",
+      "id": "hibou-22",
+      "text": "Bourse d'étude du Ministère : 25 points de maison.",
+      "action": {
+        "type": "collect",
+        "amount": 25
+      }
+    },
+    {
+      "id": "hibou-23",
+      "text": "Rendez-vous à la Banque des Sorciers Gringotts.",
       "action": {
         "type": "move_to",
         "target": 39,
@@ -258,12 +195,82 @@
       }
     },
     {
-      "id": "hibou-32",
-      "text": "Bourse d'étude du Ministère : 25 points de maison.",
+      "id": "hibou-24",
+      "text": "Vous cassez une fiole rare : payez 25 points par blason posé.",
       "action": {
-        "type": "collect",
-        "amount": 25
+        "type": "pay_per_building",
+        "perHouse": 25,
+        "perHotel": 100
       }
+    },
+    {
+      "id": "hibou-25",
+      "text": "Entretien des lieux explorés : payez 40 points par blason.",
+      "action": {
+        "type": "pay_per_building",
+        "perHouse": 40,
+        "perHotel": 115
+      }
+    },
+    {
+      "id": "hibou-26",
+      "text": "Vous offrez des Chocogrenouilles : versez 10 points à chaque joueuse.",
+      "action": {
+        "type": "pay_to_each",
+        "amount": 10
+      }
+    },
+    {
+      "id": "hibou-27",
+      "text": "Rendez-vous au Chaudron Baveur pour une Bièraubeurre.",
+      "action": {
+        "type": "move_to",
+        "target": 6,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "beuglante-01",
+      "text": "BEUGLANTE ! Vos parents ont appris pour la voiture volante : 40 points en moins.",
+      "action": {
+        "type": "pay",
+        "amount": 40
+      },
+      "variant": "howler"
+    },
+    {
+      "id": "beuglante-02",
+      "text": "BEUGLANTE ! Rogue vous retire 30 points de maison.",
+      "action": {
+        "type": "pay",
+        "amount": 30
+      },
+      "variant": "howler"
+    },
+    {
+      "id": "beuglante-03",
+      "text": "BEUGLANTE ! Rusard vous a vue dans les couloirs la nuit : allez en retenue.",
+      "action": {
+        "type": "go_to_jail"
+      },
+      "variant": "howler"
+    },
+    {
+      "id": "beuglante-04",
+      "text": "BEUGLANTE ! Convoquée sur-le-champ : direction la retenue.",
+      "action": {
+        "type": "go_to_jail"
+      },
+      "variant": "howler"
+    },
+    {
+      "id": "beuglante-05",
+      "text": "BEUGLANTE ! Versement obligatoire à la réserve de Poudlard : 25 points.",
+      "action": {
+        "type": "pay",
+        "amount": 25
+      },
+      "variant": "howler"
     }
   ],
   "community_chest": []

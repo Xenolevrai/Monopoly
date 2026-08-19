@@ -1,12 +1,12 @@
 {
   "id": "poudlard-points",
-  "name": "Monopoly Poudlard",
-  "theme": "Points de maison et exploration du château",
-  "tagline": "Pas d’argent : des points de maison, et une exploration.",
-  "summary": "Choisissez votre maison, explorez le château, posez des blasons. La partie s’arrête quand tout a été exploré — la plus grande réserve de points l’emporte.",
+  "name": "Monopoly Harry Potter — Coupe des Quatre Maisons",
+  "theme": "Points de maison et exploration de Poudlard",
+  "tagline": "L'édition Hasbro : pas d'argent, pas de faillite.",
+  "summary": "Choisissez votre maison, explorez les lieux avec vos points, posez vos blasons. La partie s'arrête quand le dernier lieu est exploré — le plus grand total remporte la Coupe.",
   "playerCount": {
     "min": 2,
-    "max": 6
+    "max": 4
   },
   "board": {
     "size": 40
@@ -16,7 +16,7 @@
     "label": "pts",
     "startingAmount": 300,
     "goBonus": 20,
-    "singleDenomination": true,
+    "singleDenomination": false,
     "denominations": [
       50,
       10,
@@ -68,14 +68,14 @@
   "buildingLabels": {
     "house": "Blason",
     "houses": "Blasons",
-    "hotel": "Blason d’or",
-    "hotels": "Blasons d’or"
+    "hotel": "Blason doré",
+    "hotels": "Blasons dorés"
   },
   "vocabulary": {
     "buy": "Explorer",
     "rent": "Droit de passage",
     "jail": "Retenue",
-    "bail": "Excuses au concierge"
+    "bail": "Amende au préfet"
   },
   "factions": {
     "label": "Votre maison",
@@ -85,62 +85,48 @@
         "id": "gryffondor",
         "label": "Gryffondor",
         "color": "#7f0909",
-        "homeSpace": 5,
         "emblem": "lion"
       },
       {
         "id": "poufsouffle",
         "label": "Poufsouffle",
         "color": "#d3a625",
-        "homeSpace": 15,
         "emblem": "blaireau"
       },
       {
         "id": "serdaigle",
         "label": "Serdaigle",
         "color": "#0e1a40",
-        "homeSpace": 25,
         "emblem": "aigle"
       },
       {
         "id": "serpentard",
         "label": "Serpentard",
         "color": "#1a472a",
-        "homeSpace": 35,
         "emblem": "serpent"
       }
     ]
   },
   "tokens": [
     {
-      "id": "baguette",
-      "label": "Baguette",
-      "color": "#7B4FA8"
+      "id": "harry",
+      "label": "Harry Potter",
+      "color": "#7f0909"
     },
     {
-      "id": "chaudron",
-      "label": "Chaudron",
-      "color": "#2E9E63"
+      "id": "hermione",
+      "label": "Hermione Granger",
+      "color": "#b8860b"
     },
     {
-      "id": "vif",
-      "label": "Vif d'or",
-      "color": "#D4A32B"
+      "id": "ron",
+      "label": "Ron Weasley",
+      "color": "#c4622d"
     },
     {
-      "id": "hibou",
-      "label": "Hibou",
-      "color": "#8A6A4F"
-    },
-    {
-      "id": "balai",
-      "label": "Balai",
-      "color": "#C6303A"
-    },
-    {
-      "id": "choixpeau",
-      "label": "Choixpeau",
-      "color": "#2A5CAA"
+      "id": "drago",
+      "label": "Drago Malefoy",
+      "color": "#1a472a"
     }
   ],
   "theming": {
@@ -163,26 +149,30 @@
       "gold": "#d3a625",
       "boardInk": "#e8dcc0"
     },
+    "display": "engraved",
     "centerTitle": "Poudlard",
     "centerSubtitle": "La Coupe des Quatre Maisons",
+    "icons": {
+      "railroad": "locomotive",
+      "utility": [
+        "spark",
+        "owl"
+      ],
+      "chance": "owl",
+      "jail": "bars",
+      "go_to_jail": "officer",
+      "free_parking": "castle",
+      "tax": [
+        "officer",
+        "crest"
+      ]
+    },
     "decks": {
       "chance": {
         "label": "Hibou Express",
         "color": "#6b3fa0",
         "glyph": "🦉"
       }
-    },
-    "display": "engraved",
-    "icons": {
-      "railroad": "crest",
-      "utility": [
-        "spark",
-        "spark"
-      ],
-      "chance": "owl",
-      "jail": "bars",
-      "go_to_jail": "officer",
-      "free_parking": "castle"
     }
   }
 }

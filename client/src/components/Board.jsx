@@ -217,12 +217,18 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
       </div>
 
       <div className="absolute bottom-5 left-1/2 flex w-full -translate-x-1/2 flex-col items-center gap-3 px-4">
+        {/* Une pastille claire : le nom reste lisible même sur un plateau
+            sombre, et la couleur de la joueuse reste identifiable. */}
         {state.phase === 'playing' && current && (
-          <p
-            className="font-condensed text-xs uppercase tracking-widest opacity-80"
-            style={{ color: 'var(--color-board-ink)' }}
-          >
-            Au tour de <span style={{ color: current.color }}>{current.name}</span>
+          <p className="flex items-center gap-1.5 rounded-full border border-black/15 bg-[var(--color-space)] px-3 py-1 font-condensed text-xs uppercase tracking-widest text-ink">
+            Au tour de
+            <span className="inline-flex items-center gap-1">
+              <span
+                className="h-2.5 w-2.5 rounded-full border border-black/30"
+                style={{ backgroundColor: current.color }}
+              />
+              {current.name}
+            </span>
           </p>
         )}
         <Dice values={state.dice?.values} rolling={rolling} />
@@ -235,15 +241,24 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
       </div>
 
       {drawnCard && (
+        (() => {
+          // Une Beuglante ne se lit pas comme un courrier ordinaire : elle
+          // hurle. On la sort en rouge, quel que soit le paquet dont elle vient.
+          const howler = drawnCard.variant === 'howler';
+          const deck = editionFor(state).theming?.decks?.[drawnCard.deck];
+          const tint = howler ? '#a01b1b' : deck?.color;
+          return (
         <div
-          className="card-flip absolute left-1/2 top-1/2 w-[min(70%,320px)] -translate-x-1/2 -translate-y-1/2 border-[3px] bg-[#fdfaf4] p-4 text-center shadow-[0_18px_40px_-16px_rgba(0,0,0,.8)]"
-          style={{ borderColor: editionFor(state).theming?.decks?.[drawnCard.deck]?.color }}
+          className={`card-flip absolute left-1/2 top-1/2 w-[min(70%,320px)] -translate-x-1/2 -translate-y-1/2 border-[3px] p-4 text-center shadow-[0_18px_40px_-16px_rgba(0,0,0,.8)] ${
+            howler ? 'bg-[#fdeaea]' : 'bg-[#fdfaf4]'
+          }`}
+          style={{ borderColor: tint }}
         >
           <p
             className="mb-2 font-condensed text-base uppercase tracking-[0.2em]"
-            style={{ color: editionFor(state).theming?.decks?.[drawnCard.deck]?.color }}
+            style={{ color: tint }}
           >
-            {editionFor(state).theming?.decks?.[drawnCard.deck]?.label ?? drawnCard.deck}
+            {howler ? 'Beuglante' : (deck?.label ?? drawnCard.deck)}
           </p>
           <p className="text-sm leading-snug text-ink">{drawnCard.text}</p>
           {revealed && (
@@ -256,6 +271,8 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
             </button>
           )}
         </div>
+          );
+        })()
       )}
     </div>
   );

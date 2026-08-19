@@ -1,9 +1,9 @@
 {
   "brown": {
     "id": "brown",
-    "label": "Le parc du château",
+    "label": "Premiers pas",
     "color": "#8B5A2B",
-    "houseCost": 30,
+    "houseCost": 50,
     "size": 2,
     "spaces": [
       1,
@@ -12,9 +12,9 @@
   },
   "lightblue": {
     "id": "lightblue",
-    "label": "Terrains extérieurs",
+    "label": "Auberges",
     "color": "#8FD3F4",
-    "houseCost": 30,
+    "houseCost": 50,
     "size": 3,
     "spaces": [
       6,
@@ -26,7 +26,7 @@
     "id": "pink",
     "label": "Le Chemin de Traverse",
     "color": "#D45A93",
-    "houseCost": 50,
+    "houseCost": 100,
     "size": 3,
     "spaces": [
       11,
@@ -38,7 +38,7 @@
     "id": "orange",
     "label": "Pré-au-Lard",
     "color": "#E8862B",
-    "houseCost": 50,
+    "houseCost": 100,
     "size": 3,
     "spaces": [
       16,
@@ -48,9 +48,9 @@
   },
   "red": {
     "id": "red",
-    "label": "Salles de cours",
+    "label": "Terrains de Poudlard",
     "color": "#C6303A",
-    "houseCost": 80,
+    "houseCost": 150,
     "size": 3,
     "spaces": [
       21,
@@ -60,9 +60,9 @@
   },
   "yellow": {
     "id": "yellow",
-    "label": "Les hauteurs du château",
+    "label": "Grandes salles",
     "color": "#E9C33A",
-    "houseCost": 80,
+    "houseCost": 150,
     "size": 3,
     "spaces": [
       26,
@@ -72,9 +72,9 @@
   },
   "green": {
     "id": "green",
-    "label": "Le savoir interdit",
+    "label": "Salles secrètes",
     "color": "#2E9E63",
-    "houseCost": 100,
+    "houseCost": 200,
     "size": 3,
     "spaces": [
       31,
@@ -84,9 +84,9 @@
   },
   "darkblue": {
     "id": "darkblue",
-    "label": "Le cœur de Poudlard",
+    "label": "Gringotts",
     "color": "#2A5CAA",
-    "houseCost": 100,
+    "houseCost": 200,
     "size": 2,
     "spaces": [
       37,
@@ -95,9 +95,9 @@
   },
   "railroad": {
     "id": "railroad",
-    "label": "Salles communes",
+    "label": "Transports magiques",
     "color": "#3A3A3A",
-    "houseCost": 10,
+    "houseCost": null,
     "size": 4,
     "spaces": [
       5,
@@ -108,9 +108,9 @@
   },
   "utility": {
     "id": "utility",
-    "label": "Sortilèges",
+    "label": "Services magiques",
     "color": "#6C757D",
-    "houseCost": 10,
+    "houseCost": null,
     "size": 2,
     "spaces": [
       12,

@@ -79,7 +79,9 @@ export function RulesContent({ state }) {
           Une case occupée par une autre coûte un {edition.vocabulary?.rent?.toLowerCase() ?? 'loyer'}.
           Posséder <strong>tout un groupe de couleur</strong> double ce montant sur les cases nues.
         </Line>
-        {edition.factions && (
+        {/* Le privilège n'existe que si l'édition rattache un fief à un camp :
+            le plateau de certaines boîtes n'a pas de salle commune. */}
+        {edition.factions?.options.some((f) => f.homeSpace != null) && (
           <Line>
             La salle commune de <strong>votre propre maison</strong> est à part : vous l'explorez
             gratuitement en y arrivant, et vous n'y payez jamais rien, même si une autre l'a prise
@@ -87,6 +89,15 @@ export function RulesContent({ state }) {
           </Line>
         )}
       </Section>
+
+      {edition.factions && (
+        <Section title={edition.factions.label}>
+          <Line>
+            Chacune choisit son camp au départ ({edition.factions.options.map((f) => f.label).join(', ')}).
+            Il donne la couleur de vos {labels.houses.toLowerCase()} et l'identité de votre score.
+          </Line>
+        </Section>
+      )}
 
       {m.houses && (
         <Section title={labels.houses}>

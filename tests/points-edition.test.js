@@ -38,6 +38,42 @@ test('on démarre avec 300 points de maison, pas avec de l\'argent', () => {
   assert.equal(edition.currency.goBonus, 20);
 });
 
+test('le plateau est bien celui relevé sur la boîte', () => {
+  const at = (id) => edition.board[id];
+  assert.equal(at(1).name, "Le Placard sous l'escalier");
+  assert.equal(at(1).price, 60);
+  assert.equal(at(5).name, 'Poudlard Express');
+  assert.equal(at(5).price, 200);
+  assert.equal(at(12).name, 'Réseau des Cheminées');
+  assert.equal(at(12).price, 150);
+  assert.equal(at(39).name, 'Banque des Sorciers Gringotts');
+  assert.equal(at(39).price, 400);
+  // Les deux malus de cette édition, différents du classique (200 et 100).
+  assert.equal(at(4).amount, 100, 'Retenue avec Rogue');
+  assert.equal(at(38).amount, 75, 'Fournitures scolaires');
+  // Six cases Courrier par Hibou, et plus aucune Caisse de Communauté.
+  assert.equal(edition.board.filter((s) => s.type === 'chance').length, 6);
+  assert.equal(edition.board.filter((s) => s.type === 'community_chest').length, 0);
+});
+
+test('la boîte contient quatre pions dorés : quatre joueuses au maximum', () => {
+  assert.equal(edition.playerCount.max, 4);
+  assert.deepEqual(
+    edition.tokens.map((t) => t.label),
+    ['Harry Potter', 'Hermione Granger', 'Ron Weasley', 'Drago Malefoy'],
+  );
+});
+
+test('44 blasons, 11 par maison, et pas un seul hôtel', () => {
+  assert.equal(edition.bank.houses, 44);
+  assert.equal(edition.bank.houses / edition.factions.options.length, 11);
+  assert.equal(edition.bank.hotels, 0);
+});
+
+test('la caution de retenue est de 10 points', () => {
+  assert.equal(edition.jail.bail, 10);
+});
+
 test('chaque joueuse reçoit une maison de Poudlard, distinctes tant qu\'il en reste', () => {
   const game = newPointsGame(['Alice', 'Bruno', 'Chloé', 'Dan']);
   const houses = game.state.players.map((p) => p.faction);
@@ -47,33 +83,43 @@ test('chaque joueuse reçoit une maison de Poudlard, distinctes tant qu\'il en r
   }
 });
 
-test('la salle commune de sa propre maison s\'explore sans rien payer', () => {
-  const game = newPointsGame();
-  const alice = game.state.players.find((p) => p.id === 'p0');
-  const home = edition.factions.options.find((f) => f.id === alice.faction).homeSpace;
-
-  alice.position = home;
-  const before = alice.cash;
-  resolveLanding(game.state, alice.id, { diceTotal: 5 });
-
-  assert.equal(game.state.properties[home].ownerId, alice.id, 'la salle commune lui revient');
-  assert.equal(alice.cash, before, 'et elle n\'a rien dépensé');
-  assert.notEqual(game.state.pending.kind, 'buy_or_auction', 'aucun achat ne lui est proposé');
+test('le plateau de cette boîte ne rattache aucun fief aux maisons', () => {
+  // L'inventaire des 40 cases ne comporte pas de salle commune : le privilège
+  // « chez soi » n'a donc rien à quoi s'accrocher ici. Le moteur sait le faire
+  // (cf. le test suivant), mais il ne doit pas l'inventer.
+  for (const faction of edition.factions.options) {
+    assert.equal(faction.homeSpace, undefined, `${faction.label} ne doit pas avoir de fief`);
+  }
 });
 
-test('on ne paie jamais de droit de passage dans sa propre salle commune', () => {
+test('un fief déclaré s\'explore gratuitement et ne se paie jamais', () => {
+  // Le mécanisme lui-même, vérifié en rattachant un fief à la volée : c'est ce
+  // qui servira dès qu'une boîte comportera de vraies salles communes.
   const game = newPointsGame();
   const [alice, bruno] = game.state.players;
-  const home = edition.factions.options.find((f) => f.id === alice.faction).homeSpace;
+  const home = 6;
+  const options = getEdition(EDITION).factions.options;
+  const original = options[0].homeSpace;
+  options[0].homeSpace = home;
+  alice.faction = options[0].id;
 
-  // Bruno a exploré la salle commune d'Alice avant elle.
-  game.state.properties[home].ownerId = bruno.id;
-  alice.position = home;
-  const before = alice.cash;
-  resolveLanding(game.state, alice.id, { diceTotal: 5 });
+  try {
+    // Libre : elle l'explore sans rien dépenser.
+    alice.position = home;
+    const before = alice.cash;
+    resolveLanding(game.state, alice.id, { diceTotal: 5 });
+    assert.equal(game.state.properties[home].ownerId, alice.id, 'le fief lui revient');
+    assert.equal(alice.cash, before, 'sans rien dépenser');
 
-  assert.equal(alice.cash, before, 'elle est chez elle : rien à payer');
-  assert.equal(game.state.debt, null);
+    // Déjà exploré par une autre : elle n'y paie toujours rien.
+    game.state.properties[home].ownerId = bruno.id;
+    const before2 = alice.cash;
+    resolveLanding(game.state, alice.id, { diceTotal: 5 });
+    assert.equal(alice.cash, before2, 'elle est chez elle : rien à payer');
+    assert.equal(game.state.debt, null);
+  } finally {
+    options[0].homeSpace = original;
+  }
 });
 
 test('personne ne fait faillite : on verse ce qu\'on a, et la dette s\'éteint', () => {
@@ -148,6 +194,7 @@ test('les blasons plafonnent : il n\'y a pas d\'hôtel à Poudlard', () => {
 
 test('une seule pile de cartes : le Hibou Express remplace Chance et Caisse', () => {
   assert.equal(edition.cards.chance.length, 32);
+  assert.equal(edition.cards.chance.filter((c) => c.variant === 'howler').length, 5, 'cinq Beuglantes');
   assert.equal(edition.cards.community_chest.length, 0);
   // Aucune case ne réclame la pile disparue, sinon on piocherait dans le vide.
   assert.equal(edition.board.filter((s) => s.type === 'community_chest').length, 0);

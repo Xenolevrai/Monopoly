@@ -168,6 +168,51 @@ const SHAPES = {
     </>
   ),
 
+  // — Les quatre pions dorés de la boîte Poudlard —————————————————
+  // Des emblèmes, pas des portraits : chaque personnage est évoqué par l'objet
+  // qui lui est propre, ce qui reste lisible à 14 px sur une case.
+
+  // Harry : lunettes rondes et éclair.
+  harry: (
+    <>
+      <path d="M6 32c0-5 4.4-9 10-9s10 4 10 9-4.4 9-10 9-10-4-10-9zm10-5.4c-3.6 0-6.4 2.4-6.4 5.4s2.8 5.4 6.4 5.4 6.4-2.4 6.4-5.4-2.8-5.4-6.4-5.4z" />
+      <path d="M38 32c0-5 4.4-9 10-9s10 4 10 9-4.4 9-10 9-10-4-10-9zm10-5.4c-3.6 0-6.4 2.4-6.4 5.4s2.8 5.4 6.4 5.4 6.4-2.4 6.4-5.4-2.8-5.4-6.4-5.4z" transform="translate(-16)" />
+      <rect x="25.4" y="30" width="7.2" height="3" rx="1.5" />
+      <path d="M34 6l-9 16h6.4l-3.4 14 11-18h-6.6l4.6-12z" />
+    </>
+  ),
+
+  // Hermione : un livre ouvert et sa baguette.
+  hermione: (
+    <>
+      <path d="M8 20c6-3.6 12-4.6 18-3v25c-6-1.6-12-.6-18 3z" />
+      <path d="M56 20c-6-3.6-12-4.6-18-3v25c6-1.6 12-.6 18 3z" />
+      <rect x="29.6" y="16" width="4.8" height="30" rx="2.4" />
+      <g stroke="#fff" strokeWidth="1.2" opacity=".4" fill="none">
+        <path d="M12 25h9M12 30h9M12 35h9M43 25h9M43 30h9M43 35h9" />
+      </g>
+      <path d="M46 4.4c.8-.8 2-.8 2.8 0s.8 2 0 2.8L36.6 19.4l-2.8-2.8z" />
+    </>
+  ),
+
+  // Ron : le cavalier d'échecs de la partie grandeur nature.
+  ron: (
+    <>
+      <path d="M20 52h26c1 0 1.8.8 1.8 1.8v2.4c0 1-.8 1.8-1.8 1.8H20c-1 0-1.8-.8-1.8-1.8v-2.4c0-1 .8-1.8 1.8-1.8z" />
+      <path d="M22 48c0-6 2.4-9.6 6.4-13.2l-3.6-1.4c-1.2-.5-1.4-2-.4-2.8l5.2-4L27 20.4c-.6-1 .2-2.2 1.4-2l4 .8L34 12c.3-1.3 2-1.6 2.7-.4 3 4.8 7.3 8 7.3 14.4 0 4.8-1.6 8-3.6 11.2-1.8 2.9-2.4 6.4-2.4 10.8z" />
+      <circle cx="36" cy="24" r="1.9" fill="#fff" opacity=".8" />
+      <path d="M29 30l6-2.4" stroke="#fff" strokeWidth="1.4" opacity=".35" fill="none" />
+    </>
+  ),
+
+  // Drago : le serpent lové de sa maison.
+  drago: (
+    <>
+      <path d="M32 8c11 0 20 7.2 20 16.6 0 8-6 13.4-14 13.4-6 0-10-3.4-10-8 0-3.6 2.6-6.2 6.4-6.2 3 0 5.2 1.8 5.2 4.2 0 1.9-1.4 3.2-3.2 3.2-1.4 0-2.4-.9-2.4-2 0-.9.6-1.5 1.4-1.5.6 0 1 .3 1.2.8-.6-1.4-2-2.3-3.8-2.3-2.6 0-4.4 1.8-4.4 4.4 0 3.4 3 6 7.4 6 5.9 0 10.4-4.1 10.4-10.2C46.4 19 40 13.6 32 13.6S17.6 19 17.6 26.4c0 12 9.4 21 22.4 25.4.9.3.7 1.7-.3 1.7-16.6-.6-28-11-28-25.5C11.7 16.4 20.8 8 32 8z" />
+      <circle cx="42" cy="20" r="1.8" fill="#fff" opacity=".75" />
+    </>
+  ),
+
   // — Avengers ————————————————————————————————————————
 
   // Marteau : tête rectangulaire massive et manche sanglé.

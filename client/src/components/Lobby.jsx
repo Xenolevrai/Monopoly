@@ -416,11 +416,17 @@ export function Home({ error }) {
 }
 
 /** Formulaire d'ajout d'une joueuse supplémentaire sur ce même ordinateur. */
-function AddLocalPlayer({ edition, taken, onCancel }) {
+function AddLocalPlayer({ edition, taken, takenFactions = [], onCancel }) {
   const free = edition.tokens.find((t) => !taken.includes(t.id));
   const [name, setName] = useState('');
   const [token, setToken] = useState(free?.id ?? edition.tokens[0].id);
-  const [faction, setFaction] = useState(edition.factions?.options[0].id ?? null);
+  // On propose d'emblée une maison encore libre : quatre cartes de maison pour
+  // quatre joueuses, autant ne pas les faire toutes atterrir à Gryffondor.
+  const [faction, setFaction] = useState(
+    edition.factions?.options.find((f) => !takenFactions.includes(f.id))?.id ??
+      edition.factions?.options[0].id ??
+      null,
+  );
 
   const add = () => {
     socket.emit('game:add-local', { name, token, faction });
@@ -604,7 +610,12 @@ export function WaitingRoom({ state, mine, onLeave }) {
           ))}
 
           {adding ? (
-            <AddLocalPlayer edition={edition} taken={taken} onCancel={() => setAdding(false)} />
+            <AddLocalPlayer
+              edition={edition}
+              taken={taken}
+              takenFactions={state.players.map((p) => p.faction)}
+              onCancel={() => setAdding(false)}
+            />
           ) : (
             <button
               type="button"
