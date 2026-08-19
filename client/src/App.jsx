@@ -30,10 +30,11 @@ function allCardsOf(state) {
  * tout reste côte à côte et cette barre disparaît.
  */
 function MobileTabs({ tab, onChange, waiting, t }) {
+  // Le plateau et les boutons vivent dans le même onglet : on lance les dés, on
+  // voit où l'on tombe, on achète et on paie sans jamais changer d'écran.
   const tabs = [
-    ['jouer', t('tabPlay')],
-    ['plateau', t('tabBoard')],
-    ['joueuses', t('tabPlayers')],
+    ['jeu', t('tabPlay')],
+    ['profil', t('tabProfile')],
     ['journal', t('tabLog')],
   ];
 
@@ -56,7 +57,7 @@ function MobileTabs({ tab, onChange, waiting, t }) {
           >
             {label}
             {/* La pastille signale qu'on attend une décision de ce poste. */}
-            {id === 'jouer' && waiting && !active && (
+            {id === 'jeu' && waiting && !active && (
               <span className="absolute left-1/2 top-1.5 ml-5 h-2 w-2 rounded-full bg-[var(--color-accent)]" />
             )}
           </button>
@@ -75,7 +76,7 @@ export default function App() {
   const [tradeOpen, setTradeOpen] = useState(false);
   const [settleOpen, setSettleOpen] = useState(false);
   const [inspected, setInspected] = useState(null);
-  const [tab, setTab] = useState('jouer');
+  const [tab, setTab] = useState('jeu');
   const aside = useRef(null);
   const [recapClosed, setRecapClosed] = useState(false);
 
@@ -97,7 +98,7 @@ export default function App() {
     state?.pending?.kind && mine.some((p) => state.pending.playerIds?.includes(p.id)),
   );
   useEffect(() => {
-    if (myTurn) setTab('jouer');
+    if (myTurn) setTab('jeu');
   }, [myTurn, pendingKind]);
 
   // Les erreurs sont passagères : elles s'effacent d'elles-mêmes.
@@ -139,7 +140,7 @@ export default function App() {
       <div className="mx-auto flex max-w-[1500px] flex-col gap-4 pb-16 xl:h-[calc(100dvh-2.5rem)] xl:flex-row xl:pb-0">
         <div
           className={`min-h-0 flex-1 items-start justify-center xl:flex ${
-            tab === 'plateau' ? 'flex' : 'hidden'
+            tab === 'jeu' ? 'flex' : 'hidden'
           }`}
         >
           <ErrorBoundary zone="Le plateau">
@@ -162,7 +163,7 @@ export default function App() {
           ref={aside}
           className="scroll-thin flex w-full shrink-0 flex-col gap-4 xl:h-full xl:w-[380px] xl:overflow-y-auto"
         >
-          <div className={tab === 'jouer' ? 'contents' : 'hidden xl:contents'}>
+          <div className={tab === 'jeu' ? 'contents' : 'hidden xl:contents'}>
             <ErrorBoundary zone="Le menu de partie">
               <GameMenu
                 state={state}
@@ -182,7 +183,7 @@ export default function App() {
             </ErrorBoundary>
           </div>
 
-          <div className={tab === 'joueuses' ? 'contents' : 'hidden xl:contents'}>
+          <div className={tab === 'profil' ? 'contents' : 'hidden xl:contents'}>
             <ErrorBoundary zone="Le panneau des joueuses">
               <Players state={state} me={me} mine={mine} onFocus={focusOn} />
             </ErrorBoundary>

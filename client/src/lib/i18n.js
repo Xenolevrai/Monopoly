@@ -143,9 +143,8 @@ const FR = {
     'Plusieurs joueuses sur cet écran : cliquez sur un nom pour agir en son nom hors de son tour.',
 
   // — Onglets mobiles ——————————————————————————————
-  tabPlay: 'Jouer',
-  tabBoard: 'Plateau',
-  tabPlayers: 'Joueuses',
+  tabPlay: 'Jeu',
+  tabProfile: 'Profil',
   tabLog: 'Journal',
 
   // — Divers ————————————————————————————————————
@@ -284,9 +283,8 @@ const EN = {
   hotSeatHint:
     'Several players on this screen: click a name to act for them outside their turn.',
 
-  tabPlay: 'Play',
-  tabBoard: 'Board',
-  tabPlayers: 'Players',
+  tabPlay: 'Game',
+  tabProfile: 'Profile',
   tabLog: 'Log',
 
   connectionLost: 'Connection lost — it will pick up as soon as the server answers…',

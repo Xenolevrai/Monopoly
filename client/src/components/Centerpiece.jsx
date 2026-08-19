@@ -247,21 +247,21 @@ function ClassicBanner({ title, subtitle }) {
 export default function Centerpiece({ skin, title, subtitle }) {
   if (skin === 'parchment') {
     return (
-      <div className="w-[min(56%,270px)]">
+      <div className="w-[46%]">
         <CrestBanner title={title} subtitle={subtitle} />
       </div>
     );
   }
   if (skin === 'night') {
     return (
-      <div className="w-[min(78%,360px)]">
+      <div className="w-[66%]">
         <CastleScene title={title} subtitle={subtitle} />
       </div>
     );
   }
   if (skin === 'tech') {
     return (
-      <div className="w-[min(70%,320px)]">
+      <div className="w-[60%]">
         <TechEmblem title={title} subtitle={subtitle} />
       </div>
     );

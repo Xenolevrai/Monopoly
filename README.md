@@ -1,11 +1,26 @@
-# Monopoly Paris — multijoueur en temps réel
+# Monopoly — la plateforme multijoueur en temps réel
 
-Version numérique du Monopoly classique (édition française, plateau parisien),
-jouable à 2-6 depuis un navigateur, sur le même wifi ou à distance.
+Plusieurs boîtes de Monopoly, jouables à 2-6 depuis un navigateur, sur le même
+wifi ou à distance.
 
 **Le jeu est complet et jouable** : plateau, règles, temps réel, lobby, échanges,
 chat, reconnexion. On peut jouer **à plusieurs sur le même ordinateur**, avec
-d'autres joueuses **à distance** dans la même partie. 87 tests automatisés.
+d'autres joueuses **à distance** dans la même partie. 128 tests automatisés.
+
+## Les éditions
+
+Chacune a son plateau, ses pions, ses cartes, ses couleurs et sa matière — et,
+quand la boîte le demande, **ses règles**.
+
+| Édition | Monnaie | Plateau | Règles |
+|---|---|---|---|
+| **Monopoly Classique** | € | carton vert de table | la référence |
+| **Harry Potter — Gallions** | G | parchemin, Carte du Maraudeur | comme le classique, noms de Poudlard |
+| **Marvel Avengers** | M$ | acier et néons | bases S.H.I.E.L.D. et quartiers généraux Stark |
+| **Harry Potter — Coupe des Quatre Maisons** | points | ciel de nuit, Grande Salle | **règles Hasbro** : pas d'hôtel, pas d'hypothèque, personne n'est éliminée, on gagne en explorant tout le plateau |
+
+Au moment de créer une partie, on choisit sa boîte **et sa langue** : français ou
+anglais. La langue ne change que les mots — jamais un prix, jamais une règle.
 
 ![Une partie en cours](docs/captures/partie.png)
 
@@ -15,7 +30,7 @@ d'autres joueuses **à distance** dans la même partie. 87 tests automatisés.
 npm install
 npm run build   # compile l'interface — à refaire après chaque `git pull`
 npm start       # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
-npm run check   # lint + 87 tests : données, règles, parties simulées, temps réel
+npm run check   # lint + 128 tests : données, éditions, langues, règles, parties simulées, temps réel
 ```
 
 Node 22+. Le serveur affiche aussi l'adresse locale (`http://192.168.x.x:3000`) à
@@ -24,21 +39,28 @@ donner aux autres joueuses du même wifi.
 ## Structure
 
 ```
-shared/     données de jeu + schéma d'état, partagés serveur ↔ client
-  data/     board.json, groups.json, cards.json, rules.json  ← règles éditables sans toucher au code
-  index.js  accès aux données + helpers de plateau
-  schema.js typedefs de l'état + fabriques d'état initial
+shared/          données de jeu + schéma d'état, partagés serveur ↔ client
+  editions.js    catalogue des boîtes + surcouche de langue
+  editions/<id>/ board.json, groups.json, cards.json, edition.json, locales/en.json
+  messages.js    les phrases du journal, en français et en anglais
+  schema.js      typedefs de l'état + fabriques d'état initial
 server/
-  engine/   moteur de jeu : tour, déplacements, loyers, cartes, enchères, faillite
-  index.js  serveur HTTP + API, sert le client compilé
-  sockets.js passerelle Socket.io ↔ moteur
-  rooms.js  registre des parties, codes, sauvegarde sur disque
-client/     interface React + Vite + Tailwind (« Plateau de table »)
-  src/components/  plateau, joueuses, actions, échanges, journal et chat
-  src/lib/         connexion temps réel, état, données du plateau
-tests/      data / engine / simulation / server
-docs/       DATA_MODEL.md, MOTEUR.md, SERVEUR.md, CLIENT.md, ART_DIRECTION.md
+  engine/        moteur : tour, déplacements, loyers, cartes, enchères, faillite
+  index.js       serveur HTTP + API, sert le client compilé
+  sockets.js     passerelle Socket.io ↔ moteur
+  rooms.js       registre des parties, codes, sauvegarde sur disque
+client/          interface React + Vite + Tailwind
+  src/components/  plateau et son décor, joueuses, actions, échanges, journal, chat
+  src/lib/         connexion temps réel, état, données du plateau, thème, langues
+tests/           data / editions / engine / locales / payment-flow / points-edition / server / simulation
+docs/            DATA_MODEL.md, MOTEUR.md, SERVEUR.md, CLIENT.md, ART_DIRECTION.md
+CLAUDE.md        carnet de bord : architecture, pièges, ce qui reste à faire
 ```
+
+**Ajouter une édition = déposer un dossier** dans `shared/editions/`, le déclarer
+dans `shared/editions.js`, dessiner les pions manquants. Aucune ligne de moteur
+ne bouge — et `tests/editions.test.js` joue une partie entière sur la nouvelle
+boîte pour le vérifier.
 
 ## Stack retenue
 
@@ -56,10 +78,12 @@ charges, avec deux ajustements pensés pour un groupe non technique :
 
 ## Direction artistique
 
-**« Plateau de table »** : carton vert pâle, cases crème cernées d'un filet noir,
-bandeaux de couleur pleins, textes condensés en capitales orientés vers le centre
-comme sur le plateau papier, six pions dessinés en SVG. Détails dans
-`docs/ART_DIRECTION.md`.
+**Chaque boîte a son plateau.** Le carton vert de table pour le classique, un
+parchemin à l'encre sépia pour Harry Potter, un ciel de nuit doré pour la Coupe
+des Quatre Maisons, de l'acier et des néons pour les Avengers : matière, cadre,
+filigrane, blason central et illustration de chaque case changent avec
+l'édition. Tout est dessiné en SVG à la main — rien à télécharger, le jeu tourne
+hors ligne. Détails dans `docs/ART_DIRECTION.md`.
 
 ## Jouer ensemble
 
@@ -91,6 +115,17 @@ chez tout le monde en même temps : le podium, le détail de chacune (liquide,
 propriétés, constructions), les éliminées en bas de tableau. De là, un bouton
 ramène à l'accueil pour en relancer une — ou on referme pour regarder le plateau
 une dernière fois, le compte reste accessible depuis la barre du haut.
+
+## Sur téléphone comme sur ordinateur
+
+**Sur ordinateur**, le plateau occupe la gauche, tout le reste la droite : on
+voit la partie entière d'un seul coup d'œil, sans onglet.
+
+**Sur téléphone**, trois onglets, et le premier suffit pour jouer : l'onglet
+**Jeu** montre le plateau *et* les boutons — on lance les dés, on voit la case
+où l'on tombe, on achète, on paie, sans jamais changer d'écran. L'onglet
+**Profil** sert à regarder ses biens à tête reposée, l'onglet **Journal** à
+relire ce qui s'est passé.
 
 ## Conçu pour se jouer en se parlant
 
@@ -137,6 +172,7 @@ et répondables tout de suite.
 
 ## Pistes si l'envie vient
 
+- L'édition Spider-Man, puis Junior, Cheaters, Empire, Speed — les drapeaux de
+  mécaniques correspondants existent déjà dans `edition.mechanics`
 - Sauvegarde longue durée en SQLite plutôt qu'en fichiers JSON
 - Statistiques de fin de partie (patrimoine, loyers encaissés)
-- Variante sombre : tout passe par des variables CSS dans `client/src/styles.css`

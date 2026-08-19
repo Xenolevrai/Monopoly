@@ -20,19 +20,19 @@
     },
     {
       "id": "av-shield-03",
-      "text": "Renfort tactique chez Black Panther. Si vous passez par la case Départ, touchez 200 M$.",
+      "text": "Renfort tactique au Wakanda, chez Black Panther. Si vous passez par la case Départ, touchez 200 M$.",
       "action": {
         "type": "move_to",
-        "target": 11,
+        "target": 14,
         "collectGoSalary": true
       }
     },
     {
       "id": "av-shield-04",
-      "text": "Rejoignez le camp de Captain Marvel. Si vous passez par la case Départ, touchez 200 M$.",
+      "text": "Rejoignez le camp de Spider-Man. Si vous passez par la case Départ, touchez 200 M$.",
       "action": {
         "type": "move_to",
-        "target": 19,
+        "target": 18,
         "collectGoSalary": true
       }
     },
@@ -66,10 +66,10 @@
     },
     {
       "id": "av-shield-08",
-      "text": "Vol en Quinjet. Si vous passez par la case Départ, touchez 200 M$.",
+      "text": "Vol en Héliporteur du S.H.I.E.L.D. Si vous passez par la case Départ, touchez 200 M$.",
       "action": {
         "type": "move_to",
-        "target": 5,
+        "target": 15,
         "collectGoSalary": true
       }
     },
@@ -224,7 +224,7 @@
       "text": "Rapport d'évaluation chez Nick Fury : avancez jusqu'à sa case. Si vous passez par la case Départ, touchez 200 M$.",
       "action": {
         "type": "move_to",
-        "target": 3,
+        "target": 1,
         "collectGoSalary": true
       }
     },
@@ -255,10 +255,10 @@
     },
     {
       "id": "av-stark-15",
-      "text": "Sauvetage civil héroïque récompensé : recevez 100 M$.",
+      "text": "Sauvetage civil héroïque récompensé : recevez 25 M$.",
       "action": {
         "type": "collect",
-        "amount": 100
+        "amount": 25
       }
     },
     {

@@ -25,6 +25,24 @@ function cornerNote(state, id) {
   return null;
 }
 
+/**
+ * Un nom trop long pour la largeur d'une case s'imprime plus petit — c'est ce
+ * que fait le plateau papier. Sans ça, `break-words` coupe au milieu d'un mot
+ * et l'on obtient « HONEYDU / KES ». On se règle sur le mot le plus long : huit
+ * lettres tiennent à la taille nominale, au-delà on réduit d'autant — c'est la
+ * limite mesurée sur un téléphone, où la case ne fait plus que vingt-cinq
+ * points de large une fois les marges retirées.
+ */
+function nameScale(name) {
+  const longest = Math.max(...name.split(/\s+/).map((word) => word.length));
+  // Deux contraintes : la largeur (le mot le plus long doit tenir sur une ligne)
+  // et la hauteur (« CHAMBRE DES SECRETS » prend trois lignes et chassait le prix
+  // hors de la case). On retient la plus sévère des deux.
+  const byWidth = longest <= 8 ? 1 : 8 / longest;
+  const byHeight = name.length <= 15 ? 1 : 15 / name.length;
+  return Math.max(0.6, Math.min(byWidth, byHeight));
+}
+
 /** Les cases « pile » prennent la couleur que l'édition donne à leur paquet. */
 function deckTint(state, type) {
   return editionFor(state).theming?.decks?.[type]?.color ?? null;
@@ -65,6 +83,7 @@ function Space({ space, state, active, onSelect }) {
   const edition = editionFor(state);
   const Icon = artFor(edition, space) ?? iconFor(edition, space);
   const corner = space.corner;
+  const vertical = !corner && (side === 'left' || side === 'right');
 
   return (
     <button
@@ -75,14 +94,25 @@ function Space({ space, state, active, onSelect }) {
         active ? 'space-active' : ''
       } ${space.type === 'go' ? 'text-[var(--color-accent)]' : ''}`}
     >
-      {/* Le contenu tourne vers le centre du plateau ; il occupe la case
-          « à l'endroit » grâce aux unités de conteneur (100cqh × 100cqw). */}
+      {/* Le contenu tourne vers le centre du plateau. Seules les cases des deux
+          côtés (rotation d'un quart de tour) échangent leurs dimensions : à 0°
+          comme à 180°, la case garde sa largeur, et l'échanger débordait le nom
+          d'un bon tiers — c'est ce qui coupait « HIBOU EXPRESS » en haut et
+          « TÊTE DE SANGLIER » en bas.
+
+          La taille du texte se règle ici une fois pour toutes, en fraction de
+          la largeur utile ; les enfants s'expriment ensuite en `em`. */}
       <span
         className="absolute left-1/2 top-1/2 flex flex-col items-center"
         style={{
-          width: corner ? '100cqw' : '100cqh',
-          height: corner ? '100cqh' : '100cqw',
+          width: vertical ? '100cqh' : '100cqw',
+          height: vertical ? '100cqw' : '100cqh',
           transform: `translate(-50%, -50%) rotate(${corner ? 0 : ROTATION[side]}deg)`,
+          fontSize: corner
+            ? 'clamp(6px, 13cqw, 11px)'
+            : vertical
+              ? 'clamp(6px, 17cqh, 10px)'
+              : 'clamp(6px, 17cqw, 10px)',
         }}
       >
         {color && (
@@ -94,10 +124,10 @@ function Space({ space, state, active, onSelect }) {
           </span>
         )}
 
-        <span className="flex flex-1 flex-col items-center justify-center gap-0.5 px-1 text-center">
+        <span className="flex w-full flex-1 flex-col items-center justify-center gap-0.5 px-[4%] text-center">
           {Icon && (
             <Icon
-              className={`${corner ? 'h-8 w-8' : 'h-[44%] w-[44%] min-h-4 min-w-4'} text-ink`}
+              className={`${corner ? 'w-[32%]' : 'w-[40%] min-w-4'} aspect-square h-auto text-ink`}
               style={
                 !artFor(edition, space) && deckTint(state, space.type)
                   ? { color: deckTint(state, space.type) }
@@ -106,31 +136,42 @@ function Space({ space, state, active, onSelect }) {
             />
           )}
           <span
-            className={`font-condensed uppercase leading-[1.05] ${
+            className={`w-full break-words font-condensed uppercase leading-[1.05] ${
               space.type === 'go' ? 'text-[var(--color-accent)]' : 'text-ink'
-            } ${
-              corner ? 'text-[9px]' : 'text-[7.5px]'
             }`}
+            style={{ fontSize: `${nameScale(space.shortName)}em`, letterSpacing: '-0.01em' }}
           >
             {space.shortName}
           </span>
           {cornerNote(state, space.id) && (
-            <span className="font-condensed text-[7px] uppercase leading-tight text-ink-soft">
+            <span
+              className="w-full break-words font-condensed uppercase leading-tight text-ink-soft"
+              style={{ fontSize: '0.82em' }}
+            >
               {cornerNote(state, space.id)}
             </span>
           )}
           {space.price != null && (
-            <span className="tabular font-condensed text-[7px] text-ink-soft">
+            <span
+              className="tabular font-condensed text-ink-soft"
+              style={{ fontSize: '0.82em' }}
+            >
               {money(state, space.price)}
             </span>
           )}
           {space.amount != null && (
-            <span className="tabular font-condensed text-[7px] text-ink-soft">
+            <span
+              className="tabular font-condensed text-ink-soft"
+              style={{ fontSize: '0.82em' }}
+            >
               {money(state, space.amount)}
             </span>
           )}
           {prop?.mortgaged && (
-            <span className="font-condensed text-[6.5px] uppercase text-[var(--color-accent)]">
+            <span
+              className="font-condensed uppercase text-[var(--color-accent)]"
+              style={{ fontSize: '0.75em' }}
+            >
               {translator(state.locale)('mortgaged')}
             </span>
           )}
@@ -159,7 +200,7 @@ function CardPiles({ state, canDraw, deckToDraw, onDraw }) {
   const piles = Object.entries(decks).map(([id, deck], i) => ({ id, tilt: i === 0 ? -4 : 3, ...deck }));
 
   return (
-    <div className="flex items-start gap-6">
+    <div className="flex items-start gap-[4cqw]">
       {piles.map((pile) => {
         const mine = canDraw && deckToDraw === pile.id;
         return (
@@ -173,21 +214,28 @@ function CardPiles({ state, canDraw, deckToDraw, onDraw }) {
             title={pile.label}
           >
             {/* Les cartes du dessous, pour l'épaisseur du tas. */}
-            <span className="absolute left-1 top-1 h-full w-full rounded border-2 border-ink/60 bg-white/70" />
-            <span className="absolute left-0.5 top-0.5 h-full w-full rounded border-2 border-ink/70 bg-white/85" />
+            <span className="absolute left-[0.5cqw] top-[0.5cqw] h-full w-full rounded border-2 border-ink/60 bg-white/70" />
+            <span className="absolute left-[0.25cqw] top-[0.25cqw] h-full w-full rounded border-2 border-ink/70 bg-white/85" />
             <span
-              className="relative flex h-[74px] w-[54px] flex-col items-center justify-center gap-1 rounded border-2 border-ink text-center"
-              style={{ backgroundColor: pile.color }}
+              className="relative flex flex-col items-center justify-center gap-[0.6cqw] rounded border-2 border-ink text-center"
+              style={{ backgroundColor: pile.color, width: '8.4cqw', height: '11.5cqw' }}
             >
-              <span className="font-condensed text-[26px] leading-none text-white">
+              <span
+                className="font-condensed leading-none text-white"
+                style={{ fontSize: 'clamp(11px, 4cqw, 26px)' }}
+              >
                 {pile.glyph ?? '?'}
               </span>
-              <span className="px-1 font-condensed text-[7px] uppercase leading-tight text-white/95">
+              <span
+                className="px-[0.4cqw] font-condensed uppercase leading-tight text-white/95"
+                style={{ fontSize: 'clamp(4px, 1.15cqw, 7px)' }}
+              >
                 {pile.label}
               </span>
             </span>
             {mine && (
-              <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap font-condensed text-[10px] uppercase text-[var(--color-accent)]">
+              <span className="absolute -bottom-[3.4cqw] left-1/2 -translate-x-1/2 whitespace-nowrap font-condensed uppercase text-[var(--color-accent)]"
+                style={{ fontSize: 'clamp(6px, 1.7cqw, 10px)' }}>
                 {translator(state.locale)('drawNow')}
               </span>
             )}
@@ -224,7 +272,8 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
         {/* Une pastille claire : le nom reste lisible même sur un plateau
             sombre, et la couleur de la joueuse reste identifiable. */}
         {state.phase === 'playing' && current && (
-          <p className="flex items-center gap-1.5 rounded-full border border-black/15 bg-[var(--color-space)] px-3 py-1 font-condensed text-xs uppercase tracking-widest text-ink">
+          <p className="flex items-center gap-1.5 rounded-full border border-black/15 bg-[var(--color-space)] px-[2cqw] py-[0.6cqw] font-condensed uppercase tracking-widest text-ink"
+            style={{ fontSize: 'clamp(7px, 1.9cqw, 12px)' }}>
             {translator(state.locale)('turnOf')}
             <span className="inline-flex items-center gap-1">
               <span
@@ -307,7 +356,13 @@ export default function Board({
       {/* Les quatre coins sont plus grands que les cases de bord, comme sur le plateau papier. */}
       <div
         className="relative grid h-full w-full"
-        style={{ gridTemplateColumns: gridTemplate(state), gridTemplateRows: gridTemplate(state) }}
+        style={{
+          gridTemplateColumns: gridTemplate(state),
+          gridTemplateRows: gridTemplate(state),
+          // Les tas de cartes, les dés et le cartouche se mesurent en `cqw` :
+          // sur un téléphone, tout rétrécit avec le plateau au lieu de l'écraser.
+          containerType: 'size',
+        }}
       >
         {boardOf(state).map((space) => (
           <Space

@@ -200,12 +200,12 @@
   "cards": {
     "av-shield-01": "Report to HQ: advance to GO. Collect 200 M$.",
     "av-shield-02": "Deploy to Avengers Tower.",
-    "av-shield-03": "Tactical reinforcement with Black Panther. If you pass GO, collect 200 M$.",
-    "av-shield-04": "Join Captain Marvel's squad. If you pass GO, collect 200 M$.",
+    "av-shield-03": "Tactical reinforcement in Wakanda, with Black Panther. If you pass GO, collect 200 M$.",
+    "av-shield-04": "Join Spider-Man's side. If you pass GO, collect 200 M$.",
     "av-shield-05": "Emergency transport requisition: advance to the nearest tactical vehicle. If it is owned, pay the owner twice the rental.",
     "av-shield-06": "Emergency transport requisition: advance to the nearest tactical vehicle. If it is owned, pay the owner twice the rental.",
     "av-shield-07": "Technology inspection: advance to the nearest technology. Throw the dice again and pay the owner ten times the amount thrown.",
-    "av-shield-08": "Quinjet flight. If you pass GO, collect 200 M$.",
+    "av-shield-08": "S.H.I.E.L.D. Helicarrier flight. If you pass GO, collect 200 M$.",
     "av-shield-09": "Stark technology dividends: the bank pays you 50 M$.",
     "av-shield-10": "Level 7 clearance: get out of The Raft free. This card may be kept until needed or sold.",
     "av-shield-11": "Tactical retreat: go back three spaces.",
@@ -228,7 +228,7 @@
     "av-stark-12": "Collateral damage in an urban fight: pay 50 M$ in civilian repairs.",
     "av-stark-13": "Bounty for capturing a Hydra sleeper agent: collect 100 M$.",
     "av-stark-14": "Post-invasion reconstruction: pay 40 M$ per base and 115 M$ per headquarters.",
-    "av-stark-15": "Heroic civilian rescue rewarded: collect 100 M$.",
+    "av-stark-15": "Heroic civilian rescue rewarded: collect 25 M$.",
     "av-stark-16": "Sokovia Accords violation: pay a 100 M$ fine."
   }
 }

@@ -21,10 +21,14 @@ function Die({ value, rolling, delay = 0 }) {
   const pips = PIPS[value] ?? [];
   return (
     <div
-      className={`grid h-12 w-12 grid-cols-3 grid-rows-3 gap-0.5 rounded-lg border border-black/25 bg-white p-1.5 shadow-[0_4px_10px_-4px_rgba(0,0,0,.6)] ${
+      className={`grid grid-cols-3 grid-rows-3 gap-[0.3cqw] rounded-lg border border-black/25 bg-white p-[1cqw] shadow-[0_4px_10px_-4px_rgba(0,0,0,.6)] ${
         rolling ? 'die-tumbling' : 'die-settle'
       }`}
-      style={{ animationDelay: `${delay}ms` }}
+      style={{
+        animationDelay: `${delay}ms`,
+        width: 'clamp(26px, 7cqw, 48px)',
+        height: 'clamp(26px, 7cqw, 48px)',
+      }}
     >
       {Array.from({ length: 9 }).map((_, i) => (
         <span key={i} className={`rounded-full ${pips.includes(i) ? 'bg-ink' : 'bg-transparent'}`} />
@@ -52,20 +56,20 @@ export default function Dice({ values, rolling = false }) {
     return () => clearInterval(tumbler);
   }, [rolling]);
 
-  if (!shown) return <div className="h-12" />;
+  if (!shown) return <div style={{ height: 'clamp(26px, 7cqw, 48px)' }} />;
 
   const faces = rolling ? tumble : (shown ?? [1, 1]);
   const total = shown ? shown.reduce((a, b) => a + b, 0) : null;
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-[2cqw]">
       <Die value={faces[0]} rolling={rolling} />
       <Die value={faces[1]} rolling={rolling} delay={90} />
       <span
-        className={`tabular font-condensed text-2xl transition-opacity duration-200 ${
+        className={`tabular font-condensed transition-opacity duration-200 ${
           rolling ? 'opacity-0' : 'opacity-100'
         }`}
-        style={{ color: 'var(--color-board-ink)' }}
+        style={{ color: 'var(--color-board-ink)', fontSize: 'clamp(14px, 4cqw, 26px)' }}
       >
         {total ?? ''}
       </span>
