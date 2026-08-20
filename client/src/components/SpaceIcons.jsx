@@ -242,6 +242,13 @@ const DEFAULT_ICONS = {
   jail: 'bars',
   free_parking: 'car',
   go_to_jail: 'officer',
+  // Cases génériques ajoutées par les extensions Hasbro (shared/extensions.js) :
+  // pas de dessin dédié pour l'instant, on réutilise les pictogrammes les plus
+  // proches en signification plutôt que de laisser la case sans icône.
+  spin: 'question',
+  escape: 'officer',
+  heist: 'chest',
+  super_jail: 'bars',
 };
 
 /**

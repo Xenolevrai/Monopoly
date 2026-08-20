@@ -1,7 +1,15 @@
 /** Accueil (créer / rejoindre) puis salon d'attente avec le code à partager. */
 import { useEffect, useState } from 'react';
 import { socket } from '../lib/socket.js';
-import { getEdition, listEditions, DEFAULT_EDITION, DEFAULT_LOCALE, LOCALES } from '../lib/board.js';
+import {
+  getEdition,
+  listEditions,
+  DEFAULT_EDITION,
+  DEFAULT_LOCALE,
+  LOCALES,
+  compatibleExtensions,
+  conflictingPositions,
+} from '../lib/board.js';
 import { translator } from '../lib/i18n.js';
 import TokenIcon from './TokenIcon.jsx';
 import Rules from './Rules.jsx';
@@ -147,6 +155,55 @@ function EditionBriefing({ edition }) {
  * Choix du camp, quand l'édition en propose un : les maisons de Poudlard.
  * Contrairement aux pions, plusieurs joueuses peuvent partager une maison.
  */
+/**
+ * Cases à cocher des extensions Hasbro compatibles avec l'édition choisie.
+ * Une extension déjà cochée qui entrerait en conflit avec celle qu'on vient de
+ * cocher est proposée mais désactivée — on ne devine pas quelle des deux garder.
+ */
+function ExtensionPicker({ edition, value, onChange, t }) {
+  const options = compatibleExtensions(edition);
+  if (!options.length) return null;
+
+  const toggle = (id) => {
+    onChange(value.includes(id) ? value.filter((x) => x !== id) : [...value, id]);
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
+        {t('extensions')}
+      </p>
+      <div className="space-y-1.5">
+        {options.map((ext) => {
+          const checked = value.includes(ext.id);
+          const active = options.filter((o) => value.includes(o.id));
+          const wouldConflict = !checked && conflictingPositions([...active, ext]).length > 0;
+          return (
+            <label
+              key={ext.id}
+              className={`flex items-start gap-2 rounded border-2 px-2.5 py-2 transition-colors ${
+                checked ? 'border-ink bg-white' : 'border-black/12 bg-white/60'
+              } ${wouldConflict ? 'opacity-40' : 'cursor-pointer hover:bg-white'}`}
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                disabled={wouldConflict}
+                onChange={() => toggle(ext.id)}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="block font-condensed text-xs uppercase tracking-wide">{ext.name}</span>
+                {ext.summary && <span className="block text-[11px] normal-case text-ink-soft">{ext.summary}</span>}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function FactionPicker({ edition, value, onChange }) {
   const factions = edition.factions;
   if (!factions) return null;
@@ -410,17 +467,23 @@ export function Home({ error }) {
   const t = translator(locale);
   const [token, setToken] = useState(edition.tokens[0].id);
   const [faction, setFaction] = useState(edition.factions?.options[0].id ?? null);
+  const [extensionIds, setExtensionIds] = useState([]);
 
   // Changer d'édition change la boîte de pions et les camps : on reprend les
   // premiers de la nouvelle plutôt que de garder des choix qui n'existent pas ici.
+  // Les extensions activées qui ne conviennent plus à la nouvelle édition sont
+  // abandonnées silencieusement — on ne peut pas les proposer si elle n'a pas
+  // ce qu'elles réclament.
   const chooseEdition = (id) => {
     const next = getEdition(id, locale);
     setEditionId(id);
     setToken(next.tokens[0].id);
     setFaction(next.factions?.options[0].id ?? null);
+    const stillCompatible = new Set(compatibleExtensions(next).map((ext) => ext.id));
+    setExtensionIds((prev) => prev.filter((extId) => stillCompatible.has(extId)));
   };
 
-  const create = () => socket.emit('game:create', { name, token, editionId, faction, locale });
+  const create = () => socket.emit('game:create', { name, token, editionId, faction, locale, extensionIds });
   const join = () => socket.emit('game:join', { code: code.toUpperCase(), name, token, faction });
 
   return (
@@ -442,6 +505,8 @@ export function Home({ error }) {
         <LocalePicker value={locale} onChange={setLocale} t={t} />
 
         <EditionGallery value={editionId} onChange={chooseEdition} locale={locale} t={t} />
+
+        <ExtensionPicker edition={edition} value={extensionIds} onChange={setExtensionIds} t={t} />
 
         <FactionPicker edition={edition} value={faction} onChange={setFaction} />
 

@@ -11,8 +11,9 @@ import {
   DEFAULT_LOCALE,
   LOCALES,
 } from '../../../shared/editions.js';
+import { compatibleExtensions, conflictingPositions } from '../../../shared/extensions.js';
 
-export { getEdition, listEditions, DEFAULT_EDITION, DEFAULT_LOCALE, LOCALES };
+export { getEdition, listEditions, DEFAULT_EDITION, DEFAULT_LOCALE, LOCALES, compatibleExtensions, conflictingPositions };
 
 /**
  * L'édition d'une partie, dans sa langue (ou le classique en français tant qu'on
