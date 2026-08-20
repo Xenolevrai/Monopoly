@@ -251,24 +251,12 @@ export default function App() {
         </div>
       )}
 
-      {/* Ce qui suit ne se déplace jamais : le code de partie, les règles, la
-          calculatrice, le solde. Une barre pleine largeur — les faire vivre
-          dans une colonne étroite ne servait à rien, la place est là. */}
-      <div className="mx-auto flex max-w-[2000px] flex-col gap-2 pb-16 xl:pb-0">
-        <div className={tab === 'jeu' ? 'contents' : 'hidden xl:contents'}>
-          <ErrorBoundary zone="Le menu de partie">
-            <GameMenu state={state} mine={mine} onLeave={leave} onShowRecap={() => setRecapClosed(false)} />
-          </ErrorBoundary>
-        </div>
-        <CashBar state={state} mine={mine} t={t} />
-      </div>
-
       {/* Le plateau, flanqué d'une colonne de chaque côté. N'importe quelle
           section — vos biens, les joueuses, le journal et le chat — se
           replie, se réordonne, et se glisse d'une colonne à l'autre : c'est
           l'agencement choisi qui commande, pas un ordre figé d'avance. Une
           colonne vide ne réserve aucune place, le plateau récupère l'espace. */}
-      <div className="mx-auto flex max-w-[2000px] flex-col gap-2 pb-16 xl:h-[calc(100dvh-6.5rem)] xl:flex-row xl:pb-0">
+      <div className="mx-auto flex max-w-[2000px] flex-col gap-2 pb-16 xl:h-[calc(100dvh-2.5rem)] xl:flex-row xl:pb-0">
         {leftSections.length > 0 && (
           <aside
             ref={leftDock}
@@ -302,15 +290,29 @@ export default function App() {
 
         {/* Sur téléphone, une seule colonne : les onglets décident de ce qui
             s'affiche, par des classes, jamais par une détection d'appareil.
-            Elle reçoit les deux côtés à la fois (le côté n'a de sens qu'à
-            deux colonnes visibles). Sur ordinateur, elle ne montre plus que
-            la colonne de droite — la gauche, si elle existe, est au-dessus. */}
+            Elle reçoit les deux côtés fondus, puisque « gauche » et « droite »
+            ne veulent rien dire sans le plateau entre les deux. */}
         <aside
           ref={rightDock}
           onDragOver={(e) => e.preventDefault()}
           onDrop={() => layout.dropInto('right')}
-          className="scroll-thin flex w-full shrink-0 flex-col gap-2 xl:h-full xl:w-[360px] xl:overflow-y-auto"
+          className="scroll-thin flex w-full shrink-0 flex-col gap-2 xl:h-full xl:w-[380px] xl:overflow-y-auto"
         >
+          {/* Le code de partie, les règles, la calculatrice et le solde ne se
+              déplacent pas : ils restent en tête de la colonne de droite. */}
+          <div className={tab === 'jeu' ? 'contents' : 'hidden xl:contents'}>
+            <ErrorBoundary zone="Le menu de partie">
+              <GameMenu
+                state={state}
+                mine={mine}
+                onLeave={leave}
+                onShowRecap={() => setRecapClosed(false)}
+              />
+            </ErrorBoundary>
+          </div>
+
+          <CashBar state={state} mine={mine} t={t} />
+
           {/* Le seul endroit où le téléphone regarde encore l'onglet en cours :
               une colonne unique, les deux côtés fondus dans l'ordre où
               l'ordinateur les affiche. */}
