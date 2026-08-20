@@ -41,7 +41,7 @@ invariant est prouvé par `tests/locales.test.js`.
 npm install
 npm run build     # compile le client — à refaire après chaque pull
 npm start         # http://localhost:3000
-npm run check     # lint + 190 tests
+npm run check     # lint + 196 tests
 ```
 
 Node 22+, ESM partout, workspaces npm (racine + `client`).
@@ -100,7 +100,7 @@ scripts/               train-bots.mjs · tune-bots.mjs — tournois et réglage
 client/src/
   components/          Board, BoardSkin, Centerpiece, SpaceArt, SpaceIcons, Actions, Players…
   lib/                 board.js, i18n.js, theme.js, rulesText.jsx, useGame.js, useCinematic.js
-tests/                 bots · data · editions · engine · locales · payment-flow · points-edition · server · simulation
+tests/                 bots · contrast · data · editions · engine · locales · payment-flow · points-edition · server · simulation
 docs/                  DATA_MODEL · MOTEUR · SERVEUR · CLIENT · ART_DIRECTION
 ```
 
@@ -419,6 +419,54 @@ aucune ressource externe, le jeu tourne hors ligne.
 
 ---
 
+## 7 bis. Les couleurs : deux encres, jamais une
+
+Une édition a **deux fonds de texte différents**, et il lui faut donc deux
+encres :
+
+- `panel` / `ink` — les panneaux latéraux, toujours clairs ;
+- `space` / `spaceInk` — les fiches de propriété, qui peuvent être **sombres**
+  (les deux boîtes Spider-Man) alors que les panneaux restent clairs.
+
+Confondre les deux a produit le pire défaut visuel du projet : `spaceInk`
+n'existait pas, la fiche prenait `ink`, et l'on obtenait du texte à **1,01:1** —
+rigoureusement invisible.
+
+**Le piège général, à connaître avant de toucher une couleur** : un composant
+qui pose un **fond fixe** (la carte piochée, la face d'un dé) doit poser une
+**encre fixe**. S'il utilise `text-ink`, il hérite de l'encre du thème — claire
+sur les plateaux sombres — et disparaît sur son propre fond clair. C'est ce qui
+rendait les cartes vierges et les dés sans points.
+
+`tests/contrast.test.js` mesure les sept paires fond/encre de chaque édition
+avec la formule de luminance du WCAG et exige le seuil AA (4,5:1). Ajouter une
+édition sans y penser fera tomber ce test — c'est voulu.
+
+Le bandeau d'une case choisit son encre sur **sa propre couleur de groupe**
+(`readableOn`, dans `Actions.jsx`) : une encre fixe est illisible sur le jaune
+ou sur le bleu nuit.
+
+---
+
+## 7 ter. La colonne de droite se réarrange
+
+`client/src/components/PanelStack.jsx` — quatre sections (votre tour, vos biens,
+les joueuses, le journal et le chat) qu'on replie et qu'on déplace, à la souris
+par la poignée ou avec deux flèches (un `draggable` ne se déclenche pas au
+doigt). L'agencement vit dans `localStorage`, pas dans l'état de la partie : il
+appartient à l'écran, pas à la partie.
+
+Deux détails qui ont coûté un bug chacun :
+
+- les sections portent **`shrink-0`**. La colonne est un conteneur flex de
+  hauteur fixe : sans lui, chaque section se fait comprimer au lieu de laisser
+  la colonne défiler, et `overflow-hidden` rogne le contenu ;
+- la visibilité par onglet sur téléphone passe par une **classe** posée sur
+  chaque section (`section.className`), jamais par un filtrage de la liste :
+  filtrer changerait l'ordre gardé.
+
+---
+
 ## 8. Mobile et ordinateur
 
 - **Ordinateur (≥ `xl`)** : aucun onglet. Plateau à gauche, panneau à droite,
@@ -466,6 +514,13 @@ Le basculement se fait par classes Tailwind dans `client/src/App.jsx`
 - Un commentaire glissé **entre** deux `case` d'un `switch` casse la détection
   de `no-fallthrough` d'ESLint : le placer au-dessus du premier `case` du
   groupe.
+- **L'hypothèque regarde le groupe entier**, pas le seul terrain visé
+  (`canMortgage`, dans `queries.js`) : sans ça on gèle une case tout en
+  encaissant les loyers majorés des autres. Le moteur et les bots lisent la même
+  fonction.
+- Les dés sont uniformes, c'est mesuré : 16,66 % de doubles pour 16,67 %
+  attendus. Avant de soupçonner le générateur, refaire la mesure — un double sur
+  six jets, ça se remarque.
 - `DATA_DIR` (`server/rooms.js`) est ancré sur l'emplacement du fichier
   (`import.meta.url`), **jamais** sur `process.cwd()` : sinon lancer le serveur
   depuis un autre dossier ou un autre raccourci pointe vers un dossier de
