@@ -120,26 +120,26 @@
   ],
   "theming": {
     "palette": {
-      "table": "#101427",
-      "tableDark": "#070a16",
-      "board": "#1b2340",
-      "boardEdge": "#2b3a63",
-      "space": "#e8ecf7",
-      "spaceAlt": "#d7deef",
+      "table": "#0a0d1a",
+      "tableDark": "#04060e",
+      "board": "#0d1228",
+      "boardEdge": "#e22034",
+      "space": "#141b33",
+      "spaceAlt": "#101731",
       "ink": "#141a2e",
       "inkSoft": "#4d5878",
       "panel": "#f0f3fb",
       "panelEdge": "#c2cbe3",
-      "accent": "#c6303a",
-      "accentDeep": "#8f1b23",
+      "accent": "#e22034",
+      "accentDeep": "#a10f1d",
       "money": "#2f6b45",
-      "house": "#2a5caa",
-      "hotel": "#c6303a",
-      "gold": "#d4a32b",
-      "boardInk": "#141a2e"
+      "house": "#1d5fd8",
+      "hotel": "#e22034",
+      "gold": "#ffc23d",
+      "boardInk": "#eef2ff"
     },
     "centerTitle": "Monopoly",
-    "centerSubtitle": "New York",
+    "centerSubtitle": "Spider-Man",
     "decks": {
       "community_chest": {
         "label": "Daily Bugle",
@@ -160,7 +160,7 @@
       "free_parking": "castle",
       "warp": "web"
     },
-    "skin": "night",
+    "skin": "web",
     "art": {
       "1": "star",
       "3": "shell",

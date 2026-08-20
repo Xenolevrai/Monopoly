@@ -241,6 +241,97 @@ function ClassicBanner({ title, subtitle }) {
 }
 
 /**
+ * Le cartouche de la boîte Spider-Man : la plaque rouge MONOPOLY posée sur un
+ * panneau de toile, le titre en dessous, et le masque au regard blanc.
+ *
+ * Tout est dessiné ici : aucune image de marque n'est reprise, c'est une
+ * composition originale dans l'esprit d'une couverture de comics.
+ */
+function SpiderEmblem({ title, subtitle }) {
+  // Une toile de fond serrée, propre au cartouche (celle du plateau est plus
+  // large et passerait inaperçue derrière un panneau opaque).
+  const spokes = 12;
+  const rays = [];
+  for (let i = 0; i < spokes; i++) {
+    const a = (i / spokes) * Math.PI * 2;
+    rays.push(`M100 62L${(100 + Math.cos(a) * 130).toFixed(1)} ${(62 + Math.sin(a) * 130).toFixed(1)}`);
+  }
+
+  return (
+    <svg viewBox="0 0 200 124" className="w-full" role="img" aria-label={`${title} ${subtitle}`}>
+      <defs>
+        <linearGradient id="sp-plate" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#f0303f" />
+          <stop offset="100%" stopColor="#b30d1c" />
+        </linearGradient>
+        {/* Le titre de la boîte : rouge vif qui s'assombrit vers le bas, cerclé
+            de bleu — c'est ce contour bleu qui le distingue d'un logo Avengers. */}
+        <linearGradient id="sp-title" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ff5a63" />
+          <stop offset="45%" stopColor="#e2142a" />
+          <stop offset="100%" stopColor="#9c0a18" />
+        </linearGradient>
+        <radialGradient id="sp-glow" cx="50%" cy="45%" r="60%">
+          <stop offset="0%" stopColor="#2b4fa8" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#0a0f22" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+
+      <rect x="0" y="0" width="200" height="124" rx="4" fill="#0b1024" opacity="0.72" />
+      <rect x="0" y="0" width="200" height="124" rx="4" fill="url(#sp-glow)" />
+      <g stroke="#8fa8e8" strokeWidth="0.5" opacity="0.3" fill="none">
+        {rays.map((d, i) => (
+          <path key={i} d={d} />
+        ))}
+        <circle cx="100" cy="62" r="26" />
+        <circle cx="100" cy="62" r="44" />
+        <circle cx="100" cy="62" r="64" />
+      </g>
+
+      {/* La plaque rouge du logo, avec son liseré blanc. */}
+      <g>
+        <rect x="26" y="16" width="148" height="34" rx="2" fill="url(#sp-plate)" stroke="#ffffff" strokeWidth="1.6" />
+        <text
+          x="100"
+          y="41"
+          textAnchor="middle"
+          fill="#ffffff"
+          style={{ font: "700 25px 'Oswald', system-ui, sans-serif", letterSpacing: '1.5px' }}
+        >
+          {title.toUpperCase()}
+        </text>
+      </g>
+
+      {/* Le masque : ovale, grands yeux cernés, quadrillage de toile. */}
+      <g transform="translate(100 78)">
+        <path d="M0-19c11 0 19 8 19 19 0 11-8 20-19 24-11-4-19-13-19-24 0-11 8-19 19-19z" fill="#c8202e" stroke="#ffffff" strokeWidth="1" />
+        <path d="M-14-3c3.5-2.6 8.4-2.4 10.6.4 1.3 1.7.6 4.1-1.4 5.8-3.2 2.8-8.6 3.2-11 .5C-17.4 1.9-16.8-1 -14-3z" fill="#ffffff" />
+        <path d="M14-3c-3.5-2.6-8.4-2.4-10.6.4-1.3 1.7-.6 4.1 1.4 5.8 3.2 2.8 8.6 3.2 11 .5C17.4 1.9 16.8-1 14-3z" fill="#ffffff" />
+        <g stroke="#7d0d18" strokeWidth="0.5" opacity="0.55" fill="none">
+          <path d="M0-19v43M-18-4h36M-16 6h32M-11 15h22" />
+        </g>
+      </g>
+
+      {subtitle && (
+        <text
+          x="100"
+          y="118"
+          textAnchor="middle"
+          fill="url(#sp-title)"
+          stroke="#1d5fd8"
+          strokeWidth="1.1"
+          paintOrder="stroke"
+          strokeLinejoin="round"
+          style={{ font: "700 19px 'Oswald', system-ui, sans-serif", letterSpacing: '3.5px' }}
+        >
+          {subtitle.toUpperCase()}
+        </text>
+      )}
+    </svg>
+  );
+}
+
+/**
  * La pièce maîtresse de l'édition en cours.
  * @param {{ skin: string, title: string, subtitle: string }} props
  */
@@ -263,6 +354,13 @@ export default function Centerpiece({ skin, title, subtitle }) {
     return (
       <div className="w-[60%]">
         <TechEmblem title={title} subtitle={subtitle} />
+      </div>
+    );
+  }
+  if (skin === 'web') {
+    return (
+      <div className="w-[62%]">
+        <SpiderEmblem title={title} subtitle={subtitle} />
       </div>
     );
   }

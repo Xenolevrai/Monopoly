@@ -97,7 +97,7 @@ test('chaque illustration de case réclamée par une édition existe', async () 
 });
 
 test('chaque édition déclare la matière de son plateau', () => {
-  const SKINS = ['table', 'parchment', 'night', 'tech'];
+  const SKINS = ['table', 'parchment', 'night', 'tech', 'web'];
   for (const [id, edition] of ALL) {
     assert.ok(
       SKINS.includes(edition.theming?.skin),

@@ -25,8 +25,8 @@ bouger le moteur, mais toujours par des **drapeaux génériques** lus dans
 | `classic-fr` | Monopoly classique, plateau parisien | `table` | dernière en jeu | la référence |
 | `harry-potter-fr` | Harry Potter (reskin Winning Moves), Gallions | `parchment` | dernière en jeu | règles classiques, noms Poudlard |
 | `avengers-fr` | Marvel Avengers, M$ | `tech` | dernière en jeu | bases S.H.I.E.L.D. / QG Stark |
-| `spiderman-fr` | Spider-Man Collector (Winning Moves), $ | `night` | dernière en jeu | reskin exact du classique : vilains, traceurs / tours de toile |
-| `spiderman-hasbro-fr` | Spider-Man Hasbro, Bouffon Vert, $ | `night` | tout capturé **ou** dernière en jeu | **règles différentes** : pion hostile autonome, pièges, raccourcis, pouvoirs de héros |
+| `spiderman-fr` | Spider-Man Collector (Winning Moves), $ | `web` | dernière en jeu | reskin exact du classique : vilains, traceurs / tours de toile |
+| `spiderman-hasbro-fr` | Spider-Man Hasbro, Bouffon Vert, $ | `web` | tout capturé **ou** dernière en jeu | **règles différentes** : pion hostile autonome, pièges, raccourcis, pouvoirs de héros |
 | `poudlard-points` | Harry Potter Hasbro, points de maison | `night` | tout le plateau exploré | **règles différentes** : pas d'hôtel, pas d'hypothèque, pas d'élimination |
 
 Chaque édition se joue **en français ou en anglais** ; la langue ne change que
