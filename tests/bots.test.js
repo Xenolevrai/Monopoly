@@ -21,10 +21,12 @@ import { decideAction, answerPendingTrade } from '../server/bots/brain.js';
 import { DIFFICULTIES, profileOf, PROFILES } from '../server/bots/profiles.js';
 import { spaceWorth, groupStatus } from '../server/bots/evaluate.js';
 import { landingOdds } from '../server/bots/odds.js';
+import { EDITIONS } from '../shared/editions.js';
+import { EXTENSIONS } from '../shared/extensions.js';
 
 /** Joue une partie entière entre bots, en surveillant chaque action. */
-function playBotGame(lineup, seed, { editionId = 'classic-fr', maxSteps = 4000, onAction } = {}) {
-  const game = createGame(`BOT${String(seed).padStart(3, '0')}`, 'p0', { seed, editionId });
+function playBotGame(lineup, seed, { editionId = 'classic-fr', extensionIds = [], maxSteps = 5000, onAction } = {}) {
+  const game = createGame(`BOT${String(seed).padStart(3, '0')}`, 'p0', { seed, editionId, extensionIds });
   lineup.forEach((level, i) => addPlayer(game, { id: `p${i}`, name: `B${i}`, token: null }));
   assert.ok(startGame(game, 'p0').ok);
 
@@ -120,6 +122,34 @@ test("l'expert bat le facile nettement", () => {
     else facile += 1;
   }
   assert.ok(expert > facile * 2, `expert ${expert} / facile ${facile} : l'écart n'est pas net`);
+});
+
+test('les bots jouent toutes les boîtes et toutes les extensions', () => {
+  // Le vrai test de « connaît les règles » : chaque édition et chaque extension
+  // pose des invites différentes (raccourcis de toile, coffre des ventes, geôle
+  // sévère, points de maison sans hypothèque). Un bot doit les traiter toutes,
+  // sans jamais rester sans réponse ni s'entêter sur une action refusée.
+  const combos = [
+    ...Object.keys(EDITIONS).map((id) => [id, []]),
+    ...Object.keys(EXTENSIONS).map((ext) => ['classic-fr', [ext]]),
+    ['classic-fr', ['go-to-jail', 'buy-everything']],
+  ];
+
+  for (const [editionId, extensionIds] of combos) {
+    const label = `${editionId}${extensionIds.length ? ` + ${extensionIds.join('+')}` : ''}`;
+    const refusals = [];
+    const { finished } = playBotGame(['expert', 'difficile', 'moyen', 'facile'], 12, {
+      editionId,
+      extensionIds,
+      onAction: (action, result) => {
+        if (!result.ok && !['AUCTION_BID', 'BUILD_HOUSE'].includes(action.type)) {
+          refusals.push(`${action.type} : ${result.error}`);
+        }
+      },
+    });
+    assert.equal(refusals.length, 0, `${label} : ${refusals[0]}`);
+    assert.ok(finished, `${label} : la partie ne s'est pas terminée`);
+  }
 });
 
 test('la carte des probabilités retrouve seule les points chauds du plateau', () => {

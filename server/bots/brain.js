@@ -11,7 +11,6 @@
  * (`profiles.js`) et dans les deux imperfections volontaires appliquées ici —
  * le bruit de jugement et la bourde franche.
  */
-import { getSpace } from '../../shared/index.js';
 import {
   playerById, propertiesOf, buildingLevel, canBuild, canSellBuilding,
   maxRaisable, unmortgageCost, config,
@@ -19,6 +18,7 @@ import {
 import { profileOf } from './profiles.js';
 import { spaceWorth, spendable, cashFloor, buildRanking } from './evaluate.js';
 import { findTradeOffer, findSettlementOffer, judgeTrade } from './negotiate.js';
+import { bestOption, actionValue, landingValue, shouldRollBuyDie, saleCardToPlay } from './cards.js';
 
 /** Bruit multiplicatif : un bot faible juge mal, il ne joue pas au hasard. */
 function blur(value, profile, rng) {
@@ -66,8 +66,15 @@ export function decideAction(state, playerId, rng, difficulty) {
     case 'card_reveal':
       return { type: 'ACKNOWLEDGE_CARD' };
 
-    case 'card_choice':
-      return { type: 'CARD_CHOICE', optionIndex: blunders(profile, rng) ? rng.int(pending.payload.options.length) : 0 };
+    // Toutes les invites à choix passent par ici : carte « payez ou piochez »,
+    // sortie de prison sévère, raccourci de toile, coffre des ventes. On chiffre
+    // chaque option et l'on prend la meilleure — c'est là qu'un bot cesse de
+    // subir les règles pour s'en servir.
+    case 'card_choice': {
+      const count = pending.payload.options.length;
+      if (blunders(profile, rng)) return { type: 'CARD_CHOICE', optionIndex: rng.int(count) };
+      return { type: 'CARD_CHOICE', optionIndex: bestOption(state, playerId, pending.payload, profile) };
+    }
 
     case 'pay_debt':
       return decideDebt(state, player, profile);
@@ -80,18 +87,23 @@ export function decideAction(state, playerId, rng, difficulty) {
   }
 }
 
-/** En prison : payer, utiliser sa carte, ou tenter les doubles. */
+/**
+ * En prison : payer, jouer sa carte, ou tenter les doubles.
+ *
+ * Le calcul qui compte, et que les débutantes ratent : en début de partie on
+ * veut sortir vite pour acheter, mais quand le plateau est bâti, la prison est
+ * l'endroit le plus sûr — y rester coûte moins cher que d'en faire le tour.
+ * `jailValue` chiffre exactement cet arbitrage sur la position réelle.
+ */
 function decideRoll(state, player, profile) {
   if (!player.inJail) return { type: 'ROLL_DICE' };
 
-  const edition = config(state);
-  const bail = edition.jail?.bail ?? 50;
+  const bail = config(state).jail?.bail ?? 50;
+  // Positif = rester est bon. On sort donc quand c'est négatif.
+  const stayValue = actionValue(state, player.id, { type: 'go_to_jail' }, profile);
+  const wantOut = stayValue < 0;
 
-  // Le calcul qui compte : en début de partie on veut sortir vite pour acheter,
-  // en fin de partie la prison protège des loyers — un bot fort le sait.
-  const boardIsHot = Object.values(state.properties).filter((p) => p.ownerId && buildingLevel(p) > 0).length;
-  const wantOut = boardIsHot < 4;
-
+  // La carte d'abord : elle ne coûte rien, autant s'en servir plutôt que payer.
   if (player.getOutOfJailCards > 0 && wantOut) return { type: 'USE_JAIL_CARD' };
   if (wantOut && player.cash - bail > cashFloor(state, player.id, profile)) return { type: 'PAY_BAIL' };
   return { type: 'ROLL_DICE' };
@@ -100,11 +112,12 @@ function decideRoll(state, player, profile) {
 /** Relancer un jet : seulement si l'on tombe sur une case qui coûte cher. */
 function decideReroll(state, player, profile, rng) {
   const total = (state.dice.values ?? []).reduce((a, b) => a + b, 0);
-  const target = getSpace(state, (player.position + total) % config(state).board.length);
-  const prop = state.properties[target.id];
-  const hostile = prop?.ownerId && prop.ownerId !== player.id && !prop.mortgaged;
+  const target = (player.position + total) % config(state).board.length;
   if (blunders(profile, rng)) return { type: 'KEEP_ROLL' };
-  return hostile ? { type: 'REROLL_DICE' } : { type: 'KEEP_ROLL' };
+  // On relance si la case d'arrivée nous coûte : loyer, taxe, prison mal placée.
+  return landingValue(state, player.id, target, profile) < 0
+    ? { type: 'REROLL_DICE' }
+    : { type: 'KEEP_ROLL' };
 }
 
 /** Acheter la case où l'on vient de tomber, ou la laisser filer. */
@@ -188,12 +201,16 @@ function raiseCash(state, player, profile, needed) {
     .reverse();
   if (sellable.length) return { type: 'SELL_BUILDING', spaceId: sellable[0].spaceId };
 
-  // Hypothéquer : le terrain le moins précieux d'abord.
-  const mortgageable = propertiesOf(state, player.id)
-    .filter((prop) => !prop.mortgaged && buildingLevel(prop) === 0)
-    .map((prop) => ({ spaceId: prop.spaceId, worth: spaceWorth(state, prop.spaceId, player.id, profile) }))
-    .sort((a, b) => a.worth - b.worth);
-  if (mortgageable.length) return { type: 'MORTGAGE', spaceId: mortgageable[0].spaceId };
+  // Hypothéquer : le terrain le moins précieux d'abord. Toutes les boîtes ne
+  // connaissent pas l'hypothèque — la Coupe des Quatre Maisons s'en passe — et
+  // insister y faisait tourner le bot en rond (4 852 refus mesurés).
+  if (config(state).mechanics?.mortgage) {
+    const mortgageable = propertiesOf(state, player.id)
+      .filter((prop) => !prop.mortgaged && buildingLevel(prop) === 0)
+      .map((prop) => ({ spaceId: prop.spaceId, worth: spaceWorth(state, prop.spaceId, player.id, profile) }))
+      .sort((a, b) => a.worth - b.worth);
+    if (mortgageable.length) return { type: 'MORTGAGE', spaceId: mortgageable[0].spaceId };
+  }
 
   return null;
 }
@@ -205,6 +222,15 @@ function raiseCash(state, player, profile, needed) {
  */
 function decideEndTurn(state, player, profile, rng) {
   const budget = spendable(state, player, profile);
+
+  // Le dé d'Achat (extension Tout Acheter) est facultatif et ne peut rien nous
+  // coûter : sa face basse frappe une adversaire, jamais soi. On le lance donc
+  // dès qu'il y a une carte à prendre.
+  if (shouldRollBuyDie(state)) return { type: 'ROLL_BUY_DIE' };
+
+  // Une carte rouge du coffre ne sert à rien tant qu'elle dort en main.
+  const playable = saleCardToPlay(state, player.id, profile);
+  if (playable) return { type: 'PLAY_SALE_CARD', cardId: playable };
 
   // Bâtir, tant que ça reste dans le budget et que ça rapporte.
   if (budget > 0) {
@@ -221,7 +247,7 @@ function decideEndTurn(state, player, profile, rng) {
   }
 
   // Réveiller un terrain hypothéqué quand on a de quoi, il ne rapporte rien.
-  for (const prop of propertiesOf(state, player.id)) {
+  for (const prop of config(state).mechanics?.mortgage ? propertiesOf(state, player.id) : []) {
     if (!prop.mortgaged) continue;
     const cost = unmortgageCost(state, prop.spaceId);
     if (cost <= budget - cashFloor(state, player.id, profile) * 0.2) {
