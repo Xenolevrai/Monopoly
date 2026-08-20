@@ -214,8 +214,8 @@ function CardPiles({ state, canDraw, deckToDraw, onDraw }) {
             title={pile.label}
           >
             {/* Les cartes du dessous, pour l'épaisseur du tas. */}
-            <span className="absolute left-[0.5cqw] top-[0.5cqw] h-full w-full rounded border-2 border-ink/60 bg-white/70" />
-            <span className="absolute left-[0.25cqw] top-[0.25cqw] h-full w-full rounded border-2 border-ink/70 bg-white/85" />
+            <span className="absolute left-[0.5cqw] top-[0.5cqw] h-full w-full rounded border-2 border-black/25 bg-white/70" />
+            <span className="absolute left-[0.25cqw] top-[0.25cqw] h-full w-full rounded border-2 border-black/30 bg-white/85" />
             <span
               className="relative flex flex-col items-center justify-center gap-[0.6cqw] rounded border-2 border-ink text-center"
               style={{ backgroundColor: pile.color, width: '8.4cqw', height: '11.5cqw' }}
@@ -313,7 +313,13 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
           >
             {howler ? (state.locale === 'en' ? 'Howler' : 'Beuglante') : (deck?.label ?? drawnCard.deck)}
           </p>
-          <p className="text-sm leading-snug text-ink">{drawnCard.text}</p>
+          {/* La carte pose son propre fond crème, indépendant du thème : son
+              encre doit donc l'être aussi. Utiliser `text-ink` la rendait
+              invisible sur les plateaux sombres, où cette variable est claire
+              — du crème sur du crème, exactement le défaut signalé. */}
+          <p className="text-sm leading-snug" style={{ color: howler ? '#3d0c0c' : '#16130f' }}>
+            {drawnCard.text}
+          </p>
           {revealed && (
             <button
               type="button"

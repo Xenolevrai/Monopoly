@@ -30,8 +30,15 @@ function Die({ value, rolling, delay = 0 }) {
         height: 'clamp(26px, 7cqw, 48px)',
       }}
     >
+      {/* Le dé a une face blanche fixe : ses points doivent être d'un noir fixe
+          eux aussi. Avec `bg-ink`, ils prenaient l'encre du plateau — claire sur
+          les boîtes sombres — et le dé s'affichait vierge. */}
       {Array.from({ length: 9 }).map((_, i) => (
-        <span key={i} className={`rounded-full ${pips.includes(i) ? 'bg-ink' : 'bg-transparent'}`} />
+        <span
+          key={i}
+          className="rounded-full"
+          style={{ background: pips.includes(i) ? '#16130f' : 'transparent' }}
+        />
       ))}
     </div>
   );

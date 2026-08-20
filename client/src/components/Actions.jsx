@@ -418,7 +418,7 @@ function Debt({ state, me, payload, actor, onOpenTrade, onOpenSettlement }) {
 }
 
 /** Gestion du patrimoine : construire, revendre, hypothéquer. */
-function Manage({ state, me }) {
+export function Manage({ state, me }) {
   const owned = Object.values(state.properties).filter((p) => p.ownerId === me.id);
   if (!owned.length) return null;
   const board = boardOf(state);
@@ -583,7 +583,7 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
   }
 
   return (
-    <div className="panel space-y-3 rounded-lg p-4">
+    <div className="space-y-3">
       {/* En mode partagé, on rappelle clairement à qui la souris doit passer. */}
       {hotSeat && mineTurn && (
         <div className="flex items-center gap-2 rounded border border-[var(--color-gold)]/50 bg-[var(--color-gold)]/10 px-2 py-1.5">
@@ -682,7 +682,6 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
         </Button>
       )}
 
-      <Manage state={state} me={me} />
     </div>
   );
 }

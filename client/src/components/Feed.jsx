@@ -101,7 +101,7 @@ export default function Feed({ state, actor }) {
   ];
 
   return (
-    <div className="panel flex h-full min-h-[220px] flex-col rounded-lg p-3">
+    <div className="flex h-[248px] flex-col">
       <div className="mb-2 flex gap-1">
         {tabs.map(([id, label]) => (
           <button

@@ -119,13 +119,10 @@ export default function Players({ state, mine, me, onFocus }) {
   const localIds = new Set(mine.map((p) => p.id));
 
   return (
-    <div className="panel space-y-2 rounded-lg p-3">
-      <div className="flex items-baseline justify-between">
-        <h2 className="font-condensed text-base uppercase tracking-[0.2em]">{t('players')}</h2>
-        <span className="tabular text-[11px] text-ink-soft">
-          {t('bank')} : {state.bank.houses} · {state.bank.hotels}
-        </span>
-      </div>
+    <div className="space-y-2">
+      <p className="tabular text-right text-[11px] text-ink-soft">
+        {t('bank')} : {state.bank.houses} · {state.bank.hotels}
+      </p>
       {state.players.map((player) => (
         <PlayerCard
           key={player.id}

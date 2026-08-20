@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import TokenIcon from './components/TokenIcon.jsx';
 import { useGame } from './lib/useGame.js';
 import { useCinematic } from './lib/useCinematic.js';
 import { useEditionTheme } from './lib/theme.js';
@@ -6,12 +7,14 @@ import { sendAction } from './lib/socket.js';
 import { Home, WaitingRoom, GameMenu } from './components/Lobby.jsx';
 import Board from './components/Board.jsx';
 import Players from './components/Players.jsx';
-import Actions from './components/Actions.jsx';
+import Actions, { Manage } from './components/Actions.jsx';
+import PanelStack from './components/PanelStack.jsx';
 import Feed from './components/Feed.jsx';
 import TradeDialog from './components/TradeDialog.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import GameOver from './components/GameOver.jsx';
 import { PropertyCard } from './components/Actions.jsx';
+import { money } from './lib/board.js';
 import { editionFor } from './lib/board.js';
 import { useT } from './lib/i18n.js';
 
@@ -64,6 +67,34 @@ function MobileTabs({ tab, onChange, waiting, t }) {
         );
       })}
     </nav>
+  );
+}
+
+/**
+ * Son solde, toujours sous les yeux.
+ *
+ * Il fallait dérouler la colonne jusqu'à sa propre fiche pour savoir de combien
+ * on disposait — y compris au moment d'acheter, c'est-à-dire précisément quand
+ * la question se pose. Ce bandeau colle en haut de la colonne et ne bouge plus.
+ */
+function CashBar({ state, mine, t }) {
+  if (!mine.length) return null;
+  return (
+    <div className="panel sticky top-0 z-20 flex items-center gap-2 rounded-lg px-3 py-1.5 shadow-sm">
+      <span className="font-condensed text-[10px] uppercase tracking-[0.18em] text-ink-soft">
+        {t('yourCash')}
+      </span>
+      <span className="ml-auto flex items-center gap-2.5">
+        {mine.map((player) => (
+          <span key={player.id} className="flex items-center gap-1">
+            <TokenIcon token={player.token} color={player.color} className="h-4 w-4" />
+            <span className="tabular font-semibold text-[var(--color-money)]">
+              {money(state, player.cash)}
+            </span>
+          </span>
+        ))}
+      </span>
+    </div>
   );
 }
 
@@ -158,10 +189,13 @@ export default function App() {
           </ErrorBoundary>
         </div>
 
-        {/* La colonne défile toute seule : le plateau, lui, ne bouge jamais. */}
+        {/* La colonne défile toute seule : le plateau, lui, ne bouge jamais.
+            Ses sections se replient et se déplacent — sur ordinateur, tout ne
+            tient pas de front, alors c'est à chacune de décider ce qu'elle
+            garde sous les yeux. */}
         <aside
           ref={aside}
-          className="scroll-thin flex w-full shrink-0 flex-col gap-4 xl:h-full xl:w-[380px] xl:overflow-y-auto"
+          className="scroll-thin flex w-full shrink-0 flex-col gap-2 xl:h-full xl:w-[400px] xl:overflow-y-auto"
         >
           <div className={tab === 'jeu' ? 'contents' : 'hidden xl:contents'}>
             <ErrorBoundary zone="Le menu de partie">
@@ -172,28 +206,64 @@ export default function App() {
                 onShowRecap={() => setRecapClosed(false)}
               />
             </ErrorBoundary>
-            <ErrorBoundary zone="La barre d'action">
-              <Actions
-                state={state}
-                me={me}
-                mine={mine}
-                onOpenTrade={() => setTradeOpen(true)}
-                onOpenSettlement={() => setSettleOpen(true)}
-              />
-            </ErrorBoundary>
           </div>
 
-          <div className={tab === 'profil' ? 'contents' : 'hidden xl:contents'}>
-            <ErrorBoundary zone="Le panneau des joueuses">
-              <Players state={state} me={me} mine={mine} onFocus={focusOn} />
-            </ErrorBoundary>
-          </div>
+          <CashBar state={state} mine={mine} t={t} />
 
-          <div className={`h-72 shrink-0 xl:block ${tab === 'journal' ? 'block' : 'hidden'}`}>
-            <ErrorBoundary zone="Le journal">
-              <Feed state={state} actor={me?.id} />
-            </ErrorBoundary>
-          </div>
+          {/* Sur téléphone, les onglets décident de ce qui s'affiche — par des
+              classes, jamais par une détection d'appareil. Sur ordinateur, tout
+              est là et c'est l'agencement choisi qui commande. */}
+          <PanelStack
+            t={t}
+            sections={[
+              {
+                id: 'actions',
+                title: t('sectionActions'),
+                className: `${tab === 'jeu' ? '' : 'hidden'} xl:block`,
+                node: (
+                  <ErrorBoundary zone="La barre d'action">
+                    <Actions
+                      state={state}
+                      me={me}
+                      mine={mine}
+                      onOpenTrade={() => setTradeOpen(true)}
+                      onOpenSettlement={() => setSettleOpen(true)}
+                    />
+                  </ErrorBoundary>
+                ),
+              },
+              {
+                id: 'assets',
+                title: t('sectionAssets'),
+                className: `${tab === 'profil' ? '' : 'hidden'} xl:block`,
+                node: (
+                  <ErrorBoundary zone="Vos biens">
+                    <Manage state={state} me={me} />
+                  </ErrorBoundary>
+                ),
+              },
+              {
+                id: 'players',
+                title: t('sectionPlayers'),
+                className: `${tab === 'profil' ? '' : 'hidden'} xl:block`,
+                node: (
+                  <ErrorBoundary zone="Le panneau des joueuses">
+                    <Players state={state} me={me} mine={mine} onFocus={focusOn} />
+                  </ErrorBoundary>
+                ),
+              },
+              {
+                id: 'feed',
+                title: t('sectionFeed'),
+                className: `${tab === 'journal' ? '' : 'hidden'} xl:block`,
+                node: (
+                  <ErrorBoundary zone="Le journal">
+                    <Feed state={state} actor={me?.id} />
+                  </ErrorBoundary>
+                ),
+              },
+            ]}
+          />
         </aside>
       </div>
 
