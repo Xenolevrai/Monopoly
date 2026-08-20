@@ -5,7 +5,7 @@ import { log, say, amountText } from './log.js';
 import { playerById, currentPlayer, activePlayers, config } from './queries.js';
 import { charge, checkGameOver } from './money.js';
 import { advance, resolveLanding, sendToJail } from './movement.js';
-import { returnJailCard } from './cards.js';
+import { returnJailCard, getCard, applyCardAction, loseVaultCard } from './cards.js';
 import { startQueuedAuction } from './auction.js';
 
 /**
@@ -23,11 +23,23 @@ function jailContext(state, player) {
   };
 }
 
+/**
+ * Les cartes détenues qui rapportent à chaque tour (`perTurn`). Générique : le
+ * moteur applique l'effet déclaré par la carte, sans savoir d'où elle vient.
+ */
+function applyRecurringCards(state, player) {
+  for (const cardId of player.saleCards ?? []) {
+    const card = getCard(state, cardId);
+    if (card?.perTurn) applyCardAction(state, player.id, card.perTurn, {});
+  }
+}
+
 /** Prépare le tour de la joueuse courante. */
 export function startTurn(state) {
   const player = currentPlayer(state);
   if (!player) return;
   state.dice = { values: null, doublesCount: 0, rolled: false, extraRoll: false, rollId: state.dice?.rollId ?? 0 };
+  applyRecurringCards(state, player);
 
   // Une édition/extension qui déclare `jail.deck` remplace le jet de dés pour
   // tenter les doubles par un choix explicite : payer, ou tirer une carte du
@@ -158,6 +170,48 @@ export function useJailCard(state, playerId) {
 }
 
 /**
+ * Le dé facultatif que certaines éditions/extensions posent en fin de case
+ * (`mechanics.buyDie`) : un jet de plus, une fois par lancer, pour tenter de
+ * gagner une carte du coffre — ou d'en faire perdre une à une adversaire.
+ * Générique : les faces gagnantes et volantes sont décrites par la mécanique.
+ */
+export function rollBuyDie(state, playerId, rng) {
+  const cfg = config(state).mechanics?.buyDie;
+  if (!cfg) return { ok: false, error: "Cette partie n'a pas de dé d'Achat." };
+  if (state.dice.buyDieUsed) return { ok: false, error: "Vous avez déjà lancé le dé d'Achat." };
+
+  const player = playerById(state, playerId);
+  const value = rollDice(rng, 1, cfg.sides)[0];
+  state.dice.buyDieUsed = true;
+  log(state, 'roll', say(state, 'buyDieRoll', { name: player.name, value }), { playerId, value });
+
+  const visible = state.saleVault?.visible ?? [];
+  if (value >= cfg.gainFrom && visible.length) {
+    // On choisit soi-même la carte prise dans le présentoir : c'est tout
+    // l'intérêt d'un coffre à cartes visibles.
+    state.pending = {
+      kind: 'card_choice',
+      playerIds: [playerId],
+      payload: {
+        options: visible.map((cardId, index) => ({ index, label: getCard(state, cardId)?.text ?? cardId })),
+        actions: visible.map((cardId) => ({ type: 'take_sale_card', cardId })),
+      },
+    };
+    return { ok: true };
+  }
+
+  if (value === cfg.stealOn) {
+    const victim = activePlayers(state).find((p) => p.id !== playerId && (p.saleCards ?? []).length);
+    if (victim) loseVaultCard(state, victim.id);
+    else log(state, 'card', say(state, 'buyDieNothing', { name: player.name }), { playerId });
+    return { ok: true };
+  }
+
+  log(state, 'card', say(state, 'buyDieNothing', { name: player.name }), { playerId });
+  return { ok: true };
+}
+
+/**
  * Après la résolution d'une case : si rien n'attend de décision, la joueuse peut
  * gérer ses biens puis finir son tour.
  */
@@ -165,10 +219,16 @@ export function finishResolution(state) {
   if (state.phase === 'finished') return { ok: true };
   if (state.pending.kind) return { ok: true }; // achat, dette, enchère, choix de carte…
   const player = currentPlayer(state);
+  const buyDie = config(state).mechanics?.buyDie;
   state.pending = {
     kind: 'end_turn',
     playerIds: [player.id],
-    payload: { extraRoll: Boolean(state.dice.extraRoll) },
+    payload: {
+      extraRoll: Boolean(state.dice.extraRoll),
+      // Proposé seulement tant qu'il reste à lancer : le client n'a pas à
+      // connaître la règle, il affiche le bouton si le moteur l'annonce.
+      canRollBuyDie: Boolean(buyDie && state.dice.rolled && !state.dice.buyDieUsed),
+    },
   };
   return { ok: true };
 }

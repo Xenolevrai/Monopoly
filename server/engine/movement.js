@@ -5,16 +5,38 @@
  * emprunté (dés, carte, sortie de prison), on retombe toujours ici, donc une
  * règle de case n'est écrite qu'une seule fois.
  */
-import { getSpace, boardOf } from '../../shared/index.js';
+import { getSpace, boardOf, isOwnable } from '../../shared/index.js';
 import { log, say, amountText } from './log.js';
 import { playerById, rentFor, config } from './queries.js';
 import { credit, charge } from './money.js';
+
+/**
+ * Les cases achetables encore libres franchies sans s'y arrêter.
+ *
+ * Une édition/extension peut décréter (`mechanics.auctionOnPass`) qu'on ne
+ * laisse rien derrière soi : tout ce qu'on dépasse part aux enchères. On les
+ * empile dans la file d'enchères déjà utilisée pour les faillites — le flux
+ * existant les traitera une par une en fin de tour.
+ */
+function queuePassedSpaces(state, from, steps) {
+  if (!config(state).mechanics?.auctionOnPass || steps <= 0) return;
+  const size = boardOf(state).length;
+  // On s'arrête à `steps - 1` : la case d'arrivée n'est pas « dépassée », elle
+  // se résout normalement (achat ou enchère par refus).
+  for (let step = 1; step < steps; step++) {
+    const id = (from + step) % size;
+    if (isOwnable(state, id) && !state.properties[id]?.ownerId && !state.auctionQueue.includes(id)) {
+      state.auctionQueue.push(id);
+    }
+  }
+}
 
 /** Avance de `steps` cases, en encaissant le salaire si on passe par Départ. */
 export function advance(state, playerId, steps) {
   const player = playerById(state, playerId);
   const size = boardOf(state).length;
   const raw = player.position + steps;
+  queuePassedSpaces(state, player.position, steps);
   player.position = ((raw % size) + size) % size;
   if (steps > 0 && raw >= size) collectSalary(state, playerId);
   return player.position;
@@ -26,6 +48,7 @@ export function moveTo(state, playerId, target, collectGoSalary = true) {
   const size = boardOf(state).length;
   const steps = (((target - player.position) % size) + size) % size;
   const passes = steps > 0 && player.position + steps >= size;
+  queuePassedSpaces(state, player.position, steps);
   player.position = target;
   if (passes && collectGoSalary) collectSalary(state, playerId);
   return target;
@@ -73,9 +96,13 @@ export function resolveLanding(state, playerId, ctx = {}) {
   log(state, 'land', say(state, 'lands', { name: player.name, space: space.name }), { playerId, spaceId: space.id });
 
   switch (space.type) {
+    // `landmark` est un titre posé sur une case qui n'en portait pas (Départ,
+    // Prison, Parc Gratuit) : il s'achète et rapporte un loyer fixe, mais ne se
+    // construit pas — d'où la même résolution que les autres cases achetables.
     case 'property':
     case 'railroad':
     case 'utility':
+    case 'landmark':
       return resolveOwnable(state, player, space, ctx);
 
     case 'tax':

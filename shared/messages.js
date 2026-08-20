@@ -98,6 +98,14 @@ const FR = {
   noneLeft: () => 'plus personne en jeu',
   allExplored: () => 'tous les lieux du plateau ont été explorés',
 
+  // Coffre de cartes visibles et dé d'Achat (extension qui les pose).
+  vaultTakes: ({ name, text }) => `${name} prend une carte du coffre : ${text}`,
+  vaultLoses: ({ name }) => `${name} perd une carte du coffre.`,
+  playsSaleCard: ({ name, text }) => `${name} joue une carte du coffre : ${text}`,
+  buyDieRoll: ({ name, value }) => `${name} lance le dé d'Achat et fait ${value}.`,
+  buyDieNothing: ({ name }) => `Le dé d'Achat ne donne rien à ${name}.`,
+  saleVictory: ({ name, text }) => `${name} remplit son objectif et gagne : ${text}`,
+
   // Motifs de paiement, cités entre parenthèses dans les phrases ci-dessus.
   reasonBail: () => 'caution de sortie de prison',
   reasonCard: () => 'carte',
@@ -204,6 +212,13 @@ const EN = {
   lastStanding: ({ name }) => `${name} is the last one left`,
   noneLeft: () => 'nobody left in the game',
   allExplored: () => 'every location on the board has been explored',
+
+  vaultTakes: ({ name, text }) => `${name} takes a card from the vault: ${text}`,
+  vaultLoses: ({ name }) => `${name} loses a card from the vault.`,
+  playsSaleCard: ({ name, text }) => `${name} plays a vault card: ${text}`,
+  buyDieRoll: ({ name, value }) => `${name} rolls the Buy Die and gets ${value}.`,
+  buyDieNothing: ({ name }) => `The Buy Die gives ${name} nothing.`,
+  saleVictory: ({ name, text }) => `${name} meets the goal and wins: ${text}`,
 
   reasonBail: () => 'bail to leave jail',
   reasonCard: () => 'card',

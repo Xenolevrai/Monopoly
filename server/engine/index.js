@@ -14,12 +14,31 @@ import { createGameState, createPlayer } from '../../shared/schema.js';
 import { createRng } from './rng.js';
 import { log, say } from './log.js';
 import { playerById, currentPlayer, activePlayers } from './queries.js';
-import { buildDecks, drawCard, applyRevealedCard, resolveCardChoice, resumeCollection } from './cards.js';
+import {
+  buildDecks,
+  drawCard,
+  applyRevealedCard,
+  resolveCardChoice,
+  resumeCollection,
+  checkSaleVictory,
+  getCard,
+  applyCardAction,
+} from './cards.js';
 import { declareBankruptcy, checkGameOver, settleDebt, finishGame } from './money.js';
 import { buyProperty, mortgage, unmortgage, buildHouse, sellBuilding } from './property.js';
 import { startAuction, placeBid, passBid, startQueuedAuction } from './auction.js';
 import { proposeTrade, respondToTrade, cancelTrade } from './trade.js';
-import { startTurn, roll, payBail, useJailCard, endTurn, nextPlayer, determineTurnOrder, finishResolution } from './turn.js';
+import {
+  startTurn,
+  roll,
+  payBail,
+  useJailCard,
+  endTurn,
+  nextPlayer,
+  determineTurnOrder,
+  finishResolution,
+  rollBuyDie,
+} from './turn.js';
 
 export * from './queries.js';
 export { createGameState, createPlayer };
@@ -205,6 +224,29 @@ function applyAction(game, state, rng, player, action) {
       if (pending.kind !== 'end_turn' || !isMine) return refuse('Vous ne pouvez pas finir votre tour maintenant.');
       return endTurn(state, playerId);
 
+    // Jet facultatif proposé par `mechanics.buyDie`, une fois la case résolue.
+    case 'ROLL_BUY_DIE':
+      if (pending.kind !== 'end_turn' || !isMine) return refuse("Ce n'est pas le moment de lancer le dé d'Achat.");
+      return rollBuyDie(state, playerId, rng);
+
+    // Carte du coffre à usage unique, jouée quand sa détentrice le décide.
+    case 'PLAY_SALE_CARD': {
+      const held = player.saleCards ?? [];
+      if (!held.includes(action.cardId)) return refuse("Vous n'avez pas cette carte.");
+      const card = getCard(state, action.cardId);
+      if (!card?.action) return refuse('Cette carte ne se joue pas.');
+      if (!isCurrent || state.debt) return refuse('Action réservée à votre tour.');
+      player.saleCards = held.filter((id) => id !== action.cardId);
+      log(state, 'card', say(state, 'playsSaleCard', { name: player.name, text: card.text }), {
+        playerId,
+        cardId: card.id,
+      });
+      applyCardAction(state, playerId, card.action, {
+        diceTotal: (state.dice.values ?? []).reduce((a, b) => a + b, 0),
+      });
+      return { ok: true };
+    }
+
     // — Achat / enchère —————————————————————————————————————
     case 'BUY_PROPERTY': {
       if (pending.kind !== 'buy_or_auction' || !isMine) return refuse("Aucun achat en attente.");
@@ -329,6 +371,11 @@ function advanceFlow(state) {
   // ferait sortir d'ici et la partie continuerait un tour de trop.
   if (editionOf(state).winCondition === 'allLocationsExplored' && checkGameOver(state))
     return;
+
+  // Même raison, même place : une condition de victoire portée par une carte
+  // (`mechanics.saleVictory`) peut être remplie à tout moment — y compris juste
+  // après qu'une invite de fin de tour a été posée.
+  if (checkSaleVictory(state)) return;
 
   if (state.debt) return; // en attente d'un règlement ou d'une faillite
   if (state.pending.kind) return; // en attente d'une décision

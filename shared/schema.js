@@ -28,6 +28,7 @@
  * @property {boolean} inJail
  * @property {number} jailTurns     - tours passés en prison (0-3)
  * @property {number} getOutOfJailCards - nombre de cartes « libérée de prison » détenues
+ * @property {string[]} saleCards  - cartes du coffre détenues (extension qui en pose un)
  * @property {boolean} bankrupt
  * @property {boolean} connected    - false = onglet fermé, la place reste réservée
  * @property {number} order         - rang dans l'ordre de jeu
@@ -171,6 +172,10 @@ export function createGameState(code, hostId, editionId = DEFAULT_EDITION, local
     // et en ajouter d'autres (spin, corruption…).
     decks: Object.fromEntries(Object.keys(merged.cards ?? {}).map((deck) => [deck, []])),
     drawnCardId: null,
+    // Coffre de cartes toujours visibles, quand l'édition fusionnée en déclare
+    // un (`mechanics.saleVault`). `null` partout ailleurs : rien à afficher,
+    // rien à sauvegarder.
+    saleVault: merged.mechanics?.saleVault ? { visible: [] } : null,
     freeParkingPot: 0,
     pending: { kind: null, playerIds: [] },
     auction: null,
@@ -210,6 +215,9 @@ export function createPlayer({ id, name, token, color, order, edition, faction =
     inJail: false,
     jailTurns: 0,
     getOutOfJailCards: 0,
+    // Cartes gagnées dans un coffre (`mechanics.saleVault`) : toujours un
+    // tableau, même sans extension qui en distribue — l'état reste homogène.
+    saleCards: [],
     bankrupt: false,
     connected: true,
     order,

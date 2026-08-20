@@ -7,8 +7,8 @@
  */
 import { cardsOf, editionOf, boardOf } from '../../shared/index.js';
 import { log, say, amountText } from './log.js';
-import { playerById, buildingsOf, activePlayers } from './queries.js';
-import { credit, charge } from './money.js';
+import { playerById, buildingsOf, activePlayers, propertiesOf, config } from './queries.js';
+import { credit, charge, finishGame } from './money.js';
 import { advance, moveTo, sendToJail, resolveLanding } from './movement.js';
 import { rollDice } from './rng.js';
 
@@ -55,6 +55,94 @@ export function buildDecks(state, rng) {
   for (const deck of decksOf(state)) {
     state.decks[deck] = rng.shuffle((decks[deck] ?? []).map((c) => c.id));
   }
+  refillVault(state);
+}
+
+// — Coffre de cartes visibles ————————————————————————————————
+// Une édition (ou une extension) qui déclare `mechanics.saleVault` garde en
+// permanence quelques cartes retournées, prises dans un paquet ordinaire. Le
+// moteur ne sait pas laquelle des extensions le pose : il lit la mécanique.
+
+/** La configuration du coffre, ou null si l'édition n'en déclare pas. */
+export function vaultConfig(state) {
+  return config(state).mechanics?.saleVault ?? null;
+}
+
+/** Complète le présentoir jusqu'au nombre de cartes visibles annoncé. */
+export function refillVault(state) {
+  const cfg = vaultConfig(state);
+  if (!cfg || !state.saleVault) return;
+  const queue = state.decks[cfg.deck] ?? [];
+  while (state.saleVault.visible.length < cfg.visible && queue.length) {
+    state.saleVault.visible.push(queue.shift());
+  }
+}
+
+/** Fait passer une carte visible du coffre dans la main d'une joueuse. */
+export function takeVaultCard(state, playerId, cardId) {
+  const cfg = vaultConfig(state);
+  if (!cfg || !state.saleVault) return { ok: false, error: "Aucun coffre dans cette partie." };
+  const index = state.saleVault.visible.indexOf(cardId);
+  if (index < 0) return { ok: false, error: "Cette carte n'est plus dans le coffre." };
+  state.saleVault.visible.splice(index, 1);
+  const player = playerById(state, playerId);
+  player.saleCards.push(cardId);
+  const card = getCard(state, cardId);
+  log(state, 'card', say(state, 'vaultTakes', { name: player.name, text: card?.text ?? cardId }), {
+    playerId,
+    cardId,
+  });
+  refillVault(state);
+  return { ok: true };
+}
+
+/** Retire une carte à une joueuse et la remet sous le paquet du coffre. */
+export function loseVaultCard(state, playerId) {
+  const cfg = vaultConfig(state);
+  const player = playerById(state, playerId);
+  if (!cfg || !player?.saleCards?.length) return false;
+  const cardId = player.saleCards.shift();
+  (state.decks[cfg.deck] ??= []).push(cardId);
+  log(state, 'card', say(state, 'vaultLoses', { name: player.name }), { playerId, cardId });
+  return true;
+}
+
+/**
+ * Une carte du coffre porte-t-elle une condition de victoire déjà remplie ?
+ * Les conditions sont déclaratives (`{ type, amount }`) et lues ici de façon
+ * générique : ajouter un type de condition ne demande pas de toucher au flux.
+ */
+function victoryMet(state, player, condition) {
+  switch (condition.type) {
+    case 'cash_at_least':
+      return player.cash >= condition.amount;
+    case 'own_at_least':
+      return propertiesOf(state, player.id).length >= condition.count;
+    case 'buildings_at_least': {
+      const { houses, hotels } = buildingsOf(state, player.id);
+      return houses + hotels >= condition.count;
+    }
+    default:
+      return false;
+  }
+}
+
+/**
+ * Victoire immédiate par carte du coffre (`mechanics.saleVictory`).
+ * @returns {boolean} true si la partie vient de se terminer
+ */
+export function checkSaleVictory(state) {
+  if (!config(state).mechanics?.saleVictory) return false;
+  for (const player of activePlayers(state)) {
+    for (const cardId of player.saleCards ?? []) {
+      const card = getCard(state, cardId);
+      if (card?.victory && victoryMet(state, player, card.victory)) {
+        finishGame(state, say(state, 'saleVictory', { name: player.name, text: card.text }));
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /**
@@ -262,6 +350,16 @@ export function applyCardAction(state, playerId, action, ctx = {}) {
 
     case 'draw_card':
       drawCard(state, playerId, action.deck, ctx);
+      return;
+
+    // Choisir une carte parmi celles retournées dans le coffre.
+    case 'take_sale_card':
+      takeVaultCard(state, playerId, action.cardId);
+      return;
+
+    // Le dé d'Achat a fait perdre une carte à une adversaire.
+    case 'lose_sale_card':
+      loseVaultCard(state, action.targetId ?? playerId);
       return;
 
     case 'choice':

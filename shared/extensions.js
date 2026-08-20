@@ -23,6 +23,8 @@
  * @property {{position: number, changes: object}[]} [boardOverrides]
  * @property {string[]} [removesDecks]
  * @property {Record<string, object[]>} [addsDecks]
+ * @property {Record<string, object>} [addsGroups] - groupes ajoutés à `edition.groups`
+ *   (une extension qui pose de nouveaux titres a besoin d'un groupe pour les porter)
  * @property {Record<string, unknown>} [addsMechanics]
  * @property {number[]} [touchesPositions] - cases sur lesquelles elle agit, pour
  *   détecter les conflits entre deux extensions activées ensemble
@@ -146,6 +148,64 @@ export const EXTENSIONS = {
     },
     touchesPositions: [2, 4, 7, 17, 22, 30, 33, 36, 38],
   },
+
+  'buy-everything': {
+    id: 'buy-everything',
+    name: 'Tout Acheter',
+    summary:
+      "Départ, Prison et Parc Gratuit deviennent achetables ; un dé d'Achat donne accès au coffre des cartes Vente, et une case dépassée part aux enchères.",
+    // ⚠️ Comme l'extension Prison, les chiffres (prix des titres spéciaux,
+    // faces du dé d'Achat, effets des cartes Vente) viennent de sources
+    // secondaires et non du livret Hasbro : ils sont cohérents entre eux et
+    // équilibrés pour jouer, mais méritent une relecture contre la boîte
+    // physique. Voir CLAUDE.md §10.
+    requires: ['goSpace', 'jailSpace', 'freeParkingSpace', 'sequentialTurns', 'fortySpaceBoard'],
+    // Trois titres de propriété là où il n'y en avait pas. La « Banque » de la
+    // boîte physique n'est pas une case du plateau mais un présentoir central :
+    // notre modèle n'ayant que 40 cases, elle n'est pas représentée — les trois
+    // coins achetables suffisent à porter la mécanique.
+    boardOverrides: [
+      { position: 0, changes: { type: 'landmark', group: 'landmark', price: 400, rent: [75], mortgage: 200 } },
+      { position: 10, changes: { type: 'landmark', group: 'landmark', price: 300, rent: [50], mortgage: 150 } },
+      { position: 20, changes: { type: 'landmark', group: 'landmark', price: 350, rent: [60], mortgage: 175 } },
+    ],
+    addsGroups: {
+      landmark: {
+        id: 'landmark',
+        label: 'Titres spéciaux',
+        color: '#b08d3f',
+        size: 3,
+        spaces: [0, 10, 20],
+      },
+    },
+    addsDecks: {
+      // Le coffre des ventes. Trois cartes restent visibles ; on les gagne au dé
+      // d'Achat. Rouge = pouvoir à usage unique, jaune = revenu permanent,
+      // verte = condition de victoire immédiate.
+      sale: [
+        { id: 'sale-red-01', color: 'red', text: 'Coup de chance : la banque vous verse 200 €.', action: { type: 'collect', amount: 200 } },
+        { id: 'sale-red-02', color: 'red', text: 'Racket : chaque adversaire vous verse 50 €.', action: { type: 'collect_from_each', amount: 50 } },
+        { id: 'sale-red-03', color: 'red', text: 'Passe-droit : gardez une carte « libérée de prison ».', action: { type: 'get_out_of_jail_free' } },
+        { id: 'sale-red-04', color: 'red', text: 'Raccourci : avancez de 5 cases.', action: { type: 'move_relative', offset: 5 } },
+        { id: 'sale-red-05', color: 'red', text: 'Liquidation : la banque vous verse 150 €.', action: { type: 'collect', amount: 150 } },
+        { id: 'sale-yellow-01', color: 'yellow', text: 'Rente foncière : touchez 50 € au début de chacun de vos tours.', perTurn: { type: 'collect', amount: 50 } },
+        { id: 'sale-yellow-02', color: 'yellow', text: 'Péage privé : touchez 30 € au début de chacun de vos tours.', perTurn: { type: 'collect', amount: 30 } },
+        { id: 'sale-yellow-03', color: 'yellow', text: 'Dividendes : touchez 40 € au début de chacun de vos tours.', perTurn: { type: 'collect', amount: 40 } },
+        { id: 'sale-green-01', color: 'green', text: 'Objectif : réunir 2 500 € en liquide. Vous gagnez sur-le-champ.', victory: { type: 'cash_at_least', amount: 2500 } },
+        { id: 'sale-green-02', color: 'green', text: 'Objectif : détenir 10 titres de propriété. Vous gagnez sur-le-champ.', victory: { type: 'own_at_least', count: 10 } },
+        { id: 'sale-green-03', color: 'green', text: 'Objectif : bâtir 8 constructions. Vous gagnez sur-le-champ.', victory: { type: 'buildings_at_least', count: 8 } },
+      ],
+    },
+    addsMechanics: {
+      saleVault: { deck: 'sale', visible: 3 },
+      // Le dé d'Achat, facultatif, lancé une fois par tour après la case résolue.
+      buyDie: { sides: 6, gainFrom: 5, stealOn: 1 },
+      auctionOnPass: true,
+      saleVictory: true,
+    },
+    deckTheming: { sale: { label: 'Vente', color: '#3c6e9f', glyph: '§' } },
+    touchesPositions: [0, 10, 20],
+  },
 };
 
 /** Ce que chaque `requires` vérifie sur une édition donnée. */
@@ -155,6 +215,10 @@ const REQUIREMENT_CHECKS = {
   taxSpaces: (edition) => edition.board.some((space) => space.type === 'tax'),
   jailSpace: (edition) => edition.board.some((space) => space.type === 'jail'),
   freeParkingSpace: (edition) => edition.board.some((space) => space.type === 'free_parking'),
+  goSpace: (edition) => edition.board.some((space) => space.type === 'go'),
+  // Les titres supplémentaires sont posés à des positions fixes du plateau
+  // classique 40 cases : une édition plus courte ne peut pas les accueillir.
+  fortySpaceBoard: (edition) => edition.board.length === 40,
   sequentialTurns: (edition) => edition.mechanics?.explorationMode !== true,
 };
 
@@ -203,6 +267,7 @@ function mergeOne(edition, extension) {
     ...edition,
     board,
     cards,
+    groups: { ...edition.groups, ...(extension.addsGroups ?? {}) },
     mechanics: { ...edition.mechanics, ...(extension.addsMechanics ?? {}) },
     jail: { ...edition.jail, ...(extension.jail ?? {}) },
     dice: { ...edition.dice, ...(extension.dice ?? {}) },

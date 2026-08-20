@@ -37,8 +37,15 @@ import avEn from './editions/avengers-fr/locales/en.json' with { type: 'json' };
 
 import { applyExtensions } from './extensions.js';
 
-/** Types de cases achetables, quel que soit le thème. */
-export const OWNABLE_TYPES = ['property', 'railroad', 'utility'];
+/**
+ * Types de cases achetables, quel que soit le thème.
+ *
+ * `landmark` est un titre de propriété posé sur une case qui n'en portait pas
+ * (Départ, Prison, Parc Gratuit) : il s'achète et rapporte un loyer fixe, mais
+ * ne se construit pas. Aucune édition de base n'en contient — seule une
+ * extension en pose, ce qui laisse le type inerte partout ailleurs.
+ */
+export const OWNABLE_TYPES = ['property', 'railroad', 'utility', 'landmark'];
 
 /** Les langues dans lesquelles une partie peut se jouer. */
 export const LOCALES = ['fr', 'en'];
