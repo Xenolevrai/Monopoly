@@ -5,7 +5,8 @@ wifi ou à distance.
 
 **Le jeu est complet et jouable** : plateau, règles, temps réel, lobby, échanges,
 chat, reconnexion. On peut jouer **à plusieurs sur le même ordinateur**, avec
-d'autres joueuses **à distance** dans la même partie. 128 tests automatisés.
+d'autres joueuses **à distance** dans la même partie. Deux extensions Hasbro
+activables à la création de la partie (Parc Gratuit Jackpot, Prison). 139 tests automatisés.
 
 ## Les éditions
 
@@ -22,6 +23,13 @@ quand la boîte le demande, **ses règles**.
 Au moment de créer une partie, on choisit sa boîte **et sa langue** : français ou
 anglais. La langue ne change que les mots — jamais un prix, jamais une règle.
 
+Sur l'édition Classique, deux **extensions Hasbro** sont activables (une, l'autre,
+ou aucune) à la création de la partie : **Parc Gratuit Jackpot** (Chance et Caisse
+de communauté deviennent des cases Spin, la cagnotte du Parc Gratuit devient
+permanente) et **Prison** (les cases taxes envoient en prison, une geôle plus
+sévère apparaît). Elles se marchent toutes les deux sur les mêmes cases et ne
+peuvent donc pas s'activer ensemble — l'écran de sélection le détecte tout seul.
+
 ![Une partie en cours](docs/captures/partie.png)
 
 ## Démarrage
@@ -30,7 +38,7 @@ anglais. La langue ne change que les mots — jamais un prix, jamais une règle.
 npm install
 npm run build   # compile l'interface — à refaire après chaque `git pull`
 npm start       # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
-npm run check   # lint + 128 tests : données, éditions, langues, règles, parties simulées, temps réel
+npm run check   # lint + 139 tests : données, éditions, extensions, langues, règles, parties simulées, temps réel
 ```
 
 Node 22+. Le serveur affiche aussi l'adresse locale (`http://192.168.x.x:3000`) à
@@ -172,7 +180,13 @@ et répondables tout de suite.
 
 ## Pistes si l'envie vient
 
-- L'édition Spider-Man, puis Junior, Cheaters, Empire, Speed — les drapeaux de
-  mécaniques correspondants existent déjà dans `edition.mechanics`
+- L'extension « Tout Acheter » (`buy-everything`, voir `shared/extensions.js`) :
+  la troisième extension Hasbro 2025, la plus complexe, pas encore codée
+- L'édition Spider-Man : mise de côté faute de données fiables (le site officiel
+  des règles Hasbro est inaccessible depuis cet environnement, et le web ne donne
+  que des généralités thématiques, jamais la liste des rues/prix/cartes) — voir
+  CLAUDE.md §11
+- Junior, Cheaters, Empire, Speed — les drapeaux de mécaniques correspondants
+  existent déjà dans `edition.mechanics`
 - Sauvegarde longue durée en SQLite plutôt qu'en fichiers JSON
 - Statistiques de fin de partie (patrimoine, loyers encaissés)
