@@ -578,6 +578,56 @@ export function Home({ error }) {
   );
 }
 
+/**
+ * Ajouter une joueuse artificielle, à un niveau choisi.
+ *
+ * Le niveau se choisit à l'ajout et ne se change plus ensuite : il fait partie
+ * de la joueuse, comme son pion. On peut en mettre plusieurs, de niveaux
+ * différents — c'est le moyen le plus simple de jouer à deux contre la maison.
+ */
+function AddBot({ t, full }) {
+  const [level, setLevel] = useState('moyen');
+  const levels = [
+    ['facile', 'Facile'],
+    ['moyen', 'Moyen'],
+    ['difficile', 'Difficile'],
+    ['expert', 'Expert'],
+  ];
+
+  return (
+    <div className="space-y-1.5 rounded border border-dashed border-black/25 bg-white/40 p-2">
+      <p className="font-condensed text-[10px] uppercase tracking-widest text-ink-soft">
+        {t('botLevel')}
+      </p>
+      <div className="grid grid-cols-4 gap-1">
+        {levels.map(([id, label]) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setLevel(id)}
+            className={`rounded border px-1 py-1 font-condensed text-[11px] uppercase transition-colors ${
+              level === id
+                ? 'border-[var(--color-accent)] bg-[var(--color-accent)] text-white'
+                : 'border-black/15 bg-white hover:bg-black/5'
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <button
+        type="button"
+        disabled={full}
+        onClick={() => socket.emit('game:add-bot', { difficulty: level })}
+        className="w-full rounded bg-[var(--color-accent)] py-1.5 font-condensed text-sm uppercase tracking-wide text-white hover:bg-[var(--color-accent-deep)] disabled:opacity-40"
+      >
+        {full ? t('gameFull') : t('addBot')}
+      </button>
+      <p className="text-[10px] leading-snug text-ink-soft">{t('botsHint')}</p>
+    </div>
+  );
+}
+
 /** Formulaire d'ajout d'une joueuse supplémentaire sur ce même ordinateur. */
 function AddLocalPlayer({ t, edition, taken, takenFactions = [], onCancel }) {
   const free = edition.tokens.find((t) => !taken.includes(t.id));
@@ -757,10 +807,24 @@ export function WaitingRoom({ state, mine, onLeave }) {
             >
               <TokenIcon token={player.token} color={player.color} className="h-6 w-6" />
               <span className="font-condensed text-[15px] uppercase">{player.name}</span>
-              {localIds.has(player.id) && (
+              {player.bot && (
+                <span className="rounded bg-[var(--color-accent)]/15 px-1 font-condensed text-[10px] uppercase text-[var(--color-accent)]">
+                  {t('botBadge')}
+                </span>
+              )}
+              {localIds.has(player.id) && !player.bot && (
                 <span className="rounded bg-[var(--color-gold)]/20 px-1 font-condensed text-[10px] uppercase text-[#6b5216]">
                   {t('onThisScreen')}
                 </span>
+              )}
+              {player.bot && (
+                <button
+                  onClick={() => socket.emit('game:remove-bot', { playerId: player.id })}
+                  className="ml-auto text-xs text-ink-soft hover:text-[var(--color-accent)]"
+                  title="Retirer ce bot"
+                >
+                  ✕
+                </button>
               )}
               {localIds.has(player.id) && mine.length > 1 && (
                 <button
@@ -795,6 +859,8 @@ export function WaitingRoom({ state, mine, onLeave }) {
               {full ? t('gameFull') : t('addLocal')}
             </button>
           )}
+
+          <AddBot t={t} full={full} />
         </div>
 
         {/* Celles qui arrivent à distance découvrent l'édition choisie ici. */}

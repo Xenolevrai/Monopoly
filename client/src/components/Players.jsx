@@ -46,7 +46,12 @@ function PlayerCard({ player, state, isLocal, isActingHere, isCurrent, onFocus }
           <TokenIcon token={player.token} color={player.color} className="h-4 w-4" />
         </span>
         <span className="truncate font-condensed text-[15px] uppercase">{player.name}</span>
-        {isLocal && (
+        {player.bot && (
+          <span className="rounded bg-[var(--color-accent)]/15 px-1 text-[9px] uppercase tracking-wide text-[var(--color-accent)]">
+            {t('botBadge')}
+          </span>
+        )}
+        {isLocal && !player.bot && (
           <span className="rounded bg-[var(--color-gold)]/20 px-1 text-[9px] uppercase tracking-wide text-[#6b5216]">
             {t('here')}
           </span>

@@ -21,6 +21,8 @@ import {
   playerById,
 } from './engine/index.js';
 import { createRoom, getRoom, newPlayerId, scheduleSave } from './rooms.js';
+import { scheduleBots, stopBots } from './bots/runner.js';
+import { DIFFICULTIES, DEFAULT_DIFFICULTY, PROFILES } from './bots/profiles.js';
 import { listEditions, DEFAULT_EDITION } from '../shared/index.js';
 
 /** Nettoie un pseudo saisi par une joueuse. */
@@ -28,10 +30,23 @@ function cleanName(name) {
   return String(name ?? '').trim().slice(0, 20);
 }
 
-/** Diffuse l'état à toute la salle et programme la sauvegarde. */
+/**
+ * Diffuse l'état à toute la salle et programme la sauvegarde.
+ *
+ * C'est aussi le point où les bots reprennent la main : après chaque
+ * changement d'état, si la décision attendue est celle d'une joueuse
+ * artificielle, son coup est programmé. Une partie entre bots se déroule donc
+ * toute seule, sans que le moteur ait à connaître leur existence.
+ */
 function broadcast(io, room) {
   io.to(room.state.code).emit('game:state', publicState(room.state));
   scheduleSave(room);
+  if (room.state.phase === 'finished') stopBots(room.state.code);
+  else scheduleBots(room, (r) => {
+    io.to(r.state.code).emit('game:state', publicState(r.state));
+    scheduleSave(r);
+    if (r.state.phase === 'finished') stopBots(r.state.code);
+  });
 }
 
 export function registerSocketHandlers(io) {
@@ -115,6 +130,36 @@ export function registerSocketHandlers(io) {
     });
 
     // — Retirer une joueuse de ce poste (lobby uniquement) ————————————
+    // — Ajouter une joueuse artificielle ————————————————————
+    socket.on('game:add-bot', ({ difficulty, token } = {}) => {
+      const room = currentRoom();
+      if (!room) return fail("Vous n'êtes dans aucune partie.");
+      if (room.state.phase !== 'lobby') return fail('La partie a déjà commencé.');
+
+      const level = DIFFICULTIES.includes(difficulty) ? difficulty : DEFAULT_DIFFICULTY;
+      // Un nom qui dit ce que c'est : à table, on doit savoir qui est un bot.
+      const base = PROFILES[level].label;
+      let name = base;
+      let n = 2;
+      while (room.state.players.some((p) => p.name.toLowerCase() === name.toLowerCase())) {
+        name = `${base} ${n++}`;
+      }
+
+      const added = addPlayer(room, { id: newPlayerId(), name, token, bot: level });
+      if (!added.ok) return fail(added.error);
+      announce(room);
+    });
+
+    socket.on('game:remove-bot', ({ playerId } = {}) => {
+      const room = currentRoom();
+      if (!room) return fail("Vous n'êtes dans aucune partie.");
+      if (room.state.phase !== 'lobby') return fail('La partie a déjà commencé.');
+      const player = playerById(room.state, playerId);
+      if (!player?.bot) return fail("Cette joueuse n'est pas un bot.");
+      removePlayer(room, playerId);
+      announce(room);
+    });
+
     socket.on('game:remove-local', ({ playerId } = {}) => {
       const room = currentRoom();
       if (!room) return fail("Vous n'êtes dans aucune partie.");

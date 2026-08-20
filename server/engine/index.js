@@ -59,7 +59,7 @@ export function createGame(
 export { listEditions, getEdition };
 
 /** Ajoute une joueuse au lobby. */
-export function addPlayer(game, { id, name, token, faction }) {
+export function addPlayer(game, { id, name, token, faction, bot = null }) {
   const { state } = game;
   const edition = editionOf(state);
   if (state.phase !== 'lobby') return { ok: false, error: 'La partie a déjà commencé.' };
@@ -94,6 +94,7 @@ export function addPlayer(game, { id, name, token, faction }) {
     order: state.players.length,
     edition,
     faction: chosenFaction?.id ?? null,
+    bot,
   });
   state.players.push(player);
   log(

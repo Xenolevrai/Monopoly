@@ -210,7 +210,7 @@ export function createGameState(code, hostId, editionId = DEFAULT_EDITION, local
  * Crée une joueuse prête à être ajoutée au lobby.
  * @returns {Player}
  */
-export function createPlayer({ id, name, token, color, order, edition, faction = null }) {
+export function createPlayer({ id, name, token, color, order, edition, faction = null, bot = null }) {
   const config = edition ?? getEdition();
   return {
     id,
@@ -219,6 +219,9 @@ export function createPlayer({ id, name, token, color, order, edition, faction =
     color,
     // Camp choisi quand l'édition en propose (maison de Poudlard…), sinon null.
     faction,
+    // Niveau de difficulté si c'est une joueuse artificielle, `null` si humaine.
+    // Vit dans l'état — donc une partie reprise le lendemain retrouve ses bots.
+    bot,
     cash: config.currency.startingAmount,
     position: 0,
     inJail: false,

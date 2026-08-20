@@ -115,7 +115,9 @@ export async function restoreRooms() {
         continue;
       }
       // Tout le monde est déconnecté au redémarrage : on attend les reconnexions.
-      for (const player of raw.state.players) player.connected = false;
+      // Sauf les bots — ils n'ont pas de navigateur à rouvrir, et les marquer
+      // absents ferait croire qu'on attend quelqu'un qui ne viendra jamais.
+      for (const player of raw.state.players) player.connected = Boolean(player.bot);
       // Migration : les parties sauvegardées avant l'ajout du compteur de journal
       // n'en ont pas. On le fait repartir après le plus grand id déjà écrit, pour
       // qu'aucune nouvelle entrée ne réutilise une clé déjà affichée.
