@@ -7,7 +7,7 @@ wifi ou à distance.
 chat, reconnexion. On peut jouer **à plusieurs sur le même ordinateur**, avec
 d'autres joueuses **à distance** dans la même partie. Les trois extensions Hasbro
 2025 sont activables à la création de la partie (Parc Gratuit Jackpot, Prison,
-Tout Acheter). 175 tests automatisés.
+Tout Acheter), et **quatre niveaux de bots**. 190 tests automatisés.
 
 ## Les éditions
 
@@ -50,7 +50,7 @@ autorisée.
 npm install
 npm run build   # compile l'interface — à refaire après chaque `git pull`
 npm start       # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
-npm run check   # lint + 175 tests : données, éditions, extensions, langues, règles, parties simulées, temps réel
+npm run check   # lint + 190 tests : données, éditions, extensions, bots, langues, règles, parties simulées, temps réel
 ```
 
 Node 22+. Le serveur affiche aussi l'adresse locale (`http://192.168.x.x:3000`) à
@@ -69,10 +69,12 @@ server/
   index.js       serveur HTTP + API, sert le client compilé
   sockets.js     passerelle Socket.io ↔ moteur
   rooms.js       registre des parties, codes, sauvegarde sur disque
+  bots/          les quatre niveaux de joueuses artificielles
+scripts/         train-bots.mjs, tune-bots.mjs — tournois et entraînement
 client/          interface React + Vite + Tailwind
   src/components/  plateau et son décor, joueuses, actions, échanges, journal, chat
   src/lib/         connexion temps réel, état, données du plateau, thème, langues
-tests/           data / editions / engine / locales / payment-flow / points-edition / server / simulation
+tests/           bots / data / editions / engine / locales / payment-flow / points-edition / server / simulation
 docs/            DATA_MODEL.md, MOTEUR.md, SERVEUR.md, CLIENT.md, ART_DIRECTION.md
 CLAUDE.md        carnet de bord : architecture, pièges, ce qui reste à faire
 ```
@@ -143,6 +145,30 @@ chez tout le monde en même temps : le podium, le détail de chacune (liquide,
 propriétés, constructions), les éliminées en bas de tableau. De là, un bouton
 ramène à l'accueil pour en relancer une — ou on referme pour regarder le plateau
 une dernière fois, le compte reste accessible depuis la barre du haut.
+
+## Jouer contre des bots
+
+On peut ajouter autant de joueuses artificielles qu'on veut au salon, à quatre
+niveaux : **facile**, **moyen**, **difficile**, **expert**. Elles portent le nom
+de leur niveau et un badge « bot », pour qu'on sache toujours qui est une
+machine. Pratique pour jouer à deux contre la maison, ou pour compléter une
+table quand il manque du monde.
+
+Elles jouent **vraiment** : elles achètent, enchérissent, bâtissent,
+hypothèquent pour se refaire, tranchent les cartes à choix, et **négocient** —
+elles repèrent le terrain qui leur ferme un groupe, cherchent quoi offrir en
+échange, et acceptent ou refusent selon ce que le marché leur rapporte.
+
+La différence entre les niveaux n'est pas cosmétique. Un bot faible juge mal et
+se trompe franchement de temps en temps, comme une débutante ; un expert
+connaît les probabilités du plateau — il sait que l'orange rapporte plus que la
+rue de la Paix parce qu'on y tombe plus souvent en sortant de prison — et ne
+laisse rien passer. Sur 100 parties à quatre, l'expert en gagne 54 et le facile
+aucune.
+
+Elles ne peuvent pas tricher : leurs coups passent exactement par la même porte
+que les vôtres, et le serveur leur refuserait une action illégale comme à
+n'importe qui.
 
 ## Sur téléphone comme sur ordinateur
 

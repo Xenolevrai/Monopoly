@@ -41,7 +41,7 @@ invariant est prouvé par `tests/locales.test.js`.
 npm install
 npm run build     # compile le client — à refaire après chaque pull
 npm start         # http://localhost:3000
-npm run check     # lint + 175 tests
+npm run check     # lint + 190 tests
 ```
 
 Node 22+, ESM partout, workspaces npm (racine + `client`).
@@ -95,10 +95,12 @@ server/
   engine/{movement,property,cards,auction,trade,money,turn,queries,log,rng}.js
   rooms.js             registre des parties, codes, sauvegarde disque
   sockets.js           passerelle Socket.io ↔ moteur
+  bots/                les joueuses artificielles (voir §5 ter)
+scripts/               train-bots.mjs · tune-bots.mjs — tournois et réglage
 client/src/
   components/          Board, BoardSkin, Centerpiece, SpaceArt, SpaceIcons, Actions, Players…
   lib/                 board.js, i18n.js, theme.js, rulesText.jsx, useGame.js, useCinematic.js
-tests/                 data · editions · engine · locales · payment-flow · points-edition · server · simulation
+tests/                 bots · data · editions · engine · locales · payment-flow · points-edition · server · simulation
 docs/                  DATA_MODEL · MOTEUR · SERVEUR · CLIENT · ART_DIRECTION
 ```
 
@@ -310,6 +312,72 @@ Tests : `tests/hazard-edition.test.js`.
 
 ---
 
+## 5 ter. Les bots (`server/bots/`)
+
+Quatre niveaux — facile, moyen, difficile, expert — qu'on ajoute au salon comme
+une joueuse de plus. Le contrat est le même que pour tout le reste : **le moteur
+ne sait pas ce qu'est un bot**. Un bot est une fonction pure
+`(state, playerId) => action`, et son coup passe par `dispatch` comme celui
+d'une humaine — il ne peut donc rien faire d'illégal, et un test le vérifie sur
+une partie entière.
+
+```
+odds.js       fréquence de visite de chaque case, MESURÉE sur le plateau joué
+evaluate.js   ce qu'une case vaut pour cette joueuse-là (rendement, groupe, blocage)
+cards.js      ce que vaut chaque effet de carte, chaque choix, chaque case d'arrivée
+negotiate.js  proposer un échange, juger celui qu'on reçoit
+profiles.js   les quatre niveaux, en chiffres
+brain.js      l'aiguillage : une action pour l'invite en cours
+runner.js     la seule pièce qui sait qu'un bot existe (côté serveur)
+```
+
+### Ce qui fait la force d'un bot
+
+**Il mesure le plateau au lieu de le connaître.** `odds.js` fait tourner une
+marche aléatoire sur le plateau *réellement joué* — extensions comprises — et en
+tire la fréquence de visite de chaque case. Il retrouve seul le résultat connu
+du Monopoly : la prison est le puits (9,3 % des visites) et l'orange, à un jet
+de sa sortie, bat la rue de la Paix. **Ne pas remplacer par une table écrite à
+la main** : elle serait fausse dès qu'une édition déplace la prison ou qu'une
+extension change les cases taxes en « allez en prison ».
+
+**Un seul cerveau, quatre réglages.** Pas de code « facile » et de code
+« expert » à maintenir en double. Tout tient dans `profiles.js`, plus deux
+imperfections volontaires : `noise` (bruit de jugement) et `blunderRate` (bourde
+franche). Un bot faible ne joue pas au hasard — il voit la bonne action et en
+joue une autre, comme une débutante.
+
+### Entraîner
+
+```bash
+node scripts/train-bots.mjs --games 300          # tournoi de contrôle
+node scripts/tune-bots.mjs --level expert --rounds 20 --games 44
+```
+
+`tune-bots.mjs` est une montée de colline : il secoue les paramètres d'un
+profil, fait jouer la variante contre la version en place, et garde ce qui
+l'emporte **à plus de 53 %** — en dessous, l'écart se confond avec le bruit. Les
+réglages retenus s'affichent à la fin, à recopier dans `profiles.js`. **Relancer
+après toute retouche à `evaluate.js` ou `cards.js`.**
+
+Mesure de référence (100 parties à quatre, sièges tournants) : expert 54 %,
+difficile 26 %, moyen 20 %, facile 0 %, pour 25 % au hasard.
+
+### Pièges déjà rencontrés ici
+
+- **Les boucles de propositions.** Un bot qui repropose un marché refusé fige la
+  partie : mesuré à 2 800 propositions pour 90 tours joués. Deux garde-fous dans
+  `brain.js` — jamais deux fois la même offre, et pas plus d'une par tour de
+  table. Même piège pour l'arrangement de dette, qui ne se tente qu'une fois.
+- **Toutes les boîtes n'ont pas toutes les règles.** La Coupe des Quatre Maisons
+  ignore l'hypothèque ; le bot en réclamait une quand même, 4 852 refus sur une
+  partie qui ne finissait jamais. Lire `mechanics.*` comme le fait le moteur.
+- Le champ de dette s'appelle `debt.debtorId`, **pas** `debt.playerId`.
+- Les entrées du journal portent l'autrice dans `entry.data.playerId`, pas à la
+  racine — un test qui cherche `entry.playerId` ne trouvera jamais rien.
+
+---
+
 ## 6. Le point sensible : réunir de l'argent
 
 Un défaut signalé en jouant a laissé des tests dédiés
@@ -417,7 +485,9 @@ mise en page téléphone et ordinateur, les **trois** extensions Hasbro sur
 l'édition Classique (Parc Gratuit Jackpot, Prison, Tout Acheter — voir §5,
 avec leurs cases à cocher et la détection de conflit dans l'écran de
 sélection), les deux éditions Spider-Man (Collector et Hasbro/Bouffon Vert),
-175 tests.
+les **quatre niveaux de bots** (voir §5 ter — ils achètent, bâtissent,
+hypothèquent, enchérissent, tranchent les cartes et négocient, sur les six
+boîtes et toutes les extensions), 190 tests.
 
 **Reste à faire**, par ordre de priorité annoncée :
 
