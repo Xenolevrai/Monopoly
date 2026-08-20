@@ -6,7 +6,7 @@
  * les animer — un pion qu'on déplace de case en case, comme à la main.
  */
 import { useEffect, useRef, useState } from 'react';
-import { spaceRect, boardOf } from '../lib/board.js';
+import { spaceRect, boardOf, editionFor } from '../lib/board.js';
 import TokenIcon from './TokenIcon.jsx';
 
 const STEP_MS = 260; // durée d'un pas — on prend le temps de voir le pion avancer
@@ -75,6 +75,8 @@ export default function Pawns({ state, players, hold = false }) {
 
   return (
     <div className="pointer-events-none absolute inset-0 z-10">
+      <Hazards state={state} />
+      <HazardPawn state={state} />
       {players.map((player) => {
         const space = shown[player.id] ?? player.position;
         const moving = space !== player.position;
@@ -109,5 +111,71 @@ export default function Pawns({ state, players, hold = false }) {
         );
       })}
     </div>
+  );
+}
+
+
+/**
+ * Les cases piégées par le pion hostile. Rien à afficher tant que l'édition
+ * n'en pose pas : le client ne connaît aucune édition par son nom, il lit
+ * simplement `state.hazards`.
+ */
+function Hazards({ state }) {
+  const marked = Object.keys(state.hazards ?? {});
+  if (marked.length === 0) return null;
+
+  return (
+    <>
+      {marked.map((spaceId) => {
+        const rect = spaceRect(state, Number(spaceId));
+        return (
+          <span
+            key={`hazard-${spaceId}`}
+            className="absolute flex items-center justify-center rounded-full"
+            style={{
+              left: `${rect.x}%`,
+              top: `${rect.y - rect.h * 0.22}%`,
+              width: '2.6%',
+              height: '2.6%',
+              marginLeft: '-1.3%',
+              marginTop: '-1.3%',
+              background: 'radial-gradient(circle at 35% 30%, #ffb648, #d9531e 60%, #7d2408)',
+              boxShadow: '0 0 8px rgba(255,150,40,.85), 0 2px 5px rgba(0,0,0,.55)',
+            }}
+            title="Piège"
+          />
+        );
+      })}
+    </>
+  );
+}
+
+/** Le pion qui joue tout seul, posé sur le plateau comme les autres. */
+function HazardPawn({ state }) {
+  const pawn = state.hazardPawn;
+  if (!pawn) return null;
+  const label = editionFor(state).mechanics?.hazardPawn?.label ?? '';
+  const rect = spaceRect(state, pawn.position);
+
+  return (
+    <span
+      className="absolute flex items-center justify-center rounded-full border-2"
+      style={{
+        left: `${rect.x}%`,
+        top: `${rect.y - rect.h * 0.24}%`,
+        width: '4.2%',
+        height: '4.2%',
+        marginLeft: '-2.1%',
+        marginTop: '-2.1%',
+        borderColor: '#7bd44e',
+        background: '#12210c',
+        boxShadow: '0 0 0 2px #2f6b1f, 0 0 12px rgba(123,212,78,.75), 0 3px 8px rgba(0,0,0,.6)',
+        transition: `left ${STEP_MS}ms ease-in-out, top ${STEP_MS}ms ease-in-out`,
+        zIndex: 4,
+      }}
+      title={label}
+    >
+      <TokenIcon token="planeur" color="#7bd44e" className="h-[74%] w-[74%]" />
+    </span>
   );
 }

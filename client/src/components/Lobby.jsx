@@ -218,7 +218,7 @@ function FactionPicker({ edition, value, onChange }) {
       <p className="font-condensed text-[11px] uppercase tracking-widest text-ink-soft">
         {factions.prompt ?? factions.label}
       </p>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {factions.options.map((faction) => {
           const selected = value === faction.id;
           return (
@@ -226,7 +226,7 @@ function FactionPicker({ edition, value, onChange }) {
               key={faction.id}
               type="button"
               onClick={() => onChange(faction.id)}
-              className={`flex flex-col items-center gap-1 rounded border-2 px-2 py-2 transition-all ${
+              className={`flex flex-col items-center gap-1 rounded border-2 px-2 py-2 text-center transition-all ${
                 selected ? 'border-ink bg-white' : 'border-black/12 bg-white/60 hover:bg-white'
               }`}
             >
@@ -235,6 +235,11 @@ function FactionPicker({ edition, value, onChange }) {
                 style={{ backgroundColor: faction.color }}
               />
               <span className="font-condensed text-[10px] uppercase leading-tight">{faction.label}</span>
+              {/* Le pouvoir, quand l'édition en décrit un : sans ça, on choisit
+                  un héros à l'aveugle alors que c'est le choix structurant. */}
+              {faction.power && (
+                <span className="text-[10px] leading-snug text-ink-soft">{faction.power}</span>
+              )}
             </button>
           );
         })}

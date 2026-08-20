@@ -185,11 +185,25 @@ export function PropertyCard({ state, spaceId }) {
 
 function Roll({ state, payload, actor }) {
   const t = useT(state);
+  // Un pouvoir de camp peut annoncer la carte du dessus. Le serveur décide s'il
+  // y a quelque chose à montrer ; le client se contente de l'afficher.
+  const peek = payload?.peek ? (
+    <p className="rounded border border-black/10 bg-black/5 px-2 py-1.5 text-xs italic leading-snug">
+      {t('spiderSense')} « {payload.peek} »
+    </p>
+  ) : null;
+
   if (!payload?.inJail) {
-    return <Button onClick={() => sendAction({ type: 'ROLL_DICE' }, actor)}>{t('rollDice')}</Button>;
+    return (
+      <div className="space-y-2">
+        {peek}
+        <Button onClick={() => sendAction({ type: 'ROLL_DICE' }, actor)}>{t('rollDice')}</Button>
+      </div>
+    );
   }
   return (
     <div className="space-y-2">
+      {peek}
       <p className="text-xs text-ink-soft">
         {t('inJailFor', payload.jailTurns + 1, editionFor(state).jail.maxTurns)}
       </p>
@@ -536,6 +550,19 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
 
       {mineTurn && pending.kind === 'roll' && (
         <Roll state={state} payload={pending.payload} actor={actor} />
+      )}
+      {mineTurn && pending.kind === 'reroll' && (
+        <div className="space-y-2">
+          <p className="text-sm">
+            {t('rerollAsk', (pending.payload.values ?? []).join(' + '), pending.payload.total)}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => sendAction({ type: 'KEEP_ROLL' }, actor)}>{t('keepRoll')}</Button>
+            <Button tone="ghost" onClick={() => sendAction({ type: 'REROLL_DICE' }, actor)}>
+              {t('rerollDice')}
+            </Button>
+          </div>
+        </div>
       )}
       {mineTurn && pending.kind === 'draw_card' && (
         <div className="space-y-2">
