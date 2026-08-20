@@ -375,21 +375,38 @@ sélection), les deux éditions Spider-Man (Collector et Hasbro/Bouffon Vert),
 
 **Reste à faire**, par ordre de priorité annoncée :
 
-1. **Relire `spiderman-hasbro-fr` contre la boîte physique** : deux règles y
+1. **Réconcilier les données Spider-Man avec la photo de la boîte.** Une photo
+   du plateau Hasbro fournie en cours de route contredit sur plusieurs points le
+   relevé écrit qui a servi à construire `spiderman-hasbro-fr` :
+   - la boîte montre **deux paquets** (« DAILY BUGLE » et « SPIDER SENSE »),
+     là où notre édition n'en a qu'un (paquets fusionnés) ;
+   - on y lit un vilain **Prowler**, absent de nos données, et des cases
+     **« TECH FUND »** qui ne correspondent à aucune des nôtres ;
+   - les montants imprimés sont en **M** (M2, M5), pas en `$` ;
+   - **aucun pion autonome du Bouffon Vert n'y est visible** — les jetons sont
+     des pastilles (masques rouges et « W » bleus, soit nos constructions), et
+     « GREEN GOBLIN » est une case de propriété.
+   Autrement dit, la photo ressemble à un **reskin classique à deux paquets**,
+   beaucoup plus proche de `spiderman-fr` que du jeu asymétrique décrit par
+   écrit. À trancher avec la boîte en main avant d'aller plus loin : soit le
+   relevé écrit décrit une autre boîte, soit `spiderman-hasbro-fr` repose sur
+   des règles qui ne sont pas celles-là.
+
+2. **Relire `spiderman-hasbro-fr` contre la boîte physique** : deux règles y
    sont des lectures assumées (voir §5 bis), et les chiffres non donnés par la
    boîte ont été calibrés à la simulation — pénalité de piège, prix d'un
    raccourci, faces du dé du Bouffon. Les cartes Daily Bugle « Surveillance
    piratée » (réordonner trois cartes) et « Chantage photographique » (choisir
    sa cible) sont simplifiées : la première pioche la carte suivante, la seconde
    vise la joueuse la plus riche.
-2. Relire les trois extensions contre les boîtes physiques : les règles de
+3. Relire les trois extensions contre les boîtes physiques : les règles de
    Prison et de Tout Acheter viennent de sources secondaires (voir §5). Points
    les plus incertains : la caution de la Super Jail, les faces exactes du dé
    d'Achat, les effets des cartes Vente, et le rendu de la « Deal Mobile » du
    Jackpot (non implémentée) et de la « Banque » de Tout Acheter (non
    représentée).
-3. Vérifier les textes de cartes du reskin Harry Potter sur la boîte physique.
-4. Éditions Junior, Cheaters, Empire, Speed (les drapeaux `mechanics`
+4. Vérifier les textes de cartes du reskin Harry Potter sur la boîte physique.
+5. Éditions Junior, Cheaters, Empire, Speed (les drapeaux `mechanics`
    existent déjà : `cheatCards`, `towerMode`, `draftMode`, `battleSpaces`).
 
 ---

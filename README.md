@@ -19,8 +19,8 @@ quand la boîte le demande, **ses règles**.
 | **Monopoly Classique** | € | carton vert de table | la référence |
 | **Harry Potter — Gallions** | G | parchemin, Carte du Maraudeur | comme le classique, noms de Poudlard |
 | **Marvel Avengers** | M$ | acier et néons | bases S.H.I.E.L.D. et quartiers généraux Stark |
-| **Spider-Man — Collector** | $ | New York la nuit, ligne d'horizon | comme le classique : on capture les vilains, on pose traceurs et tours de toile |
-| **Spider-Man — Bouffon Vert** | $ | New York la nuit, ligne d'horizon | **règles Hasbro** : chaque joueuse a un héros et son pouvoir, un pion hostile avance tout seul et sème des bombes, des raccourcis de toile traversent le plateau |
+| **Spider-Man — Collector** | $ | nuit d'encre, toile tendue, pans rouge et bleu | comme le classique : on capture les vilains, on pose traceurs et tours de toile |
+| **Spider-Man — Bouffon Vert** | $ | nuit d'encre, toile tendue, pans rouge et bleu | **règles Hasbro** : chaque joueuse a un héros et son pouvoir, un pion hostile avance tout seul et sème des bombes, des raccourcis de toile traversent le plateau |
 | **Harry Potter — Coupe des Quatre Maisons** | points | ciel de nuit, Grande Salle | **règles Hasbro** : pas d'hôtel, pas d'hypothèque, personne n'est éliminée, on gagne en explorant tout le plateau |
 
 Au moment de créer une partie, on choisit sa boîte **et sa langue** : français ou
