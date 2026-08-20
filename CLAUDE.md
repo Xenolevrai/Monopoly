@@ -13,10 +13,12 @@ navigateur, pour jouer **en famille et entre amis**. Usage strictement privé :
 pas de vente, pas de diffusion publique. Les données de plateau et de cartes
 sont relevées sur les boîtes physiques du propriétaire du dépôt.
 
-Cinq éditions sont livrées, et l'ajout d'une sixième doit se faire **sans
-toucher une ligne de moteur** — c'est le contrat central de l'architecture.
-Spider-Man en est la preuve la plus nette : elle a été ajoutée sans qu'une
-seule ligne de `server/engine/` ne change.
+Six éditions sont livrées. L'ajout d'un **reskin** doit se faire **sans toucher
+une ligne de moteur** — c'est le contrat central de l'architecture, et
+`spiderman-fr` en est la preuve la plus nette. Une boîte qui apporte de
+véritables mécaniques nouvelles (`poudlard-points`, `spiderman-hasbro-fr`) fait
+bouger le moteur, mais toujours par des **drapeaux génériques** lus dans
+`edition.mechanics` ou `edition.factions` : jamais un `if (editionId === …)`.
 
 | id | boîte | matière | victoire | particularité |
 |---|---|---|---|---|
@@ -24,6 +26,7 @@ seule ligne de `server/engine/` ne change.
 | `harry-potter-fr` | Harry Potter (reskin Winning Moves), Gallions | `parchment` | dernière en jeu | règles classiques, noms Poudlard |
 | `avengers-fr` | Marvel Avengers, M$ | `tech` | dernière en jeu | bases S.H.I.E.L.D. / QG Stark |
 | `spiderman-fr` | Spider-Man Collector (Winning Moves), $ | `night` | dernière en jeu | reskin exact du classique : vilains, traceurs / tours de toile |
+| `spiderman-hasbro-fr` | Spider-Man Hasbro, Bouffon Vert, $ | `night` | tout capturé **ou** dernière en jeu | **règles différentes** : pion hostile autonome, pièges, raccourcis, pouvoirs de héros |
 | `poudlard-points` | Harry Potter Hasbro, points de maison | `night` | tout le plateau exploré | **règles différentes** : pas d'hôtel, pas d'hypothèque, pas d'élimination |
 
 Chaque édition se joue **en français ou en anglais** ; la langue ne change que
@@ -212,6 +215,62 @@ Tests : `tests/extensions.test.js`.
 
 ---
 
+## 5 bis. Le pion qui joue tout seul (`mechanics.hazardPawn`)
+
+`spiderman-hasbro-fr` est la première boîte où **un adversaire n'est tenu par
+personne**. Tout passe par la configuration, jamais par un nom d'édition —
+`server/engine/hazard.js` ne sait pas qu'il anime un Bouffon Vert.
+
+```json
+"hazardPawn": { "label": "Bouffon Vert", "start": 30,
+                "faces": [1,2,2,3,3,"chase"], "penalty": 50, "dropsOnOwnedOnly": true }
+```
+
+- Il joue **après chaque tour de joueuse** (`endTurn`, qui reçoit le `rng` pour
+  ça). Une face `"chase"` le fait foncer sur la joueuse la plus proche.
+- Là où il s'arrête, il pose un piège — sauf sur une case **construite** : c'est
+  ce qui donne aux constructions un rôle défensif en plus du loyer.
+- Une case piégée ne rapporte **aucun loyer** et coûte la pénalité à qui s'y
+  arrête ; le piège se **consomme** alors. Elle reste **achetable**.
+
+⚠️ **Deux lectures assumées, mesurées puis corrigées** — la boîte ne tranche pas :
+
+1. *Qui nettoie un piège ?* La boîte dit la case verrouillée « tant qu'elle
+   n'est pas nettoyée » sans dire par qui. Sans consommation, les pièges
+   s'accumulaient jusqu'à verrouiller la moitié du plateau.
+2. *Piège-t-on les cases libres ?* L'effet est décrit du point de vue du
+   propriétaire (« son propriétaire ne peut plus toucher de loyer ») : on ne
+   piège donc que ce qui est possédé. En piégeant aussi les cases libres, les
+   captures s'étranglaient — 6 à 10 vilains capturés sur 28 en fin de partie, et
+   la victoire « tout capturé » ne tombait jamais.
+
+Avec les deux réglages actuels, sur six graines : 87 à 169 tours, 28/28
+capturés dans la plupart des parties, les deux fins possibles se déclenchent.
+**Si ces règles sont relues sur la boîte physique, refaire cette mesure** — le
+script tient en vingt lignes autour de `dispatch`.
+
+### Les pouvoirs de héros passent par `factions`
+
+Chaque héros est un camp qui porte un drapeau que le moteur lit sans savoir de
+qui il s'agit : `rerollDice` (le jet est proposé avant résolution, via un
+`pending` de type `reroll`), `clearsHazardOnLand`, `freeWarp`, `peekDeck`
+(le texte de la carte du dessus arrive dans le `payload` du `pending` `roll`),
+`rentWaiverPerLap` (compteur `player.rentWaivers`, rechargé au passage du
+Départ), `buildCostFactor`. Un test refuse tout héros dont le pouvoir décrit
+ne serait branché à aucun drapeau.
+
+### Les raccourcis (`mechanics.warpSpaces`)
+
+Une case de type `warp` propose de se balancer jusqu'au **prochain raccourci du
+plateau**, contre un prix. ⚠️ La boîte dit « la case de toile opposée » ; avec
+trois raccourcis il n'y a pas d'opposée évidente, d'où l'enchaînement. Le prix
+lui-même est une inférence : la boîte ne le chiffre pas, elle dit seulement que
+Ghost-Spider s'en dispense.
+
+Tests : `tests/hazard-edition.test.js`.
+
+---
+
 ## 6. Le point sensible : réunir de l'argent
 
 Un défaut signalé en jouant a laissé des tests dédiés
@@ -311,18 +370,18 @@ personne n'est connecté), le paiement négociable, les enchères, le chat, la
 mise en page téléphone et ordinateur, les **trois** extensions Hasbro sur
 l'édition Classique (Parc Gratuit Jackpot, Prison, Tout Acheter — voir §5,
 avec leurs cases à cocher et la détection de conflit dans l'écran de
-sélection), l'édition Spider-Man Collector, 155 tests.
+sélection), les deux éditions Spider-Man (Collector et Hasbro/Bouffon Vert),
+175 tests.
 
 **Reste à faire**, par ordre de priorité annoncée :
 
-1. **Édition Spider-Man moderne (Hasbro, pion autonome du Bouffon Vert)** :
-   l'autre boîte relevée. Elle **ne rentre pas dans le contrat « aucune ligne
-   de moteur »** — il lui faut un pion autonome piloté par un dé de vilain, des
-   jetons Bombe Citrouille qui verrouillent une case, des pouvoirs de héros
-   asymétriques, des cases Raccourci de Toile qui téléportent, et un décompte
-   final au patrimoine. C'est un chantier « extension + édition », pas un
-   reskin ; à traiter comme les extensions Hasbro (drapeaux `mechanics`
-   génériques), jamais par un `if (editionId === …)`.
+1. **Relire `spiderman-hasbro-fr` contre la boîte physique** : deux règles y
+   sont des lectures assumées (voir §5 bis), et les chiffres non donnés par la
+   boîte ont été calibrés à la simulation — pénalité de piège, prix d'un
+   raccourci, faces du dé du Bouffon. Les cartes Daily Bugle « Surveillance
+   piratée » (réordonner trois cartes) et « Chantage photographique » (choisir
+   sa cible) sont simplifiées : la première pioche la carte suivante, la seconde
+   vise la joueuse la plus riche.
 2. Relire les trois extensions contre les boîtes physiques : les règles de
    Prison et de Tout Acheter viennent de sources secondaires (voir §5). Points
    les plus incertains : la caution de la Super Jail, les faces exactes du dé
