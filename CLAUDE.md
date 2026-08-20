@@ -123,7 +123,7 @@ Rien d'autre. Si le moteur doit bouger, c'est que la mécanique manque à
 extension n'est pas un plateau complet : c'est un **delta** (cases qui
 changent de nature, paquets retirés/ajoutés, mécaniques activées, réglages
 maison forcés) appliqué à l'édition choisie à la création de la partie.
-`EXTENSIONS` contient à ce jour deux entrées :
+`EXTENSIONS` contient les trois extensions Hasbro 2025 :
 
 - **`free-parking-jackpot`** (Parc Gratuit Jackpot) : Chance et Caisse de
   communauté deviennent des cases Spin (nouveau paquet, 8 cartes), la cagnotte
@@ -135,10 +135,20 @@ maison forcés) appliqué à l'édition choisie à la création de la partie.
   sur des sources secondaires (pas le livret Hasbro officiel) — à vérifier
   contre une boîte physique si l'utilisateur en possède une.
 
-**Reste à coder** : `buy-everything` (Tout Acheter — Sale Vault, dé d'Achat,
-cases normalement non-achetables qui le deviennent). C'est la plus complexe
-des trois, volontairement laissée pour la fin ; son entrée n'existe pas encore
-dans `EXTENSIONS`.
+- **`buy-everything`** (Tout Acheter) : Départ, Prison et Parc Gratuit
+  portent un titre de propriété achetable (type de case `landmark`, groupe
+  `landmark`) ; un coffre de trois cartes Vente reste retourné au centre
+  (`mechanics.saleVault`) ; un dé d'Achat facultatif (`mechanics.buyDie`), une
+  fois par jet et après la case résolue, donne une carte du coffre sur une face
+  haute ou en fait perdre une à une adversaire sur une face basse ; les cartes
+  Vente sont rouges (pouvoir à usage unique, jouable via `PLAY_SALE_CARD`),
+  jaunes (`perTurn`, appliqué à chaque `startTurn`) ou vertes (`victory`,
+  condition déclarative testée dans `advanceFlow`) ; toute case achetable
+  franchie sans s'y arrêter part aux enchères (`mechanics.auctionOnPass`).
+  ⚠️ Mêmes réserves que Prison : chiffres et effets relevés sur des sources
+  secondaires, à relire contre la boîte physique. **La « Banque » de la boîte
+  n'est pas représentée** : c'est un présentoir central, pas une case, et notre
+  modèle n'a que 40 cases.
 
 Le contrat à tenir, identique à celui des éditions : **le moteur ne connaît
 jamais une extension par son nom**. Tout passe par des mécanismes déjà
@@ -154,11 +164,22 @@ génériques ou rendus génériques pour l'occasion :
   case, geôle sévère), `edition.dice` et `edition.houseRules` — une extension
   peut donc changer la caution de sortie de prison ou activer la cagnotte du
   Parc Gratuit sans qu'aucune ligne du moteur ne le sache ;
-- deux drapeaux génériques dans `mechanics` piloté par cette fusion :
-  `doublesNeverJail` (trois doubles ne mènent plus en prison) et le fait
-  qu'une geôle porte un `jail.deck` remplace, à `startTurn`, le jet de dés
-  d'évasion par un choix payer/tirer une carte — générique, lu sur la
-  configuration, jamais sur `extensionId === …`.
+- des drapeaux génériques dans `mechanics` pilotés par cette fusion :
+  `doublesNeverJail` (trois doubles ne mènent plus en prison), `saleVault`,
+  `buyDie`, `auctionOnPass`, `saleVictory` — tous lus sur la configuration,
+  jamais sur `extensionId === …` ; et le fait qu'une geôle porte un
+  `jail.deck` remplace, à `startTurn`, le jet de dés d'évasion par un choix
+  payer/tirer une carte ;
+- `OWNABLE_TYPES` (`shared/editions.js`) accueille un quatrième type,
+  `landmark` : un titre posé sur une case qui n'en portait pas. Il s'achète,
+  s'hypothèque et rapporte un loyer fixe, mais ne se construit pas (`canBuild`
+  exige `type === 'property'`). Aucune édition de base n'en contient : le type
+  reste inerte partout ailleurs ;
+- la fusion sait aussi ajouter des **groupes** (`addsGroups`) — un titre a
+  besoin d'un groupe pour s'afficher dans le panneau des biens ;
+- une case peut nommer son propre pictogramme (`icon` dans `boardOverrides`) :
+  c'est ce qui permet à Départ devenu achetable de garder sa flèche plutôt que
+  de prendre le symbole générique de son nouveau type.
 
 `shared/schema.js` avait deux bugs latents corrigés à cette occasion :
 `settings` et `decks` se construisaient sur l'édition **non fusionnée** —
@@ -168,9 +189,10 @@ donc jamais été prise en compte à la création de la partie.
 Écran de sélection : `Lobby.jsx` lit `compatibleExtensions()` pour proposer
 les cases à cocher compatibles avec l'édition choisie, et
 `conflictingPositions()` pour griser celles qui se marcheraient sur les mêmes
-cases avec ce qui est déjà coché (aujourd'hui, Jackpot et Prison se marchent
-toutes les deux sur Chance/Caisse de communauté et ne peuvent donc pas
-s'activer ensemble).
+cases avec ce qui est déjà coché. Aujourd'hui : Jackpot et Prison se marchent
+toutes deux sur Chance/Caisse de communauté ; Jackpot et Tout Acheter se
+disputent le Parc Gratuit (case 20). **Prison + Tout Acheter est la seule
+combinaison à deux autorisée**, et elle est testée.
 
 Tests : `tests/extensions.test.js`.
 
@@ -256,6 +278,14 @@ Le basculement se fait par classes Tailwind dans `client/src/App.jsx`
   étoiles sont des `<span>` dimensionnés en pixels.
 - Le repli de `TokenIcon` doit être un cercle neutre : un repli sur le chapeau
   faisait croire que six pions étaient dessinés alors qu'aucun ne l'était.
+- Côté client, `editionFor()` (`lib/board.js`) doit passer par `editionOf()`,
+  **pas** `getEdition()` : sinon le client dessine le plateau d'origine pendant
+  que le serveur en joue un autre — cases Spin affichées « Chance », titres
+  spéciaux invisibles. Même piège dans le salon (`Lobby.jsx`), qui décrivait la
+  boîte nue au lieu de la partie réellement configurée.
+- Un commentaire glissé **entre** deux `case` d'un `switch` casse la détection
+  de `no-fallthrough` d'ESLint : le placer au-dessus du premier `case` du
+  groupe.
 
 ---
 
@@ -264,17 +294,14 @@ Le basculement se fait par classes Tailwind dans `client/src/App.jsx`
 **Fait et vérifié** : les quatre éditions, les deux langues, l'écran de règles,
 la reprise d'une partie un autre jour depuis n'importe quel appareil (même si
 personne n'est connecté), le paiement négociable, les enchères, le chat, la
-mise en page téléphone et ordinateur, deux extensions Hasbro sur l'édition
-Classique (Parc Gratuit Jackpot, Prison — voir §5, avec leurs cases à cocher
-dans l'écran de sélection), 139 tests.
+mise en page téléphone et ordinateur, les **trois** extensions Hasbro sur
+l'édition Classique (Parc Gratuit Jackpot, Prison, Tout Acheter — voir §5,
+avec leurs cases à cocher et la détection de conflit dans l'écran de
+sélection), 153 tests.
 
 **Reste à faire**, par ordre de priorité annoncée :
 
-1. **Extension « Tout Acheter »** (`buy-everything`) : la troisième extension
-   Hasbro 2025, volontairement laissée pour la fin (Sale Vault, cartes Vente
-   rouge/jaune/verte, dé d'Achat, propriétés normalement non-achetables qui le
-   deviennent). Aucune ligne dans `EXTENSIONS` pour l'instant.
-2. **Édition Spider-Man** : mise de côté faute de données fiables. Le site
+1. **Édition Spider-Man** : mise de côté faute de données fiables. Le site
    officiel des règles Hasbro (`instructions.hasbro.com`) et les sites de
    manuels scannés (`manuals.plus`) sont bloqués par le proxy réseau de
    l'environnement d'agent ; la recherche web ne remonte que des généralités
@@ -286,6 +313,12 @@ dans l'écran de sélection), 139 tests.
    inventer — ce qu'un plateau Poudlard inventé par le passé a déjà coûté cher
    en corrections. À reprendre si l'utilisateur peut fournir une photo de la
    boîte physique, ou si l'accès à `instructions.hasbro.com` devient possible.
+2. Relire les trois extensions contre les boîtes physiques : les règles de
+   Prison et de Tout Acheter viennent de sources secondaires (voir §5). Points
+   les plus incertains : la caution de la Super Jail, les faces exactes du dé
+   d'Achat, les effets des cartes Vente, et le rendu de la « Deal Mobile » du
+   Jackpot (non implémentée) et de la « Banque » de Tout Acheter (non
+   représentée).
 3. Vérifier les textes de cartes du reskin Harry Potter sur la boîte physique.
 4. Éditions Junior, Cheaters, Empire, Speed (les drapeaux `mechanics`
    existent déjà : `cheatCards`, `towerMode`, `draftMode`, `battleSpaces`).

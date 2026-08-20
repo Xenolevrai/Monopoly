@@ -5,8 +5,9 @@ wifi ou à distance.
 
 **Le jeu est complet et jouable** : plateau, règles, temps réel, lobby, échanges,
 chat, reconnexion. On peut jouer **à plusieurs sur le même ordinateur**, avec
-d'autres joueuses **à distance** dans la même partie. Deux extensions Hasbro
-activables à la création de la partie (Parc Gratuit Jackpot, Prison). 139 tests automatisés.
+d'autres joueuses **à distance** dans la même partie. Les trois extensions Hasbro
+2025 sont activables à la création de la partie (Parc Gratuit Jackpot, Prison,
+Tout Acheter). 153 tests automatisés.
 
 ## Les éditions
 
@@ -23,12 +24,21 @@ quand la boîte le demande, **ses règles**.
 Au moment de créer une partie, on choisit sa boîte **et sa langue** : français ou
 anglais. La langue ne change que les mots — jamais un prix, jamais une règle.
 
-Sur l'édition Classique, deux **extensions Hasbro** sont activables (une, l'autre,
-ou aucune) à la création de la partie : **Parc Gratuit Jackpot** (Chance et Caisse
-de communauté deviennent des cases Spin, la cagnotte du Parc Gratuit devient
-permanente) et **Prison** (les cases taxes envoient en prison, une geôle plus
-sévère apparaît). Elles se marchent toutes les deux sur les mêmes cases et ne
-peuvent donc pas s'activer ensemble — l'écran de sélection le détecte tout seul.
+Sur l'édition Classique, trois **extensions Hasbro** sont activables à la
+création de la partie :
+
+- **Parc Gratuit Jackpot** — Chance et Caisse de communauté deviennent des cases
+  Spin, la cagnotte du Parc Gratuit devient permanente.
+- **Prison** — les cases taxes envoient en prison, une geôle plus sévère
+  apparaît, trois doubles n'y mènent plus.
+- **Tout Acheter** — Départ, Prison et Parc Gratuit deviennent achetables, un
+  coffre de cartes Vente reste retourné au centre, un dé d'Achat facultatif
+  permet d'en gagner, et toute case dépassée sans s'y arrêter part aux enchères.
+
+Certaines se marchent sur les mêmes cases et ne peuvent donc pas s'activer
+ensemble — l'écran de sélection le détecte tout seul et grise ce qui ne va pas
+avec ce qui est déjà coché. Prison + Tout Acheter est la combinaison à deux
+autorisée.
 
 ![Une partie en cours](docs/captures/partie.png)
 
@@ -38,7 +48,7 @@ peuvent donc pas s'activer ensemble — l'écran de sélection le détecte tout 
 npm install
 npm run build   # compile l'interface — à refaire après chaque `git pull`
 npm start       # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
-npm run check   # lint + 139 tests : données, éditions, extensions, langues, règles, parties simulées, temps réel
+npm run check   # lint + 153 tests : données, éditions, extensions, langues, règles, parties simulées, temps réel
 ```
 
 Node 22+. Le serveur affiche aussi l'adresse locale (`http://192.168.x.x:3000`) à
@@ -180,8 +190,9 @@ et répondables tout de suite.
 
 ## Pistes si l'envie vient
 
-- L'extension « Tout Acheter » (`buy-everything`, voir `shared/extensions.js`) :
-  la troisième extension Hasbro 2025, la plus complexe, pas encore codée
+- Relire les trois extensions contre les boîtes physiques : les règles de
+  Prison et de Tout Acheter viennent de sources secondaires, pas des livrets
+  officiels (voir CLAUDE.md §5)
 - L'édition Spider-Man : mise de côté faute de données fiables (le site officiel
   des règles Hasbro est inaccessible depuis cet environnement, et le web ne donne
   que des généralités thématiques, jamais la liste des rues/prix/cartes) — voir
