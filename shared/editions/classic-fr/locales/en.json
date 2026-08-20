@@ -31,12 +31,26 @@
     "hotels": "Hotels"
   },
   "tokens": {
-    "chapeau": "Top Hat",
+    "chapeau": "Top hat",
+    "voiture": "Racecar",
     "chat": "Cat",
+    "chien": "Scottie dog",
     "bateau": "Battleship",
+    "avion": "Aeroplane",
+    "tresor": "Treasure chest",
     "brouette": "Wheelbarrow",
     "de": "Thimble",
-    "lanterne": "Lantern"
+    "lanterne": "Lantern",
+    "chaussure": "Boot",
+    "fer": "Iron",
+    "canon": "Cannon",
+    "cavalier": "Horse and rider",
+    "sac": "Money bag",
+    "bourse": "Purse",
+    "bascule": "Rocking horse",
+    "dinosaure": "T. rex",
+    "canard": "Rubber duck",
+    "pingouin": "Penguin"
   },
   "spaces": {
     "0": {

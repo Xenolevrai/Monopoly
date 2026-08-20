@@ -363,6 +363,168 @@ const SHAPES = {
     </>
   ),
 
+
+  // — Les pièces historiques du Monopoly ————————————————————
+  // Voiture de course, vue de profil : capot long, pilote découvert.
+  voiture: (
+    <>
+      <path d="M7 39c0-2.2 1.8-4 4-4h5.4l3.4-6.6c.8-1.6 2.4-2.6 4.2-2.6h9.4c1.7 0 3.3.9 4.2 2.4l4 6.8H52c2.8 0 5 2.2 5 5v2.6c0 1.5-1.2 2.8-2.8 2.8H9.8C8.2 45.4 7 44.2 7 42.6z" />
+      <path d="M24.4 29.4h8.4c.7 0 1.3.3 1.6.9l2.6 4.7H20.6l2.2-4.6c.3-.6.9-1 1.6-1z" fill="#fff" opacity=".45" />
+      <circle cx="18" cy="46" r="5.4" />
+      <circle cx="18" cy="46" r="1.9" fill="#fff" opacity=".7" />
+      <circle cx="45" cy="46" r="5.4" />
+      <circle cx="45" cy="46" r="1.9" fill="#fff" opacity=".7" />
+    </>
+  ),
+
+  // Chien écossais : corps trapu, tête carrée, oreilles pointues, queue dressée.
+  chien: (
+    <>
+      <path d="M14.6 30l-3-9.6c-.3-1.1 1-1.9 1.8-1.1l6.4 6.4z" />
+      <rect x="14" y="26" width="26" height="15" rx="3.4" />
+      <rect x="17.2" y="38" width="5.8" height="12" rx="2" />
+      <rect x="30.8" y="38" width="5.8" height="12" rx="2" />
+      <path d="M39 21.6h9.6c1.5 0 2.6 1.2 2.6 2.6V33c0 1.4-1.1 2.6-2.6 2.6H39z" />
+      <path d="M47.6 26.6h5.8c1.1 0 1.8 1.1 1.3 2.1l-2.6 5.6c-.4.8-1.1 1.3-2 1.3h-4.6z" />
+      <path d="M40.4 21.6l-.9-6.4c-.2-1.1 1.2-1.7 1.9-.8l4.2 5.1zM48 21.6l2.5-5.9c.4-1 1.9-.8 1.9.4l.2 5.5z" />
+      <circle cx="45.6" cy="26.4" r="1.5" fill="#fff" opacity=".85" />
+      <path d="M18 32h20v2H18z" fill="#fff" opacity=".18" />
+    </>
+  ),
+
+  // Botte lacée : tige haute et bout renforcé.
+  chaussure: (
+    <>
+      <path d="M21 11h8.4c1.7 0 3 1.3 3 3v14.6c0 2.6 1.2 5 3.3 6.6l7.6 5.7c2.6 1.9 4.1 5 4.1 8.2 0 1.6-1.3 2.9-2.9 2.9H21c-1.7 0-3-1.3-3-3V14c0-1.7 1.3-3 3-3z" />
+      <g fill="#fff" opacity=".45">
+        <rect x="20.5" y="17" width="11.4" height="1.8" rx=".9" />
+        <rect x="20.5" y="22" width="11.4" height="1.8" rx=".9" />
+        <rect x="20.5" y="27" width="11.4" height="1.8" rx=".9" />
+      </g>
+      <path d="M18 44h28c.6 2.4-.6 4-2.5 4H18z" fill="#fff" opacity=".2" />
+    </>
+  ),
+
+  // Fer à repasser, vu de profil : semelle, corps, anse.
+  fer: (
+    <>
+      <path d="M11 40c0-6.6 8.6-13.4 21-13.4h18.4c2 0 3.6 1.6 3.6 3.6v8c0 2-1.6 3.6-3.6 3.6H13c-1.1 0-2-.9-2-2z" />
+      <path d="M27 26.6v-3.4c0-2.4 2-4.4 4.4-4.4h11.2c2.4 0 4.4 2 4.4 4.4v3.4h-4.6v-2.6c0-.7-.6-1.2-1.2-1.2H32.8c-.7 0-1.2.5-1.2 1.2v2.6z" />
+      <rect x="10" y="45" width="46" height="4.4" rx="2.2" />
+      <path d="M16 33h30v2.4H16z" fill="#fff" opacity=".3" />
+    </>
+  ),
+
+  // Canon sur roue, comme les pièces d'artillerie des premières boîtes.
+  canon: (
+    <>
+      <path d="M16 33.4l30.6-8.2c1.8-.5 3.6.6 4.1 2.4l1.1 4.2c.5 1.8-.6 3.6-2.4 4.1L18.6 44z" />
+      <path d="M20 35.6l26-7 .9 3.4-26 7z" fill="#fff" opacity=".35" />
+      <path d="M20 41l6 1.4 4 6.6h-9z" />
+      <circle cx="20" cy="45" r="6.4" />
+      <circle cx="20" cy="45" r="2.2" fill="#fff" opacity=".7" />
+    </>
+  ),
+
+  // Cheval et cavalier : la monture de profil, la silhouette en selle.
+  cavalier: (
+    <>
+      <path d="M18.4 28.4l-6.8-4c-1-.6-2.2.6-1.6 1.6l4 6.8-3.8 8.4c-.5 1 .8 2 1.7 1.2l8.2-7z" />
+      <path d="M44.6 11.4c1 0 1.9.8 2.1 1.8l1.2 6.8c.2 1.3-.4 2.6-1.5 3.4l-6.6 4.5v4.7h-6.6v-7.2c0-1.4.7-2.7 1.9-3.5l5.4-3.5.9-5.2c.2-1 1.1-1.8 2.1-1.8z" />
+      <rect x="17.6" y="26" width="24.8" height="12.4" rx="5.4" />
+      <path d="M20.6 37.2h4.6v11a2.3 2.3 0 01-4.6 0zM34.8 37.2h4.6v11a2.3 2.3 0 01-4.6 0z" />
+      <circle cx="26.6" cy="14.2" r="4.4" />
+      <path d="M22 19.6h9.2c1.2 0 2.2 1 2.2 2.2v5.6H19.8V21.8c0-1.2 1-2.2 2.2-2.2z" />
+      <circle cx="27.6" cy="13.2" r="1.4" fill="#fff" opacity=".75" />
+      <circle cx="44.8" cy="16.6" r="1.4" fill="#fff" opacity=".85" />
+    </>
+  ),
+
+  // Sac d'argent, cordon serré et symbole frappé sur la panse.
+  sac: (
+    <>
+      <path d="M26 19h12c1 0 1.6 1 1.2 1.9l-1.4 3.1h-11.6l-1.4-3.1c-.4-.9.2-1.9 1.2-1.9z" />
+      <path d="M25.6 25.6h12.8c6.4 3.2 11.6 9.4 11.6 15.8 0 6.2-5 10.6-12 10.6H26c-7 0-12-4.4-12-10.6 0-6.4 5.2-12.6 11.6-15.8z" />
+      <path d="M32 30.6c-3.4 0-5.4 1.8-5.4 4.2 0 4.8 9.4 3.2 9.4 7.4 0 2.2-2 3.8-5 3.8-2.4 0-4.4-.8-5.8-2" stroke="#fff" strokeWidth="2" fill="none" opacity=".7" strokeLinecap="round" />
+      <path d="M32 28v20" stroke="#fff" strokeWidth="1.8" opacity=".7" strokeLinecap="round" />
+    </>
+  ),
+
+  // Bourse à fermoir, une pièce des toutes premières boîtes.
+  bourse: (
+    <>
+      <path d="M20 24h24c1.7 0 3.2 1.1 3.7 2.7l4.6 15.6c1 3.4-1.6 6.9-5.2 6.9H16.9c-3.6 0-6.2-3.5-5.2-6.9l4.6-15.6c.5-1.6 2-2.7 3.7-2.7z" />
+      <path d="M23 24v-3.2c0-4.4 4-8 9-8s9 3.6 9 8V24h-4.6v-3.2c0-2.1-2-3.8-4.4-3.8s-4.4 1.7-4.4 3.8V24z" />
+      <rect x="27.4" y="32" width="9.2" height="4.6" rx="2.3" fill="#fff" opacity=".65" />
+    </>
+  ),
+
+  // Cheval à bascule, avec sa lame courbe.
+  bascule: (
+    <>
+      <path d="M43 14c1 0 1.7.9 1.5 1.9l-.7 3.5 3.4 2c1 .6 1.4 1.9.9 2.9l-3 6c-.4.8-.4 1.7 0 2.5l3.4 7c.5 1-.2 2.2-1.4 2.2h-2.4c-.6 0-1.2-.4-1.5-1l-2.6-5.6H26.8l-2.6 5.6c-.3.6-.8 1-1.5 1h-2.4c-1.2 0-1.9-1.2-1.4-2.2l3.6-7.4c-2.6-1.6-4.3-4.4-4.3-7.6 0-3.4 2.6-6.2 6-6.2h9.2l4-4c.4-.4 1-.6 1.5-.6z" />
+      <circle cx="41.4" cy="21.4" r="1.5" fill="#fff" opacity=".8" />
+      <path d="M11 45c8 5 34 5 42 0" stroke="currentColor" strokeWidth="4" fill="none" strokeLinecap="round" />
+    </>
+  ),
+
+  // — Les pièces modernes ————————————————————————————————
+  // Tyrannosaure : grosse tête, petits bras, longue queue.
+  dinosaure: (
+    <>
+      <path d="M40 12c5.6 0 10 4.4 10 10v2.6h3.4c1 0 1.6 1.1 1.1 2l-2.4 4c-.5.9-1.5 1.4-2.5 1.4h-2.4c-1 4-3.6 7.4-7.2 9.4l2 8.4c.3 1.2-.6 2.3-1.8 2.3h-2.6c-.9 0-1.6-.6-1.8-1.4l-1.6-6.6h-5.6l-1.6 6.6c-.2.8-.9 1.4-1.8 1.4h-2.6c-1.2 0-2.1-1.1-1.8-2.3l2-8.6c-4-2.4-6.6-6.6-6.6-11.6 0-1.2-1-1.6-2.6-1.6H9c-1 0-1.6-1.2-1-2l5-6c.4-.5 1-.8 1.6-.8H30z" />
+      <circle cx="43" cy="21" r="1.7" fill="#fff" opacity=".85" />
+      <path d="M30 30l6 3-6 2z" fill="#fff" opacity=".4" />
+    </>
+  ),
+
+  // Canard de bain, bec plat et œil rond.
+  canard: (
+    <>
+      <path d="M36 12c5.5 0 10 4.5 10 10 0 1.4-.3 2.7-.8 3.9 4.6 1.6 7.8 5.4 7.8 10.1 0 6.6-6.4 12-14.4 12H24c-7.2 0-13-4.6-13-10.4 0-5.4 5-9.8 11.4-10.3V22c0-5.5 4.5-10 10-10z" />
+      <path d="M46.6 20.4l8.6 1.4c1 .2 1.3 1.5.5 2.1l-6.4 4.6c-.6-3-1.6-5.6-2.7-8.1z" />
+      <circle cx="39" cy="20.6" r="2" fill="#fff" opacity=".9" />
+      <path d="M18 38c6 4 20 4 26 0" stroke="#fff" strokeWidth="1.8" fill="none" opacity=".3" strokeLinecap="round" />
+    </>
+  ),
+
+  // Manchot debout, ventre clair et pieds palmés.
+  pingouin: (
+    <>
+      <path d="M32 9c8.4 0 14 6.6 14 16v14c0 8-6 14-14 14s-14-6-14-14V25c0-9.4 5.6-16 14-16z" />
+      <path d="M32 21c4.6 0 8 4 8 10v8c0 5.4-3.4 9.4-8 9.4S24 44.4 24 39v-8c0-6 3.4-10 8-10z" fill="#fff" opacity=".85" />
+      <circle cx="28" cy="20" r="1.6" fill="#fff" opacity=".9" />
+      <circle cx="36" cy="20" r="1.6" fill="#fff" opacity=".9" />
+      <path d="M29.4 24h5.2c.9 0 1.4 1 .9 1.7l-2.6 3.4c-.5.6-1.4.6-1.8 0l-2.6-3.4c-.5-.7 0-1.7.9-1.7z" />
+      <path d="M22 52h8c1 0 1.4 1.3.6 1.9l-5 3.4c-1.3.9-3-.1-3-1.6zM42 52h-8c-1 0-1.4 1.3-.6 1.9l5 3.4c1.3.9 3-.1 3-1.6z" />
+    </>
+  ),
+
+  // — Deux pièces demandées, hors gamme officielle ——————————
+  // Avion, vu de dessus : ailes en flèche et double dérive.
+  avion: (
+    <>
+      <path d="M32 7c1.8 0 3.2 1.9 3.6 4.6l1.2 8.8 16.6 10.4c1 .6 1.6 1.7 1.6 2.9v3.2c0 1-1 1.7-1.9 1.4l-16-5.6.7 8.4 5.2 4.2c.5.4.8 1 .8 1.6v2.2c0 .8-.8 1.4-1.6 1.2L32 48l-10.2 2.4c-.8.2-1.6-.4-1.6-1.2v-2.2c0-.6.3-1.2.8-1.6l5.2-4.2.7-8.4-16 5.6c-.9.3-1.9-.4-1.9-1.4v-3.2c0-1.2.6-2.3 1.6-2.9l16.6-10.4 1.2-8.8C28.8 8.9 30.2 7 32 7z" />
+      <path d="M32 12.4c.8 0 1.4 1.2 1.6 3l.9 6.4h-5l.9-6.4c.2-1.8.8-3 1.6-3z" fill="#fff" opacity=".4" />
+    </>
+  ),
+
+  // Coffre au trésor : couvercle bombé, ferrures et serrure.
+  tresor: (
+    <>
+      <path d="M13 30c0-7.2 8.5-13 19-13s19 5.8 19 13v2H13z" />
+      <path d="M11 32h42c1.1 0 2 .9 2 2v13c0 1.7-1.3 3-3 3H12c-1.7 0-3-1.3-3-3V34c0-1.1.9-2 2-2z" />
+      <g fill="#fff" opacity=".35">
+        <rect x="19" y="18.6" width="4" height="13.4" />
+        <rect x="41" y="18.6" width="4" height="13.4" />
+        <rect x="19" y="32" width="4" height="18" />
+        <rect x="41" y="32" width="4" height="18" />
+      </g>
+      <path d="M28.6 30h6.8c1 0 1.8.8 1.8 1.8v6.4c0 1-.8 1.8-1.8 1.8h-6.8c-1 0-1.8-.8-1.8-1.8v-6.4c0-1 .8-1.8 1.8-1.8z" fill="#fff" opacity=".8" />
+      <circle cx="32" cy="34.4" r="1.6" />
+    </>
+  ),
+
 };
 
 /**

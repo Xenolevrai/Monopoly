@@ -16,7 +16,7 @@ quand la boîte le demande, **ses règles**.
 
 | Édition | Monnaie | Plateau | Règles |
 |---|---|---|---|
-| **Monopoly Classique** | € | carton vert de table | la référence |
+| **Monopoly Classique** | € | carton vert de table | la référence — vingt pions au choix |
 | **Harry Potter — Gallions** | G | parchemin, Carte du Maraudeur | comme le classique, noms de Poudlard |
 | **Marvel Avengers** | M$ | acier et néons | bases S.H.I.E.L.D. et quartiers généraux Stark |
 | **Spider-Man — Collector** | $ | nuit d'encre, toile tendue, pans rouge et bleu | comme le classique : on capture les vilains, on pose traceurs et tours de toile |

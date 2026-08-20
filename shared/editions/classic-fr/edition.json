@@ -75,14 +75,34 @@
       "color": "#C6303A"
     },
     {
+      "id": "voiture",
+      "label": "Voiture",
+      "color": "#B01F2E"
+    },
+    {
       "id": "chat",
       "label": "Chat",
       "color": "#2A5CAA"
     },
     {
+      "id": "chien",
+      "label": "Chien",
+      "color": "#5B4636"
+    },
+    {
       "id": "bateau",
       "label": "Bateau",
       "color": "#2E9E63"
+    },
+    {
+      "id": "avion",
+      "label": "Avion",
+      "color": "#1E7FB8"
+    },
+    {
+      "id": "tresor",
+      "label": "Trésor",
+      "color": "#B8862B"
     },
     {
       "id": "brouette",
@@ -98,6 +118,56 @@
       "id": "lanterne",
       "label": "Lanterne",
       "color": "#7B4FA8"
+    },
+    {
+      "id": "chaussure",
+      "label": "Chaussure",
+      "color": "#7A4A22"
+    },
+    {
+      "id": "fer",
+      "label": "Fer à repasser",
+      "color": "#6C7A89"
+    },
+    {
+      "id": "canon",
+      "label": "Canon",
+      "color": "#4A5A44"
+    },
+    {
+      "id": "cavalier",
+      "label": "Cavalier",
+      "color": "#8C5A2B"
+    },
+    {
+      "id": "sac",
+      "label": "Sac d'argent",
+      "color": "#3E8E5A"
+    },
+    {
+      "id": "bourse",
+      "label": "Bourse",
+      "color": "#9B3B6A"
+    },
+    {
+      "id": "bascule",
+      "label": "Cheval à bascule",
+      "color": "#C46A3A"
+    },
+    {
+      "id": "dinosaure",
+      "label": "Tyrannosaure",
+      "color": "#3E7D5C"
+    },
+    {
+      "id": "canard",
+      "label": "Canard",
+      "color": "#E0A81E"
+    },
+    {
+      "id": "pingouin",
+      "label": "Manchot",
+      "color": "#2C3E55"
     }
   ],
   "theming": {

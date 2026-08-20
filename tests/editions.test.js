@@ -32,13 +32,18 @@ test('chaque édition déclare une identité et des bornes de joueuses cohérent
     assert.ok(edition.name?.length, `${id} : nom manquant`);
     assert.ok(edition.playerCount.min >= 2, `${id} : minimum de joueuses`);
     assert.ok(edition.playerCount.max >= edition.playerCount.min, `${id} : bornes inversées`);
-    assert.equal(
-      edition.tokens.length,
-      edition.playerCount.max,
-      `${id} : il faut autant de pions que de joueuses maximum`,
+    // Il faut de quoi servir une table pleine — davantage est un luxe voulu :
+    // au classique, on choisit son pion dans toute la vitrine, pas seulement
+    // parmi six. Ce qui compte, c'est qu'il n'en manque jamais.
+    assert.ok(
+      edition.tokens.length >= edition.playerCount.max,
+      `${id} : ${edition.tokens.length} pions pour ${edition.playerCount.max} joueuses — il en manque`,
     );
     const tokenIds = new Set(edition.tokens.map((t) => t.id));
     assert.equal(tokenIds.size, edition.tokens.length, `${id} : deux pions partagent un id`);
+    // Deux pions de la même couleur seraient indiscernables sur le plateau.
+    const tokenColors = new Set(edition.tokens.map((t) => t.color));
+    assert.equal(tokenColors.size, edition.tokens.length, `${id} : deux pions partagent une couleur`);
   }
 });
 

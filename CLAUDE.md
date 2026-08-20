@@ -22,7 +22,7 @@ bouger le moteur, mais toujours par des **drapeaux génériques** lus dans
 
 | id | boîte | matière | victoire | particularité |
 |---|---|---|---|---|
-| `classic-fr` | Monopoly classique, plateau parisien | `table` | dernière en jeu | la référence |
+| `classic-fr` | Monopoly classique, plateau parisien | `table` | dernière en jeu | la référence — **20 pions** au choix |
 | `harry-potter-fr` | Harry Potter (reskin Winning Moves), Gallions | `parchment` | dernière en jeu | règles classiques, noms Poudlard |
 | `avengers-fr` | Marvel Avengers, M$ | `tech` | dernière en jeu | bases S.H.I.E.L.D. / QG Stark |
 | `spiderman-fr` | Spider-Man Collector (Winning Moves), $ | `web` | dernière en jeu | reskin exact du classique : vilains, traceurs / tours de toile |
@@ -112,11 +112,26 @@ if (state.pending.kind) return;
    `cards.json`, `edition.json`, `locales/en.json`.
 2. Déclarer l'édition dans `SOURCES` (`shared/editions.js`).
 3. Dessiner les pions manquants dans `client/src/components/TokenIcon.jsx` et
-   les illustrations de cases dans `SpaceArt.jsx`.
+   les illustrations de cases dans `SpaceArt.jsx`. Un identifiant de pion doit
+   être **en minuscules sans majuscule interne** (`sac`, pas `sacArgent`) : le
+   test qui vérifie que chaque pion est dessiné relit le fichier avec
+   `/^ {2}([a-z]+):\s*\(/`, et un `camelCase` lui échapperait — le pion
+   passerait le test tout en s'affichant comme une pastille neutre.
 4. `npm test` : `tests/editions.test.js` vérifie tout seul la numérotation du
    plateau, les groupes, la croissance des loyers, les cibles des cartes, la
    présence des pions et des pictogrammes, la palette complète — et **joue une
    partie entière** sur la nouvelle édition.
+
+**Le nombre de pions n'est plus lié au nombre de places.** Une édition doit en
+déclarer *au moins* autant que `playerCount.max`, et peut en déclarer beaucoup
+plus : le classique en propose vingt (la voiture, le chien, la chaussure, le
+fer, le canon, le cavalier, le sac d'argent, la bourse, le cheval à bascule,
+le T. rex, le canard, le manchot — plus l'avion et le trésor, deux pièces hors
+gamme officielle ajoutées à la demande). Deux pions ne peuvent partager ni un
+identifiant ni une couleur : sur le plateau, ils seraient indiscernables. Les
+tests vérifient les trois points. Au-delà de neuf pions, l'écran de sélection
+resserre sa grille et la fait défiler plutôt que de repousser le bouton
+« créer une partie » hors de l'écran.
 
 Rien d'autre. Si le moteur doit bouger, c'est que la mécanique manque à
 `edition.mechanics` : ajouter le drapeau, pas un `if (editionId === …)`.

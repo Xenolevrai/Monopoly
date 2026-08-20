@@ -111,7 +111,7 @@ test('le stock de la banque et les constantes de règles sont ceux du jeu offici
   assert.equal(edition.bank.houses, 32);
   assert.equal(edition.bank.hotels, 12);
   assert.equal(edition.mortgage.interestRate, 0.1);
-  assert.equal(edition.tokens.length, edition.playerCount.max);
+  assert.ok(edition.tokens.length >= edition.playerCount.max);
 });
 
 test('forwardDistance et passesGo gèrent le tour du plateau', () => {

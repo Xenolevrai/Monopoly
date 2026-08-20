@@ -252,8 +252,14 @@ function FactionPicker({ edition, value, onChange }) {
  * Choix du pion : un seul par personne, les pions déjà pris sont barrés.
  */
 function TokenPicker({ edition, value, onChange, taken = [] }) {
+  // La vitrine du classique compte une vingtaine de pièces : on resserre la
+  // grille et on plafonne la hauteur plutôt que de pousser le bouton « créer
+  // une partie » hors de l'écran.
+  const many = edition.tokens.length > 9;
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div
+      className={`grid gap-2 ${many ? 'max-h-64 grid-cols-4 overflow-y-auto pr-1 sm:grid-cols-5' : 'grid-cols-3'}`}
+    >
       {edition.tokens.map((item) => {
         const isTaken = taken.includes(item.id);
         const selected = value === item.id;
@@ -273,10 +279,12 @@ function TokenPicker({ edition, value, onChange, taken = [] }) {
             <TokenIcon
               token={item.id}
               color={isTaken ? '#9a938a' : item.color}
-              className="h-9 w-9"
+              className={many ? 'h-8 w-8' : 'h-9 w-9'}
               title={item.label}
             />
-            <span className="font-condensed text-[10px] uppercase tracking-wide">{item.label}</span>
+            <span className="text-center font-condensed text-[9px] uppercase leading-tight tracking-wide">
+              {item.label}
+            </span>
           </button>
         );
       })}
