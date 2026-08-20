@@ -92,7 +92,11 @@ export default function PanelStack({ sections, t }) {
             key={id}
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => drop(id)}
-            className={`panel overflow-hidden rounded-lg transition-opacity ${
+            // `shrink-0` est indispensable : la colonne est un conteneur flex de
+            // hauteur fixe, et sans lui chaque section se fait comprimer au lieu
+            // de laisser la colonne défiler — avec `overflow-hidden`, le contenu
+            // se retrouvait rogné (mesuré : 412 px de contenu dans 315 px).
+            className={`panel shrink-0 overflow-hidden rounded-lg transition-opacity ${
               section.className ?? ''
             } ${dragging === id ? 'opacity-40' : ''}`}
           >
