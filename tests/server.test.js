@@ -516,3 +516,88 @@ test('deux joueuses qui gardent le pion par défaut entrent quand même', async 
   assert.equal(lobby.players.length, 2, 'Sophie entre malgré tout');
   assert.notEqual(lobby.players[0].token, lobby.players[1].token, 'et reçoit un autre pion');
 });
+
+test('un bot ajouté au salon joue tout seul une fois la partie lancée', async (t) => {
+  const server = await startServer();
+  const host = connect(server.url);
+  t.after(async () => {
+    host.close();
+    await server.close();
+  });
+
+  host.socket.emit('game:create', { name: 'Julie', token: 'chat' });
+  await host.once('game:joined');
+
+  host.socket.emit('game:add-bot', { difficulty: 'expert' });
+  const withBot = await host.once('game:state', (s) => s.players.length === 2);
+  const bot = withBot.players.find((p) => p.bot);
+  assert.ok(bot, 'le bot doit apparaître dans la partie');
+  assert.equal(bot.bot, 'expert', 'son niveau est celui demandé');
+  assert.equal(bot.connected, true, "un bot n'a pas de navigateur à attendre");
+
+  host.socket.emit('game:start');
+  await host.once('game:state', (s) => s.phase === 'playing');
+
+  // L'ordre de jeu est tiré au sort, et le tour de Julie peut s'étirer (carte à
+  // piocher, achat à trancher). On joue donc *sa* part le plus platement
+  // possible jusqu'à ce que la main revienne au bot — et à partir de là on ne
+  // touche plus à rien : s'il reste immobile, la partie se fige et l'attente
+  // expire, ce qui est exactement le défaut qu'on veut attraper.
+  const humanId = bot.id === withBot.players[0].id ? withBot.players[1].id : withBot.players[0].id;
+  const plainMoves = {
+    roll: { type: 'ROLL_DICE' },
+    reroll: { type: 'KEEP_ROLL' },
+    draw_card: { type: 'DRAW_CARD' },
+    card_reveal: { type: 'ACKNOWLEDGE_CARD' },
+    card_choice: { type: 'CARD_CHOICE', optionIndex: 0 },
+    buy_or_auction: { type: 'DECLINE_PROPERTY' },
+    auction_bid: { type: 'AUCTION_PASS' },
+    end_turn: { type: 'END_TURN' },
+    pay_debt: { type: 'PAY_DEBT' },
+  };
+  // Le journal porte l'autrice dans `data`, pas à la racine de l'entrée.
+  const botHasRolled = () =>
+    host.states.at(-1)?.log?.some((entry) => entry.type === 'roll' && entry.data?.playerId === bot.id);
+
+  // Une seule boucle, sans course entre deux attentes : à chaque passage on
+  // joue la part de Julie si on la lui demande, et l'on regarde si le bot a
+  // bougé. S'il reste immobile, la boucle s'épuise — c'est précisément le
+  // défaut qu'on veut attraper.
+  for (let i = 0; i < 120 && !botHasRolled(); i++) {
+    const now = host.states.at(-1);
+    const move = now?.pending?.playerIds?.includes(humanId) ? plainMoves[now.pending.kind] : null;
+    if (move) host.socket.emit('game:action', { ...move, playerId: humanId });
+    await new Promise((resolve) => setTimeout(resolve, 80));
+  }
+
+  assert.ok(botHasRolled(), 'le bot doit lancer les dés de lui-même');
+});
+
+test('un bot se retire du salon, mais plus une fois la partie lancée', async (t) => {
+  const server = await startServer();
+  const host = connect(server.url);
+  t.after(async () => {
+    host.close();
+    await server.close();
+  });
+
+  host.socket.emit('game:create', { name: 'Julie', token: 'chat' });
+  await host.once('game:joined');
+  host.socket.emit('game:add-bot', { difficulty: 'facile' });
+  const withBot = await host.once('game:state', (s) => s.players.length === 2);
+  const botId = withBot.players.find((p) => p.bot).id;
+
+  host.socket.emit('game:remove-bot', { playerId: botId });
+  const without = await host.once('game:state', (s) => s.players.length === 1);
+  assert.equal(without.players.some((p) => p.bot), false);
+
+  // Deux bots pour pouvoir lancer, puis on vérifie que le retrait est refusé.
+  host.socket.emit('game:add-bot', { difficulty: 'moyen' });
+  const again = await host.once('game:state', (s) => s.players.length === 2);
+  host.socket.emit('game:start');
+  await host.once('game:state', (s) => s.phase === 'playing');
+
+  host.socket.emit('game:remove-bot', { playerId: again.players.find((p) => p.bot).id });
+  const refus = await host.once('game:error');
+  assert.match(refus.message, /commenc/i, 'on ne retire pas un bot en pleine partie');
+});

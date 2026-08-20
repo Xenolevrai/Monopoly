@@ -83,14 +83,17 @@ export const PROFILES = {
     id: 'difficile',
     label: 'Difficile',
     summary: 'Vise les groupes rentables, bloque, garde de quoi encaisser, négocie.',
-    yieldToPrice: 75,
-    completesGroup: 2.3,
-    nearlyGroup: 1.55,
+    // Également réglé par auto-jeu (16 rondes de 40 parties). Il apprend la
+    // même leçon que l'expert sur le rendement, mais reste volontairement plus
+    // tiède sur le blocage : c'est ce qui laisse un écart entre les deux.
+    yieldToPrice: 97,
+    completesGroup: 2.59,
+    nearlyGroup: 2.34,
     deadGroup: 0.7,
-    blockRival: 0.6,
+    blockRival: 0.62,
     cashReserve: 1.8,
     buildTarget: 3,
-    mortgagePenalty: 0.3,
+    mortgagePenalty: 0.31,
     bidCeiling: 1.05,
     tradeMargin: 0.06,
     proposesTrades: true,
@@ -102,16 +105,22 @@ export const PROFILES = {
     id: 'expert',
     label: 'Expert',
     summary: "Joue les probabilités du plateau, bloque sans pitié, ne se trompe pas.",
-    yieldToPrice: 90,
-    completesGroup: 2.8,
-    nearlyGroup: 1.8,
-    deadGroup: 0.55,
-    blockRival: 0.95,
-    cashReserve: 2.2,
+    // Réglages issus de `scripts/tune-bots.mjs` (22 rondes de 44 parties, 11
+    // améliorations retenues). Deux leçons de la mesure, contraires à mes
+    // premières intuitions : le rendement locatif pèse près du double de ce que
+    // je croyais face au prix affiché (`yieldToPrice` 90 → 169), et priver une
+    // adversaire de son groupe vaut plus cher que de compléter le sien
+    // (`blockRival` 0,95 → 1,2).
+    yieldToPrice: 169,
+    completesGroup: 2.74,
+    nearlyGroup: 2.23,
+    deadGroup: 0.58,
+    blockRival: 1.2,
+    cashReserve: 2.0,
     buildTarget: 3,
-    mortgagePenalty: 0.4,
+    mortgagePenalty: 0.41,
     bidCeiling: 1.2,
-    tradeMargin: 0.1,
+    tradeMargin: 0.08,
     proposesTrades: true,
     noise: 0,
     blunderRate: 0,
@@ -121,7 +130,14 @@ export const PROFILES = {
 export const DIFFICULTIES = Object.keys(PROFILES);
 export const DEFAULT_DIFFICULTY = 'moyen';
 
-/** Le profil demandé, ou le niveau moyen si l'identifiant est inconnu. */
+/**
+ * Le profil demandé, ou le niveau moyen si l'identifiant est inconnu.
+ *
+ * Accepte aussi un profil déjà constitué : c'est ce qui permet à
+ * `scripts/tune-bots.mjs` de faire jouer une variante qui n'existe pas encore
+ * dans le catalogue, sans dupliquer le cerveau pour l'occasion.
+ */
 export function profileOf(difficulty) {
+  if (difficulty && typeof difficulty === 'object') return difficulty;
   return PROFILES[difficulty] ?? PROFILES[DEFAULT_DIFFICULTY];
 }
