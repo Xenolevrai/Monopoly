@@ -12,7 +12,7 @@
  * le bruit de jugement et la bourde franche.
  */
 import {
-  playerById, propertiesOf, buildingLevel, canBuild, canSellBuilding,
+  playerById, propertiesOf, buildingLevel, canBuild, canSellBuilding, canMortgage,
   maxRaisable, unmortgageCost, config,
 } from '../engine/queries.js';
 import { profileOf } from './profiles.js';
@@ -206,7 +206,9 @@ function raiseCash(state, player, profile, needed) {
   // insister y faisait tourner le bot en rond (4 852 refus mesurés).
   if (config(state).mechanics?.mortgage) {
     const mortgageable = propertiesOf(state, player.id)
-      .filter((prop) => !prop.mortgaged && buildingLevel(prop) === 0)
+      // `canMortgage` porte la règle du groupe entier : s'en remettre à elle
+      // évite que le bot s'entête sur un terrain nu d'un groupe encore bâti.
+      .filter((prop) => canMortgage(state, player.id, prop.spaceId).ok)
       .map((prop) => ({ spaceId: prop.spaceId, worth: spaceWorth(state, prop.spaceId, player.id, profile) }))
       .sort((a, b) => a.worth - b.worth);
     if (mortgageable.length) return { type: 'MORTGAGE', spaceId: mortgageable[0].spaceId };

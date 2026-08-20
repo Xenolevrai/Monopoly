@@ -189,7 +189,9 @@
       "house": "#1f9d55",
       "hotel": "#c62828",
       "gold": "#b08733",
-      "boardInk": "#16130f"
+      "boardInk": "#16130f",
+      "spaceInk": "#16130f",
+      "spaceInkSoft": "#4a453c"
     },
     "centerTitle": "Monopoly",
     "centerSubtitle": "Paris",

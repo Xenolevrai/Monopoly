@@ -125,7 +125,9 @@
       "house": "#2b7fb8",
       "hotel": "#b3242c",
       "gold": "#d9a83a",
-      "boardInk": "#dbe5f0"
+      "boardInk": "#dbe5f0",
+      "spaceInk": "#0c141d",
+      "spaceInkSoft": "#4a5766"
     },
     "centerTitle": "Monopoly",
     "centerSubtitle": "Avengers",

@@ -161,6 +161,11 @@ const FR = {
   ownedCount: (n, label) => `${n} ${label}${n > 1 ? 's' : ''} possédée${n > 1 ? 's' : ''}`,
   price: "Prix d'achat",
   mortgageValue: 'Valeur hypothécaire',
+  resaleValue: 'Revente',
+  halfOfCost: 'la moitié du prix payé',
+  groupStillBuilt: 'Revendez toutes les constructions du groupe pour hypothéquer',
+  needFullGroup: 'Il faut tout le groupe pour construire',
+  yourCash: 'Votre argent',
   utilityRent: (a, b) => `Loyer : ${a} × le jet de dés, ou ${b} × si les deux sont possédées.`,
   hotSeatHint:
     'Plusieurs joueuses sur cet écran : cliquez sur un nom pour agir en son nom hors de son tour.',
@@ -325,6 +330,11 @@ const EN = {
   ownedCount: (n, label) => `${n} ${label}${n > 1 ? 's' : ''} owned`,
   price: 'Price',
   mortgageValue: 'Mortgage value',
+  resaleValue: 'Resale',
+  halfOfCost: 'half of what you paid',
+  groupStillBuilt: 'Sell every building in the group before mortgaging',
+  needFullGroup: 'You need the whole colour group to build',
+  yourCash: 'Your cash',
   utilityRent: (a, b) => `Rent: ${a} × the dice roll, or ${b} × if both are owned.`,
   hotSeatHint:
     'Several players on this screen: click a name to act for them outside their turn.',

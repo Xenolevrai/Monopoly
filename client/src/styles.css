@@ -23,6 +23,12 @@
   --color-board-edge: #b9d3be;
   --color-space: #f7f4ea;        /* le crème des cases */
   --color-space-alt: #efeade;
+  /* L'encre à écrire SUR une fiche. Distincte de `--color-ink`, qui s'écrit sur
+     les panneaux : une édition peut avoir des fiches sombres (Spider-Man) et
+     des panneaux clairs, auquel cas une seule encre pour les deux en rend une
+     illisible — le défaut mesuré à 1,01:1, soit du texte invisible. */
+  --color-space-ink: #16130f;
+  --color-space-ink-soft: #4a453c;
   --color-ink: #16130f;          /* l'encre des titres */
   --color-ink-soft: #4a453c;
   --color-panel: #f6f2e7;

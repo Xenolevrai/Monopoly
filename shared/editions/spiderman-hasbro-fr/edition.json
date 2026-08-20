@@ -131,13 +131,15 @@
       "inkSoft": "#4d5878",
       "panel": "#f0f3fb",
       "panelEdge": "#c2cbe3",
-      "accent": "#e22034",
+      "accent": "#cf1728",
       "accentDeep": "#a10f1d",
       "money": "#2f6b45",
       "house": "#1d5fd8",
       "hotel": "#e22034",
       "gold": "#ffc23d",
-      "boardInk": "#eef2ff"
+      "boardInk": "#eef2ff",
+      "spaceInk": "#eef2ff",
+      "spaceInkSoft": "#aebde0"
     },
     "centerTitle": "Monopoly",
     "centerSubtitle": "Spider-Man",

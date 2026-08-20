@@ -178,6 +178,32 @@ export function canSellBuilding(state, playerId, spaceId) {
   return { ok: true, refund: half };
 }
 
+/**
+ * Peut-on hypothéquer ce terrain ?
+ *
+ * Règle officielle, et le piège qu'elle évite : on n'hypothèque pas un terrain
+ * d'un groupe encore bâti, **même si ce terrain-là est nu**. Sans ça on gèlerait
+ * une case tout en continuant d'encaisser les loyers majorés des deux autres.
+ * Le moteur et les bots lisent tous les deux cette fonction : une seule règle,
+ * un seul endroit.
+ */
+export function canMortgage(state, playerId, spaceId) {
+  if (!config(state).mechanics?.mortgage)
+    return { ok: false, reason: "Cette édition ne connaît pas l'hypothèque." };
+  const space = getSpace(state, spaceId);
+  const prop = state.properties[spaceId];
+  if (!prop || prop.ownerId !== playerId) return { ok: false, reason: "Cette propriété n'est pas à vous." };
+  if (prop.mortgaged) return { ok: false, reason: 'Déjà hypothéquée.' };
+
+  const groupSpaces = space.group ? getGroup(state, space.group).spaces : [spaceId];
+  const built = groupSpaces.filter((id) => buildingLevel(state.properties[id]) > 0);
+  if (built.length) {
+    const names = built.map((id) => getSpace(state, id).name).join(', ');
+    return { ok: false, reason: `Revendez d'abord les constructions du groupe (${names}).`, built };
+  }
+  return { ok: true, amount: space.mortgage };
+}
+
 /** Coût pour lever une hypothèque : montant + 10 % d'intérêt, arrondi au supérieur. */
 export function unmortgageCost(state, spaceId) {
   return Math.ceil(getSpace(state, spaceId).mortgage * (1 + config(state).mortgage.interestRate));

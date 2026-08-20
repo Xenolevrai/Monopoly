@@ -101,6 +101,23 @@ function SaleVault({ state, me, actor }) {
 }
 
 /** Le titre de propriété, dans l'esprit des cartes du jeu. */
+/**
+ * Noir ou blanc, selon ce qui se lit le mieux sur cette couleur.
+ *
+ * Les bandeaux de groupe vont du jaune vif au bleu nuit : une encre fixe est
+ * forcément illisible sur l'une des deux. On calcule donc la luminance relative
+ * (formule WCAG) et l'on tranche.
+ */
+export function readableOn(hex) {
+  if (!hex?.startsWith('#') || hex.length < 7) return 'var(--color-space-ink)';
+  const channel = (i) => {
+    const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = 0.2126 * channel(1) + 0.7152 * channel(3) + 0.0722 * channel(5);
+  return luminance > 0.42 ? '#12100c' : '#ffffff';
+}
+
 export function PropertyCard({ state, spaceId }) {
   const t = useT(state);
   const space = boardOf(state)[spaceId];
@@ -126,55 +143,85 @@ export function PropertyCard({ state, spaceId }) {
           ])
         : [];
 
+  // La fiche s'écrit sur `--color-space`, qui peut être sombre (Spider-Man) là
+  // où les panneaux restent clairs. Elle a donc sa propre encre : réutiliser
+  // celle des panneaux donnait du texte invisible, mesuré à 1,01:1.
+  const onCard = { color: 'var(--color-space-ink)' };
+  const onCardSoft = { color: 'var(--color-space-ink-soft)' };
+
   return (
-    <div className="overflow-hidden rounded border-2 border-ink bg-[var(--color-space)]">
+    <div
+      className="overflow-hidden rounded border-2 bg-[var(--color-space)]"
+      style={{ borderColor: 'var(--color-space-ink)' }}
+    >
       {color && (
         <div
-          className="border-b-2 border-ink px-2 py-2 text-center"
-          style={{ backgroundColor: color }}
+          className="border-b-2 px-2 py-2 text-center"
+          style={{ backgroundColor: color, borderColor: 'var(--color-space-ink)' }}
         >
-          <p className="font-condensed text-[13px] uppercase leading-tight text-ink">{space.name}</p>
+          {/* Le bandeau porte la couleur du groupe : son encre se choisit sur
+              cette couleur-là, pas sur le fond de la fiche. */}
+          <p
+            className="font-condensed text-[13px] uppercase leading-tight"
+            style={{ color: readableOn(color) }}
+          >
+            {space.name}
+          </p>
         </div>
       )}
       <div className="p-2.5">
         {!color && (
-          <p className="mb-1 text-center font-condensed text-[13px] uppercase">{space.name}</p>
+          <p className="mb-1 text-center font-condensed text-[13px] uppercase" style={onCard}>
+            {space.name}
+          </p>
         )}
         {rows.length > 0 && (
           <table className="w-full text-[11px]">
             <tbody>
               {rows.map(([label, value]) => (
                 <tr key={label}>
-                  <td className="py-px text-ink-soft">{label}</td>
-                  <td className="tabular py-px text-right font-medium">{money(state, value)}</td>
+                  <td className="py-px" style={onCardSoft}>{label}</td>
+                  <td className="tabular py-px text-right font-medium" style={onCard}>
+                    {money(state, value)}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
         {space.type === 'utility' && (
-          <p className="text-[11px] text-ink-soft">
+          <p className="text-[11px]" style={onCardSoft}>
             {t('utilityRent', space.rentMultipliers[0], space.rentMultipliers[1])}
           </p>
         )}
-        <div className="mt-2 border-t border-black/15 pt-1.5 text-[11px] text-ink-soft">
+        <div className="mt-2 border-t border-current/20 pt-1.5 text-[11px]" style={onCardSoft}>
           <p className="tabular">
-            {t('price')} : {money(state, space.price)}
+            {t('price')} : <span style={onCard}>{money(state, space.price)}</span>
           </p>
-          {space.houseCost && (
-            <p className="tabular">
-              {labels.house} : {money(state, space.houseCost)}
-              {editionFor(state).mechanics.hotels && (
-                <>
-                  {' · '}
-                  {labels.hotel} : {money(state, space.houseCost)} + 4 {labels.houses.toLowerCase()}
-                </>
-              )}
-            </p>
+          {space.houseCost > 0 && (
+            <>
+              <p className="tabular">
+                {labels.house} : <span style={onCard}>{money(state, space.houseCost)}</span>
+                {editionFor(state).mechanics.hotels && (
+                  <>
+                    {' · '}
+                    {labels.hotel} : <span style={onCard}>{money(state, space.houseCost)}</span>
+                    {' + 4 '}
+                    {labels.houses.toLowerCase()}
+                  </>
+                )}
+              </p>
+              {/* Ce qu'on récupère en revendant : la moitié, comme dans la boîte.
+                  L'écrire évite d'avoir à le deviner au moment de se refaire. */}
+              <p className="tabular">
+                {t('resaleValue')} : <span style={onCard}>{money(state, space.houseCost / 2)}</span>
+                <span className="opacity-70"> · {t('halfOfCost')}</span>
+              </p>
+            </>
           )}
           {editionFor(state).mechanics.mortgage && (
             <p className="tabular">
-              {t('mortgageValue')} : {money(state, space.mortgage)}
+              {t('mortgageValue')} : <span style={onCard}>{money(state, space.mortgage)}</span>
             </p>
           )}
         </div>
@@ -392,7 +439,17 @@ function Manage({ state, me }) {
           .map((prop) => {
             const space = board[prop.spaceId];
             const level = prop.hotel ? 5 : prop.houses;
-            const btn = 'rounded border border-black/15 bg-white px-1.5 py-1 hover:bg-black/5';
+            const btn = 'rounded border border-black/15 bg-white px-1.5 py-1 text-[10px] hover:bg-black/5';
+            // Une construction ne se pose qu'avec le groupe entier ; et le
+            // groupe entier doit être nu pour hypothéquer quoi que ce soit.
+            const groupSpaces = space.group ? groups[space.group].spaces : [];
+            const ownsGroup =
+              groupSpaces.length > 0 &&
+              groupSpaces.every((id) => state.properties[id]?.ownerId === me.id);
+            const groupBuilt = groupSpaces.some(
+              (id) => state.properties[id]?.hotel || state.properties[id]?.houses > 0,
+            );
+            const nextLabel = level === 4 ? labels.hotel : labels.house;
             // Les infobulles (`title`) ne s'affichent jamais au doigt : le prix doit
             // être écrit en toutes lettres sur le bouton, pas seulement au survol.
             return (
@@ -421,23 +478,26 @@ function Manage({ state, me }) {
                     {t('mortgaged')}
                   </span>
                 )}
-                <span className="ml-auto flex gap-1">
+                <span className="ml-auto flex flex-wrap justify-end gap-1">
                   {space.type === 'property' && !prop.mortgaged && (
                     <>
+                      {/* Les prix sont écrits sur les boutons, pas en infobulle :
+                          une infobulle ne s'ouvre jamais au doigt, et l'on ne doit
+                          pas avoir à deviner ce qu'un clic va coûter. */}
                       <button
-                        className={btn}
-                        title={`${t("build")} (${labels.house.toLowerCase()})`}
+                        className={`${btn} tabular disabled:opacity-35`}
+                        disabled={!ownsGroup}
+                        title={ownsGroup ? undefined : t('needFullGroup')}
                         onClick={() => sendAction({ type: 'BUILD_HOUSE', spaceId: prop.spaceId }, me.id)}
                       >
-                        +
+                        + {nextLabel} {money(state, space.houseCost)}
                       </button>
                       {level > 0 && (
                         <button
-                          className={btn}
-                          title={`${t("sellBuilding")} (${labels.house.toLowerCase()})`}
+                          className={`${btn} tabular`}
                           onClick={() => sendAction({ type: 'SELL_BUILDING', spaceId: prop.spaceId }, me.id)}
                         >
-                          −
+                          − {t('sellBuilding')} {money(state, space.houseCost / 2)}
                         </button>
                       )}
                     </>
@@ -445,20 +505,24 @@ function Manage({ state, me }) {
                   {canMortgage &&
                     (prop.mortgaged ? (
                       <button
-                        className={btn}
+                        className={`${btn} tabular`}
                         onClick={() => sendAction({ type: 'UNMORTGAGE', spaceId: prop.spaceId }, me.id)}
                       >
                         {t('unmortgage')} ({money(state, Math.ceil(space.mortgage * 1.1))})
                       </button>
                     ) : (
-                      level === 0 && (
-                        <button
-                          className={btn}
-                          onClick={() => sendAction({ type: 'MORTGAGE', spaceId: prop.spaceId }, me.id)}
-                        >
-                          {t('mortgage')} ({money(state, space.mortgage)})
-                        </button>
-                      )
+                      // Règle officielle : tout le groupe doit être nu, pas
+                      // seulement ce terrain-là. Le bouton se grise plutôt que de
+                      // disparaître, avec la raison au survol — sinon on cherche
+                      // pourquoi l'hypothèque a disparu.
+                      <button
+                        className={`${btn} tabular disabled:opacity-35`}
+                        disabled={groupBuilt}
+                        title={groupBuilt ? t('groupStillBuilt') : undefined}
+                        onClick={() => sendAction({ type: 'MORTGAGE', spaceId: prop.spaceId }, me.id)}
+                      >
+                        {t('mortgage')} ({money(state, space.mortgage)})
+                      </button>
                     ))}
                 </span>
               </div>

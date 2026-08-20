@@ -5,8 +5,8 @@ import {
   playerById,
   canBuild,
   canSellBuilding,
+  canMortgage,
   unmortgageCost,
-  buildingLevel,
 } from './queries.js';
 import { credit, refreshDebtPending } from './money.js';
 
@@ -42,14 +42,10 @@ export function buyProperty(state, playerId, spaceId, price = null) {
 
 /** Hypothèque : encaisse la valeur, la propriété ne rapporte plus de loyer. */
 export function mortgage(state, playerId, spaceId) {
-  if (!rulesOf(state).mechanics.mortgage)
-    return { ok: false, error: "Cette édition ne connaît pas l'hypothèque." };
+  const check = canMortgage(state, playerId, spaceId);
+  if (!check.ok) return { ok: false, error: check.reason };
   const space = getSpace(state, spaceId);
   const prop = state.properties[spaceId];
-  if (!prop || prop.ownerId !== playerId) return { ok: false, error: "Cette propriété n'est pas à vous." };
-  if (prop.mortgaged) return { ok: false, error: 'Déjà hypothéquée.' };
-  if (buildingLevel(prop) > 0)
-    return { ok: false, error: 'Revendez d\'abord les constructions de ce terrain.' };
 
   prop.mortgaged = true;
   credit(state, playerId, space.mortgage, `hypothèque de ${space.name}`);

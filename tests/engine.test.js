@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import { newGame, forceDice, act, give, setCash, place, dispatch, playerById } from './helpers.js';
 import { rentFor, maxRaisable, netWorth } from '../server/engine/queries.js';
+import { boardOf } from '../shared/index.js';
 import { applyCardAction, drawCard, applyRevealedCard, returnJailCard } from '../server/engine/cards.js';
 
 // ————————————————————————————————————— Tour de jeu
@@ -833,4 +834,46 @@ test('le récapitulatif chiffre tout le monde, faillies comprises', async () => 
   assert.equal(standings[0].name, 'Julie');
   assert.equal(standings[0].properties, 2);
   assert.equal(standings.at(-1).bankrupt, true, 'la faillie ferme la marche');
+});
+
+test("on ne peut pas hypothéquer un terrain d'un groupe encore bâti", () => {
+  const game = newGame();
+  // Julie tient tout le groupe brun et a bâti sur une seule des deux cases.
+  give(game, 'p0', [1, 3]);
+  game.state.properties[1].houses = 1;
+  game.state.bank.houses -= 1;
+
+  // Belleville (1) porte la maison : refus évident.
+  const surBati = dispatch(game, 'p0', { type: 'MORTGAGE', spaceId: 1 });
+  assert.equal(surBati.ok, false);
+
+  // Lecourbe (3) est nue — mais son groupe ne l'est pas. C'était le défaut :
+  // on gelait une case tout en encaissant le loyer majoré de l'autre.
+  const surNu = dispatch(game, 'p0', { type: 'MORTGAGE', spaceId: 3 });
+  assert.equal(surNu.ok, false, 'le groupe entier doit être nu');
+  assert.match(surNu.error, /constructions du groupe/i);
+
+  // Une fois la maison revendue, les deux redeviennent hypothécables.
+  assert.ok(dispatch(game, 'p0', { type: 'SELL_BUILDING', spaceId: 1 }).ok);
+  assert.ok(dispatch(game, 'p0', { type: 'MORTGAGE', spaceId: 3 }).ok);
+});
+
+test('revendre une construction rembourse la moitié de son prix', () => {
+  const game = newGame();
+  give(game, 'p0', [1, 3]);
+  const houseCost = boardOf(game.state)[1].houseCost;
+
+  game.state.properties[1].houses = 1;
+  game.state.bank.houses -= 1;
+  const avant = playerById(game.state, 'p0').cash;
+
+  assert.ok(dispatch(game, 'p0', { type: 'SELL_BUILDING', spaceId: 1 }).ok);
+  const rendu = playerById(game.state, 'p0').cash - avant;
+  assert.equal(rendu, houseCost / 2, `une maison payée ${houseCost} doit rendre ${houseCost / 2}`);
+});
+
+test("un terrain hors groupe (gare, compagnie) s'hypothèque toujours", () => {
+  const game = newGame();
+  give(game, 'p0', [5]); // Gare de Lyon : aucun bâtiment possible
+  assert.ok(dispatch(game, 'p0', { type: 'MORTGAGE', spaceId: 5 }).ok);
 });

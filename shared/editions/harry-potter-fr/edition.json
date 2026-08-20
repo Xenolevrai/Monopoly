@@ -125,7 +125,9 @@
       "house": "#4a7c3f",
       "hotel": "#a8232b",
       "gold": "#b8912f",
-      "boardInk": "#3f2a12"
+      "boardInk": "#3f2a12",
+      "spaceInk": "#2e1c0a",
+      "spaceInkSoft": "#6b5233"
     },
     "centerTitle": "Monopoly",
     "centerSubtitle": "Poudlard",

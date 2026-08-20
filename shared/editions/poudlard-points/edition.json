@@ -144,11 +144,13 @@
       "panelEdge": "#c9b891",
       "accent": "#6b3fa0",
       "accentDeep": "#4b2a73",
-      "money": "#a8791a",
+      "money": "#8a6214",
       "house": "#d3a625",
       "hotel": "#7f0909",
       "gold": "#d3a625",
-      "boardInk": "#ecdfc0"
+      "boardInk": "#ecdfc0",
+      "spaceInk": "#1d1608",
+      "spaceInkSoft": "#61543a"
     },
     "display": "engraved",
     "centerTitle": "Poudlard",
