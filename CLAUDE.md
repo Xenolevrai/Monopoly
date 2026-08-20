@@ -41,7 +41,7 @@ invariant est prouvé par `tests/locales.test.js`.
 npm install
 npm run build     # compile le client — à refaire après chaque pull
 npm start         # http://localhost:3000
-npm run check     # lint + 196 tests
+npm run check     # lint + 207 tests
 ```
 
 Node 22+, ESM partout, workspaces npm (racine + `client`).
@@ -396,6 +396,33 @@ Un défaut signalé en jouant a laissé des tests dédiés
 
 ---
 
+## 6 bis. Revenir en arrière (`UNDO`)
+
+Un bouton défait le dernier geste — mais **seulement les gestes réversibles** :
+`BUILD_HOUSE`, `SELL_BUILDING`, `MORTGAGE`, `UNMORTGAGE`. Jamais un jet de dés
+ni une carte piochée : ce serait rejouer le hasard une fois le résultat connu,
+c'est-à-dire tricher. Un test verrouille cet invariant ; **ne jamais élargir
+`UNDOABLE` à une action qui révèle de l'information.**
+
+Trois décisions de conception, chacune pour une raison :
+
+- **Les instantanés vivent sur la partie (`game.undo`), pas dans `state`.**
+  L'état part sur le disque à chaque coup ; y empiler des copies complètes le
+  ferait grossir pour rien. On perd donc la pile au redémarrage du serveur —
+  c'est le bon compromis, on n'annule pas le coup d'hier. L'état ne porte qu'un
+  marqueur minuscule, `state.undoable`, pour que le client sache s'il doit
+  proposer le bouton.
+- **Toute action non réversible vide la pile.** C'est ce qui rend la
+  restauration sûre : la pile ne contient jamais qu'une suite ininterrompue de
+  gestes réversibles de la même personne, donc revenir en arrière ne peut pas
+  effacer le coup d'une autre (rappel : `MORTGAGE` est permis hors de son tour).
+- **`logSeq` ne recule jamais.** Rembobiner l'état rembobinerait le compteur du
+  journal, et deux entrées porteraient la même clé — le piège maison qui fige la
+  liste côté React. Le chat non plus n'est pas rembobiné : ce n'est pas un coup
+  de jeu.
+
+---
+
 ## 7. Le plateau : géométrie et typographie
 
 `client/src/components/Board.jsx` — la partie la plus piégeuse du client.
@@ -519,8 +546,15 @@ Le basculement se fait par classes Tailwind dans `client/src/App.jsx`
   encaissant les loyers majorés des autres. Le moteur et les bots lisent la même
   fonction.
 - Les dés sont uniformes, c'est mesuré : 16,66 % de doubles pour 16,67 %
-  attendus. Avant de soupçonner le générateur, refaire la mesure — un double sur
-  six jets, ça se remarque.
+  attendus, quelle que soit la case de départ, et le mélange des cartes passe le
+  khi² (8,0 pour un seuil à 27). Avant de soupçonner le générateur, refaire la
+  mesure — un double sur six jets, ça se remarque.
+- **`Array.sort` est stable.** Trier des scores à égalité conserve donc l'ordre
+  d'entrée : le tirage de l'ordre de jeu brassait mal, et la première inscrite
+  commençait 55,9 % du temps. `determineTurnOrder` brasse avant de trier.
+- La cagnotte du Parc Gratuit ramasse **tout ce qui irait à la banque**, pas
+  seulement ce dont le motif contient « taxe » — c'est le versement vers la
+  banque qui décide, jamais le libellé.
 - `DATA_DIR` (`server/rooms.js`) est ancré sur l'emplacement du fichier
   (`import.meta.url`), **jamais** sur `process.cwd()` : sinon lancer le serveur
   depuis un autre dossier ou un autre raccourci pointe vers un dossier de
@@ -542,7 +576,8 @@ avec leurs cases à cocher et la détection de conflit dans l'écran de
 sélection), les deux éditions Spider-Man (Collector et Hasbro/Bouffon Vert),
 les **quatre niveaux de bots** (voir §5 ter — ils achètent, bâtissent,
 hypothèquent, enchérissent, tranchent les cartes et négocient, sur les six
-boîtes et toutes les extensions), 190 tests.
+boîtes et toutes les extensions), le retour en arrière sur les gestes
+réversibles (§6 bis), la colonne de droite réarrangeable (§7 ter), 207 tests.
 
 **Reste à faire**, par ordre de priorité annoncée :
 

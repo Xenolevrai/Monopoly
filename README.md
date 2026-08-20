@@ -7,7 +7,7 @@ wifi ou à distance.
 chat, reconnexion. On peut jouer **à plusieurs sur le même ordinateur**, avec
 d'autres joueuses **à distance** dans la même partie. Les trois extensions Hasbro
 2025 sont activables à la création de la partie (Parc Gratuit Jackpot, Prison,
-Tout Acheter), et **quatre niveaux de bots**. 196 tests automatisés.
+Tout Acheter), et **quatre niveaux de bots**. 207 tests automatisés.
 
 ## Les éditions
 
@@ -50,7 +50,7 @@ autorisée.
 npm install
 npm run build   # compile l'interface — à refaire après chaque `git pull`
 npm start       # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
-npm run check   # lint + 196 tests : données, éditions, extensions, bots, langues, règles, parties simulées, temps réel
+npm run check   # lint + 207 tests : données, éditions, extensions, bots, langues, règles, parties simulées, temps réel
 ```
 
 Node 22+. Le serveur affiche aussi l'adresse locale (`http://192.168.x.x:3000`) à
@@ -215,6 +215,9 @@ somme devient une dette, et on choisit :
 - payer comptant — les billets à sortir sont affichés ;
 - hypothéquer ou revendre ses constructions ;
 - **négocier avec n'importe qui** pour réunir des fonds, puis payer ;
+- et si l'on s'est trompée — une maison revendue trop vite, une hypothèque de
+  trop — un bouton **Annuler** revient sur le geste. Seulement sur les gestes
+  qui ne révèlent rien : jamais sur un jet de dés ni sur une carte piochée ;
 - **proposer un arrangement à la propriétaire** : un terrain, deux terrains, un
   peu d'argent, un mélange des deux. Si elle accepte, **la dette est effacée**,
   quel que soit le montant cédé. C'est aux deux de juger si le marché est bon ;
