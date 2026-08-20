@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { newGame, forceDice, act, give, setCash, place, dispatch, playerById } from './helpers.js';
+import { newGame, forceDice, act, give, setCash, place, dispatch, playerById, resolveLandingAt } from './helpers.js';
 import { rentFor, maxRaisable, netWorth } from '../server/engine/queries.js';
 import { boardOf } from '../shared/index.js';
+import { createGame, addPlayer, startGame } from '../server/engine/index.js';
 import { applyCardAction, drawCard, applyRevealedCard, returnJailCard } from '../server/engine/cards.js';
 
 // ————————————————————————————————————— Tour de jeu
@@ -292,7 +293,7 @@ test('un double en prison libère mais ne donne pas de tour supplémentaire', ()
   assert.deepEqual(game.state.pending.playerIds, ['p1']);
 });
 
-test('au troisième échec, la caution est payée d\'office', () => {
+test('au bout de trois tours, on sort de prison sans rien payer', () => {
   const game = newGame();
   const player = playerById(game.state, 'p0');
   player.inJail = true;
@@ -301,9 +302,9 @@ test('au troisième échec, la caution est payée d\'office', () => {
   forceDice(game, [1, 2]);
   act(game, 'p0', { type: 'ROLL_DICE' });
 
-  assert.equal(player.inJail, false);
-  assert.equal(player.cash, 1450, 'caution de 50 € prélevée');
-  assert.equal(player.position, 13);
+  assert.equal(player.inJail, false, 'la peine purgée libère');
+  assert.equal(player.cash, 1500, "et ne coûte rien : on a déjà perdu trois tours");
+  assert.equal(player.position, 13, 'et l\'on avance du jet qui vient d\'être fait');
 });
 
 test('la case Allez en Prison envoie bien en prison', () => {
@@ -876,4 +877,154 @@ test("un terrain hors groupe (gare, compagnie) s'hypothèque toujours", () => {
   const game = newGame();
   give(game, 'p0', [5]); // Gare de Lyon : aucun bâtiment possible
   assert.ok(dispatch(game, 'p0', { type: 'MORTGAGE', spaceId: 5 }).ok);
+});
+
+// ————————————————————————————————————— Cagnotte, prison, ordre de jeu
+
+test('avec la cagnotte, tout ce qui irait à la banque va au milieu', () => {
+  const game = newGame(['Julie', 'Sophie'], { settings: { freeParkingPot: true } });
+
+  // Une taxe.
+  place(game, 'p0', 4);
+  resolveLandingAt(game, 'p0', 4);
+  const apresTaxe = game.state.freeParkingPot;
+  assert.ok(apresTaxe > 0, 'la taxe doit tomber dans la cagnotte');
+
+  // Une amende de carte : c'est ce qui filait encore à la banque.
+  applyCardAction(game.state, 'p0', { type: 'pay', amount: 50 });
+  assert.equal(game.state.freeParkingPot, apresTaxe + 50, "l'amende d'une carte aussi");
+
+  // Des réparations.
+  give(game, 'p0', [1, 3], { houses: 2 });
+  applyCardAction(game.state, 'p0', { type: 'pay_per_building', perHouse: 25, perHotel: 100 });
+  assert.equal(game.state.freeParkingPot, apresTaxe + 50 + 100, 'les réparations aussi');
+});
+
+test('un loyer versé à une joueuse ne passe jamais par la cagnotte', () => {
+  const game = newGame(['Julie', 'Sophie'], { settings: { freeParkingPot: true } });
+  give(game, 'p1', [6]);
+  forceDice(game, [2, 4]);
+  act(game, 'p0', { type: 'ROLL_DICE' });
+  act(game, 'p0', { type: 'PAY_DEBT' });
+  assert.equal(game.state.freeParkingPot, 0, "l'argent va à Sophie, pas au milieu");
+  assert.equal(playerById(game.state, 'p1').cash, 1506);
+});
+
+test('tomber sur le Parc Gratuit ramasse toute la cagnotte', () => {
+  const game = newGame(['Julie', 'Sophie'], { settings: { freeParkingPot: true } });
+  game.state.freeParkingPot = 275;
+  const avant = playerById(game.state, 'p0').cash;
+  place(game, 'p0', 20);
+  resolveLandingAt(game, 'p0', 20);
+  assert.equal(playerById(game.state, 'p0').cash, avant + 275);
+  assert.equal(game.state.freeParkingPot, 0, 'la cagnotte est vidée');
+});
+
+test('sans la règle maison, la banque encaisse comme avant', () => {
+  const game = newGame();
+  applyCardAction(game.state, 'p0', { type: 'pay', amount: 50 });
+  assert.equal(game.state.freeParkingPot, 0);
+  assert.equal(playerById(game.state, 'p0').cash, 1450);
+});
+
+test("l'ordre de jeu se départage au sort, jamais par l'ordre d'arrivée", () => {
+  // Deux joueuses qui font le même score doivent commencer aussi souvent l'une
+  // que l'autre. `Array.sort` étant stable, un tri seul gardait l'ordre
+  // d'inscription — mesuré à 55,9 % pour la première inscrite.
+  const premieres = { Julie: 0, Sophie: 0 };
+  for (let seed = 1; seed <= 400; seed++) {
+    const game = createGame(`ORD${seed}`, 'p0', { seed, editionId: 'classic-fr' });
+    addPlayer(game, { id: 'p0', name: 'Julie', token: null });
+    addPlayer(game, { id: 'p1', name: 'Sophie', token: null });
+    startGame(game, 'p0');
+    premieres[game.state.players[0].name] += 1;
+  }
+  const ecart = Math.abs(premieres.Julie - premieres.Sophie);
+  assert.ok(ecart < 70, `déséquilibre trop marqué : ${JSON.stringify(premieres)}`);
+});
+
+// ————————————————————————————————————— Revenir en arrière
+
+test('on peut revenir sur une construction revendue trop vite', () => {
+  const game = newGame();
+  give(game, 'p0', [1, 3]);
+  game.state.properties[1].houses = 1;
+  game.state.bank.houses -= 1;
+  const avant = playerById(game.state, 'p0').cash;
+
+  act(game, 'p0', { type: 'SELL_BUILDING', spaceId: 1 });
+  assert.equal(game.state.properties[1].houses, 0);
+  assert.ok(playerById(game.state, 'p0').cash > avant);
+  assert.equal(game.state.undoable?.playerId, 'p0', 'le geste doit être signalé annulable');
+
+  act(game, 'p0', { type: 'UNDO' });
+  assert.equal(game.state.properties[1].houses, 1, 'la maison est revenue');
+  assert.equal(playerById(game.state, 'p0').cash, avant, "et l'argent avec");
+  assert.equal(game.state.undoable, null, 'plus rien à annuler');
+});
+
+test("on peut défaire plusieurs gestes d'affilée, dans l'ordre inverse", () => {
+  const game = newGame();
+  give(game, 'p0', [1, 3, 6]);
+  const avant = playerById(game.state, 'p0').cash;
+
+  act(game, 'p0', { type: 'MORTGAGE', spaceId: 6 });
+  act(game, 'p0', { type: 'MORTGAGE', spaceId: 1 });
+  assert.equal(game.state.properties[1].mortgaged, true);
+  assert.equal(game.state.properties[6].mortgaged, true);
+
+  act(game, 'p0', { type: 'UNDO' });
+  assert.equal(game.state.properties[1].mortgaged, false, 'le dernier geste part en premier');
+  assert.equal(game.state.properties[6].mortgaged, true);
+
+  act(game, 'p0', { type: 'UNDO' });
+  assert.equal(game.state.properties[6].mortgaged, false);
+  assert.equal(playerById(game.state, 'p0').cash, avant);
+});
+
+test('un jet de dés ne se défait jamais', () => {
+  // C'est l'invariant qui empêche l'annulation de devenir de la triche : on ne
+  // rejoue pas le hasard une fois qu'on en connaît le résultat.
+  const game = newGame();
+  forceDice(game, [2, 4]);
+  act(game, 'p0', { type: 'ROLL_DICE' });
+  const position = playerById(game.state, 'p0').position;
+
+  const result = dispatch(game, 'p0', { type: 'UNDO' });
+  assert.equal(result.ok, false, "le jet ne doit pas s'annuler");
+  assert.equal(playerById(game.state, 'p0').position, position);
+});
+
+test('un jet de dés efface les annulations en attente', () => {
+  const game = newGame();
+  give(game, 'p0', [1, 3]);
+  act(game, 'p0', { type: 'MORTGAGE', spaceId: 1 });
+  assert.equal(game.state.undoable?.playerId, 'p0');
+
+  forceDice(game, [2, 4]);
+  act(game, 'p0', { type: 'ROLL_DICE' });
+  assert.equal(game.state.undoable, null, 'on ne remonte pas au-delà du jet');
+  assert.equal(dispatch(game, 'p0', { type: 'UNDO' }).ok, false);
+});
+
+test("on n'annule pas le geste d'une autre joueuse", () => {
+  const game = newGame();
+  give(game, 'p1', [1, 3]);
+  // Sophie hypothèque hors de son tour, ce que le moteur autorise.
+  act(game, 'p1', { type: 'MORTGAGE', spaceId: 1 });
+  const result = dispatch(game, 'p0', { type: 'UNDO' });
+  assert.equal(result.ok, false, "Julie ne peut pas défaire le geste de Sophie");
+  assert.equal(game.state.properties[1].mortgaged, true);
+});
+
+test("annuler ne réutilise jamais un identifiant de journal", () => {
+  // Le piège maison : rembobiner l'état rembobinerait le compteur, et deux
+  // entrées porteraient la même clé — React fige alors la liste.
+  const game = newGame();
+  give(game, 'p0', [1, 3]);
+  act(game, 'p0', { type: 'MORTGAGE', spaceId: 1 });
+  act(game, 'p0', { type: 'UNDO' });
+
+  const ids = game.state.log.map((entry) => entry.id);
+  assert.equal(new Set(ids).size, ids.length, 'des identifiants de journal sont dupliqués');
 });

@@ -117,6 +117,7 @@
  * @property {Object} settings        - copie de rules.houseRules, modifiable au lobby
  * @property {{playerId: string, name: string, worth: number}[]} standings - classement final
  * @property {string|null} winnerId
+ * @property {{playerId: string, type: string, spaceId?: number}|null} undoable - dernier geste réversible, s'il y en a un
  * @property {number} version         - incrémenté à chaque mutation (détection de désync)
  */
 
@@ -186,6 +187,9 @@ export function createGameState(code, hostId, editionId = DEFAULT_EDITION, local
       : null,
     hazards: {},
     freeParkingPot: 0,
+    // Marqueur du dernier geste annulable. Les instantanés, eux, vivent hors de
+    // l'état (voir `rememberForUndo`) : les y mettre gonflerait la sauvegarde.
+    undoable: null,
     pending: { kind: null, playerIds: [] },
     auction: null,
     auctionQueue: [],

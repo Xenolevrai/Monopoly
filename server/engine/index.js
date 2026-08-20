@@ -183,6 +183,79 @@ export function updateSettings(game, playerId, settings) {
 }
 
 /**
+ * Les gestes qu'on peut défaire.
+ *
+ * **Uniquement ceux qui ne révèlent rien et ne touchent personne d'autre.** On
+ * revient sur une maison vendue trop vite ; on ne revient jamais sur un jet de
+ * dés, une carte piochée ou un loyer payé — ce serait rejouer le hasard une
+ * fois qu'on en connaît le résultat, c'est-à-dire tricher.
+ */
+const UNDOABLE = new Set(['BUILD_HOUSE', 'SELL_BUILDING', 'MORTGAGE', 'UNMORTGAGE']);
+
+/** Au-delà, on ne garde plus : une pile d'annulation n'est pas un historique. */
+const UNDO_LIMIT = 12;
+
+/**
+ * Garde de quoi revenir en arrière.
+ *
+ * Les instantanés vivent **sur la partie, pas dans son état** : l'état part sur
+ * le disque à chaque coup, et y empiler des copies complètes le ferait grossir
+ * pour rien. On perd donc la pile au redémarrage du serveur, ce qui est le bon
+ * compromis — on n'annule pas le coup d'hier.
+ *
+ * L'état ne porte qu'un marqueur minuscule (`state.undoable`), pour que le
+ * client sache s'il doit proposer le bouton.
+ */
+function rememberForUndo(game, playerId, action, snapshot) {
+  game.undo ??= [];
+  game.undo.push({ playerId, type: action.type, spaceId: action.spaceId, snapshot });
+  if (game.undo.length > UNDO_LIMIT) game.undo.shift();
+  game.state.undoable = { playerId, type: action.type, spaceId: action.spaceId };
+}
+
+/** Vide la pile : l'instantané ne vaut plus rien. */
+function forgetUndo(game) {
+  if (game.undo?.length) game.undo.length = 0;
+  if (game.state.undoable) game.state.undoable = null;
+}
+
+/**
+ * Revient sur le dernier geste réversible de cette joueuse.
+ *
+ * On ne défait que le sommet de la pile, et seulement s'il est à elle. C'est ce
+ * qui rend l'opération sûre : toute action non réversible vide la pile, donc
+ * elle ne contient jamais qu'une suite ininterrompue de gestes réversibles de la
+ * même personne — restaurer ne peut pas effacer le coup d'une autre.
+ */
+function undoLast(game, playerId) {
+  const stack = game.undo ?? [];
+  const entry = stack.at(-1);
+  if (!entry) return refuse("Il n'y a rien à annuler.");
+  if (entry.playerId !== playerId) return refuse("Ce geste n'est pas le vôtre.");
+  stack.pop();
+
+  const live = game.state;
+  // Le compteur du journal ne recule jamais : un identifiant déjà affiché ne
+  // doit pas resservir, sinon React fige la liste (piège connu du projet).
+  const logSeq = live.logSeq;
+  const version = live.version;
+  const chat = live.chat;
+
+  for (const key of Object.keys(live)) delete live[key];
+  Object.assign(live, entry.snapshot);
+  live.logSeq = logSeq;
+  live.version = version;
+  live.chat = chat; // le bavardage n'est pas un coup de jeu
+
+  const player = playerById(live, playerId);
+  log(live, 'undo', say(live, 'undone', { name: player.name }), { playerId, type: entry.type });
+  live.undoable = stack.at(-1)
+    ? { playerId: stack.at(-1).playerId, type: stack.at(-1).type, spaceId: stack.at(-1).spaceId }
+    : null;
+  return { ok: true };
+}
+
+/**
  * Applique une action de joueuse.
  * @param {{state: object, rng: object}} game
  * @param {string} playerId
@@ -197,8 +270,21 @@ export function dispatch(game, playerId, action) {
   if (state.phase !== 'playing') return { ok: false, error: "La partie n'est pas en cours." };
   if (player.bankrupt) return { ok: false, error: 'Vous êtes éliminée.' };
 
+  if (action.type === 'UNDO') {
+    const undone = undoLast(game, playerId);
+    if (undone.ok) state.version += 1;
+    return undone;
+  }
+
+  // On photographie *avant* d'agir, et l'on jette la photo si l'action échoue.
+  const snapshot = UNDOABLE.has(action.type) ? structuredClone(state) : null;
   const result = applyAction(game, state, rng, player, action);
   if (result.ok) {
+    if (snapshot) rememberForUndo(game, playerId, action, snapshot);
+    // Tout le reste rend les instantanés caducs : un jet de dés, un paiement,
+    // une fin de tour ne se défont pas, et laisser la pile derrière permettrait
+    // de remonter au-delà d'eux.
+    else forgetUndo(game);
     advanceFlow(state);
     state.version += 1;
   }

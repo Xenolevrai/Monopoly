@@ -3,6 +3,7 @@ import { createGame, addPlayer, startGame, dispatch } from '../server/engine/ind
 import { buildDecks } from '../server/engine/cards.js';
 import { startTurn } from '../server/engine/turn.js';
 import { playerById } from '../server/engine/queries.js';
+import { resolveLanding } from '../server/engine/movement.js';
 
 /**
  * Crée une partie déjà lancée, avec un ordre de jeu imposé (pas de tirage
@@ -60,3 +61,9 @@ export function place(game, playerId, spaceId) {
 }
 
 export { dispatch, playerById, startGame, addPlayer, createGame };
+
+/** Pose une joueuse sur une case et résout l'arrivée, sans passer par les dés. */
+export function resolveLandingAt(game, playerId, spaceId, diceTotal = 7) {
+  playerById(game.state, playerId).position = spaceId;
+  resolveLanding(game.state, playerId, { diceTotal });
+}

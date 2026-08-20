@@ -53,7 +53,7 @@ export function charge(state, playerId, amount, reason, creditorId = null, optio
         { playerId, creditorId, amount, reason },
       );
     } else {
-      if (state.settings.freeParkingPot && isTaxLike(reason)) state.freeParkingPot += amount;
+      if (potCollects(state)) state.freeParkingPot += amount;
       log(state, 'payment', say(state, 'paysBank', { name: player.name, amount: amountText(state, amount), reason }), {
         playerId,
         creditorId: null,
@@ -114,8 +114,24 @@ export function charge(state, playerId, amount, reason, creditorId = null, optio
   return { paid: false, shortfall: Math.max(0, amount - player.cash) };
 }
 
-function isTaxLike(reason = '') {
-  return /imp[oô]t|taxe/i.test(reason);
+/**
+ * La cagnotte ramasse-t-elle ce versement ?
+ *
+ * Règle maison classique : tout ce qui partirait à la banque va au milieu, et
+ * la première qui tombe sur le Parc Gratuit ramasse. **Tout** veut bien dire
+ * tout — impôts et taxes, mais aussi les amendes des cartes, les réparations,
+ * la caution de sortie de prison.
+ *
+ * Un seul critère, et il ne regarde pas le motif : il suffit que l'argent parte
+ * vers la banque plutôt que vers une autre joueuse. On ne trie donc plus les
+ * motifs à l'expression régulière — c'est ce qui laissait les cartes « payez
+ * 50 € » filer à la banque pendant que les taxes allaient au milieu.
+ *
+ * Les achats ne passent jamais par `charge` (ils débitent directement) : une
+ * maison ou un terrain ne tombe donc pas dans la cagnotte, comme il se doit.
+ */
+function potCollects(state) {
+  return Boolean(state.settings.freeParkingPot);
 }
 
 /**
@@ -132,7 +148,7 @@ export function settleDebt(state) {
   debtor.cash -= debt.amount;
   if (debt.creditorId) {
     playerById(state, debt.creditorId).cash += debt.amount;
-  } else if (state.settings.freeParkingPot && isTaxLike(debt.reason)) {
+  } else if (potCollects(state)) {
     state.freeParkingPot += debt.amount;
   }
   log(

@@ -3,7 +3,7 @@
 import { rollDice } from './rng.js';
 import { log, say, amountText } from './log.js';
 import { playerById, currentPlayer, activePlayers, config } from './queries.js';
-import { charge, checkGameOver } from './money.js';
+import { checkGameOver } from './money.js';
 import { advance, resolveLanding, sendToJail } from './movement.js';
 import { returnJailCard, getCard, applyCardAction, loseVaultCard } from './cards.js';
 import { playHazardTurn } from './hazard.js';
@@ -185,10 +185,12 @@ function rollInJail(state, player, total, isDouble) {
 
   player.jailTurns += 1;
   if (player.jailTurns >= config(state).jail.maxTurns) {
+    // La peine est purgée : on sort, et l'on ne paie rien. Faire payer la
+    // caution au troisième tour revenait à punir deux fois — on avait déjà
+    // perdu trois tours à attendre.
     log(state, 'jail', say(state, 'jailMaxed', { name: player.name, max: config(state).jail.maxTurns }), {
       playerId: player.id,
     });
-    charge(state, player.id, config(state).jail.bail, say(state, 'reasonBail'));
     player.inJail = false;
     player.jailTurns = 0;
     advance(state, player.id, total);
@@ -335,7 +337,13 @@ export function determineTurnOrder(state, rng) {
     const values = rollDice(rng, config(state).dice.count, config(state).dice.sides);
     return { player, total: values.reduce((a, b) => a + b, 0), values };
   });
-  rolls.sort((a, b) => b.total - a.total);
+  // On brasse avant de trier. `Array.sort` est stable : sans ce brassage, deux
+  // joueuses à égalité gardaient leur ordre d'arrivée dans la partie, et la
+  // première inscrite commençait plus souvent — mesuré à 55,9 % au lieu de 50 %.
+  const shuffled = rng.shuffle(rolls);
+  shuffled.sort((a, b) => b.total - a.total);
+  rolls.length = 0;
+  rolls.push(...shuffled);
   rolls.forEach((entry, index) => {
     entry.player.order = index;
     log(state, 'setup', say(state, 'orderRoll', { name: entry.player.name, total: entry.total }), {

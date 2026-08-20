@@ -430,9 +430,25 @@ export function Manage({ state, me }) {
 
   return (
     <div className="space-y-1.5">
-      <h3 className="font-condensed text-[11px] uppercase tracking-[0.2em] text-ink-soft">
-        {t('myAssets', me.name)}
-      </h3>
+      <div className="flex items-center gap-2">
+        <h3 className="font-condensed text-[11px] uppercase tracking-[0.2em] text-ink-soft">
+          {t('myAssets', me.name)}
+        </h3>
+        {/* On ne défait qu'un geste réversible, et seulement le sien : jamais un
+            jet de dés ni une carte, qui reviendrait à rejouer le hasard une fois
+            le résultat connu. Le bouton n'apparaît donc que quand il y a
+            vraiment quelque chose à reprendre. */}
+        {state.undoable?.playerId === me.id && (
+          <button
+            type="button"
+            title={t('undoHint')}
+            onClick={() => sendAction({ type: 'UNDO' }, me.id)}
+            className="ml-auto rounded border border-[var(--color-accent)]/40 bg-[var(--color-accent)]/10 px-2 py-0.5 font-condensed text-[10px] uppercase tracking-wide text-[var(--color-accent)] hover:bg-[var(--color-accent)]/20"
+          >
+            ↶ {t('undo')}
+          </button>
+        )}
+      </div>
       <div className="scroll-thin max-h-52 space-y-1 overflow-y-auto pr-1">
         {owned
           .sort((a, b) => a.spaceId - b.spaceId)
