@@ -352,7 +352,10 @@ export default function Board({
   const skin = editionFor(state).theming?.skin ?? 'table';
 
   return (
-    <div className={`board-surface board-${skin} relative aspect-square w-full max-w-[900px] shrink-0 overflow-hidden p-1.5 xl:h-full xl:w-auto`}>
+    // Le plafond était 900px, ce qui laissait le plateau minuscule dès qu'un
+    // grand écran libérait de la place — les colonnes ne prenant plus toute la
+    // largeur, il n'y avait plus de raison de le retenir autant.
+    <div className={`board-surface board-${skin} relative aspect-square w-full max-w-[1300px] shrink-0 overflow-hidden p-1.5 xl:h-full xl:w-auto`}>
       {/* Le décor : filigrane sous les cases, grain de papier, cadre, vignetage. */}
       <BoardWatermark skin={skin} />
       {skin === 'parchment' && <PaperGrain opacity={0.42} scale={0.9} />}

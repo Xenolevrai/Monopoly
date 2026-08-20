@@ -1,145 +1,101 @@
 /**
- * La colonne de droite, réarrangeable.
+ * Une colonne de sections, à gauche ou à droite du plateau.
  *
- * Le défaut qu'elle corrige : tout était empilé dans un ordre figé, et le chat
- * se trouvait tout en bas. Pour écrire un mot il fallait dérouler la colonne
- * entière, puis remonter pour jouer. Chacune joue autrement — l'une veut le
- * chat sous les yeux, l'autre la liste des biens — donc plutôt que de choisir
- * un ordre à leur place, on les laisse le choisir.
+ * Le défaut qu'elle corrige, en deux temps. D'abord : tout était empilé dans
+ * un ordre figé, et le chat se trouvait tout en bas — il fallait dérouler la
+ * colonne entière pour l'atteindre, puis remonter pour jouer. Ensuite : la
+ * colonne elle-même n'existait que d'un côté, alors que chacune joue
+ * autrement — l'une veut le plateau et le chat côte à côte, l'autre préfère
+ * ses biens à gauche. On ne choisit donc rien à leur place : n'importe quelle
+ * section se replie, se réordonne, et se glisse d'une colonne à l'autre.
  *
- * Deux gestes : **replier** une section, et la **déplacer** en la glissant par
- * sa poignée. L'agencement est gardé dans le navigateur : on le règle une fois,
- * il tient d'une partie à l'autre.
+ * Les deux colonnes (`side="left"` et `side="right"`) partagent le même objet
+ * `layout` (`usePanelLayout`) : c'est ce qui permet à un glisser-déposer
+ * commencé dans l'une de se terminer dans l'autre.
  */
-import { useEffect, useState } from 'react';
-
-const STORAGE_KEY = 'monopoly:agencement';
-
-/** Lit l'agencement gardé, en ignorant proprement un stockage indisponible. */
-function loadLayout() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}');
-  } catch {
-    return {};
-  }
-}
-
-function saveLayout(layout) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
-  } catch {
-    // Navigation privée, quota plein : l'agencement ne survivra pas, tant pis.
-  }
-}
 
 /**
- * @param {{ sections: {id: string, title: string, node: import('react').ReactNode, className?: string}[] }} props
+ * @param {{
+ *   side: 'left'|'right',
+ *   sections: {id: string, title: string, node: import('react').ReactNode, className?: string}[],
+ *   layout: ReturnType<typeof import('../lib/usePanelLayout.js').usePanelLayout>,
+ *   t: (key: string) => string,
+ * }} props
  */
-export default function PanelStack({ sections, t }) {
-  const [order, setOrder] = useState(null);
-  const [collapsed, setCollapsed] = useState({});
-  const [dragging, setDragging] = useState(null);
-
-  // On lit le stockage après le montage : le serveur de rendu ne l'a pas, et
-  // lire pendant le rendu ferait diverger le premier affichage.
-  useEffect(() => {
-    const saved = loadLayout();
-    setOrder(saved.order ?? null);
-    setCollapsed(saved.collapsed ?? {});
-  }, []);
-
-  const ids = sections.map((s) => s.id);
-  // L'ordre gardé peut dater d'une version où une section n'existait pas encore :
-  // on garde ce qu'on reconnaît, et l'on ajoute les nouvelles à la fin.
-  const effective = order
-    ? [...order.filter((id) => ids.includes(id)), ...ids.filter((id) => !order.includes(id))]
-    : ids;
-
-  const persist = (next, nextCollapsed = collapsed) => {
-    setOrder(next);
-    setCollapsed(nextCollapsed);
-    saveLayout({ order: next, collapsed: nextCollapsed });
-  };
-
-  const move = (id, delta) => {
-    const from = effective.indexOf(id);
-    const to = from + delta;
-    if (to < 0 || to >= effective.length) return;
-    const next = [...effective];
-    [next[from], next[to]] = [next[to], next[from]];
-    persist(next);
-  };
-
-  const drop = (targetId) => {
-    if (!dragging || dragging === targetId) return;
-    const next = effective.filter((id) => id !== dragging);
-    next.splice(effective.indexOf(targetId), 0, dragging);
-    persist(next);
-    setDragging(null);
-  };
-
-  const toggle = (id) => persist(effective, { ...collapsed, [id]: !collapsed[id] });
+export default function PanelColumn({ side, sections, layout, t }) {
+  const otherSide = side === 'left' ? 'right' : 'left';
 
   return (
     <>
-      {effective.map((id, index) => {
-        const section = sections.find((s) => s.id === id);
-        if (!section) return null;
-        const isCollapsed = Boolean(collapsed[id]);
-
+      {sections.map((section, index) => {
+        const isCollapsed = Boolean(layout.collapsed[section.id]);
         return (
           <section
-            key={id}
+            key={section.id}
             onDragOver={(e) => e.preventDefault()}
-            onDrop={() => drop(id)}
+            onDrop={() => layout.dropInto(side, section.id)}
             // `shrink-0` est indispensable : la colonne est un conteneur flex de
             // hauteur fixe, et sans lui chaque section se fait comprimer au lieu
             // de laisser la colonne défiler — avec `overflow-hidden`, le contenu
             // se retrouvait rogné (mesuré : 412 px de contenu dans 315 px).
             className={`panel shrink-0 overflow-hidden rounded-lg transition-opacity ${
               section.className ?? ''
-            } ${dragging === id ? 'opacity-40' : ''}`}
+            } ${layout.dragging === section.id ? 'opacity-40' : ''}`}
           >
             <header
               draggable
-              onDragStart={() => setDragging(id)}
-              onDragEnd={() => setDragging(null)}
+              onDragStart={() => layout.setDragging(section.id)}
+              onDragEnd={() => layout.setDragging(null)}
               className="flex cursor-grab items-center gap-1 border-b border-black/10 px-2 py-1 active:cursor-grabbing"
             >
-              <span className="select-none text-[11px] leading-none text-ink-soft" aria-hidden="true">
+              <span
+                className="hidden select-none text-[11px] leading-none text-ink-soft xl:inline"
+                aria-hidden="true"
+              >
                 ⠿
               </span>
               <button
                 type="button"
-                onClick={() => toggle(id)}
+                onClick={() => layout.toggleCollapse(section.id)}
                 aria-expanded={!isCollapsed}
                 className="flex-1 text-left font-condensed text-[11px] uppercase tracking-[0.18em] text-ink-soft hover:text-ink"
               >
                 {section.title}
               </button>
-              {/* Les flèches font ce que le glisser-déposer fait, mais au doigt :
-                  sur un écran tactile, un `draggable` ne se déclenche pas. */}
+              {/* Les flèches et le renvoi de côté n'ont de sens qu'à deux
+                  colonnes côte à côte : inutiles sur téléphone, où une seule
+                  colonne existe et où le glisser-déposer ne se déclenche pas
+                  au doigt de toute façon. */}
               <button
                 type="button"
-                onClick={() => move(id, -1)}
+                onClick={() => layout.moveWithin(side, section.id, -1)}
                 disabled={index === 0}
                 aria-label={t('moveUp')}
-                className="px-1 text-[10px] leading-none text-ink-soft hover:text-ink disabled:opacity-25"
+                className="hidden px-1 text-[10px] leading-none text-ink-soft hover:text-ink disabled:opacity-25 xl:inline"
               >
                 ▲
               </button>
               <button
                 type="button"
-                onClick={() => move(id, 1)}
-                disabled={index === effective.length - 1}
+                onClick={() => layout.moveWithin(side, section.id, 1)}
+                disabled={index === sections.length - 1}
                 aria-label={t('moveDown')}
-                className="px-1 text-[10px] leading-none text-ink-soft hover:text-ink disabled:opacity-25"
+                className="hidden px-1 text-[10px] leading-none text-ink-soft hover:text-ink disabled:opacity-25 xl:inline"
               >
                 ▼
               </button>
               <button
                 type="button"
-                onClick={() => toggle(id)}
+                onClick={() => layout.sendToSide(section.id, otherSide)}
+                aria-label={otherSide === 'left' ? t('moveToLeft') : t('moveToRight')}
+                title={otherSide === 'left' ? t('moveToLeft') : t('moveToRight')}
+                className="hidden px-1 text-[10px] leading-none text-ink-soft hover:text-ink xl:inline"
+              >
+                {otherSide === 'left' ? '◀' : '▶'}
+              </button>
+              <button
+                type="button"
+                onClick={() => layout.toggleCollapse(section.id)}
                 aria-label={isCollapsed ? t('expand') : t('collapse')}
                 className="px-1 text-[10px] leading-none text-ink-soft hover:text-ink"
               >

@@ -8,7 +8,8 @@ import { Home, WaitingRoom, GameMenu } from './components/Lobby.jsx';
 import Board from './components/Board.jsx';
 import Players from './components/Players.jsx';
 import Actions, { Manage } from './components/Actions.jsx';
-import PanelStack from './components/PanelStack.jsx';
+import PanelColumn from './components/PanelStack.jsx';
+import { usePanelLayout } from './lib/usePanelLayout.js';
 import Feed from './components/Feed.jsx';
 import TradeDialog from './components/TradeDialog.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
@@ -70,6 +71,63 @@ function MobileTabs({ tab, onChange, waiting, t }) {
   );
 }
 
+/** À quel onglet mobile appartient chaque section — sans lien avec son côté. */
+const MOBILE_TAB_OF = { actions: 'jeu', assets: 'profil', players: 'profil', feed: 'journal' };
+
+/**
+ * Le contenu des quatre sections déplaçables, construit une fois par rendu.
+ *
+ * Le téléphone et l'ordinateur n'affichent pas le même arbre : une seule
+ * colonne filtrée par onglet là, deux colonnes libres ici. Chaque section
+ * vit donc à deux endroits du DOM (masqué par CSS, jamais par un test
+ * d'appareil — la convention du projet), ce qui la monte deux fois ; le seul
+ * coût réel est qu'un brouillon de message dans le chat ne survit pas à un
+ * redimensionnement qui franchit le seuil ordinateur, un cas assez rare pour
+ * qu'on l'accepte plutôt que de dupliquer toute la mise en page en JavaScript.
+ */
+function buildSections({ state, me, mine, t, setTradeOpen, setSettleOpen, focusOn }) {
+  return {
+    actions: {
+      title: t('sectionActions'),
+      node: (
+        <ErrorBoundary zone="La barre d'action">
+          <Actions
+            state={state}
+            me={me}
+            mine={mine}
+            onOpenTrade={() => setTradeOpen(true)}
+            onOpenSettlement={() => setSettleOpen(true)}
+          />
+        </ErrorBoundary>
+      ),
+    },
+    assets: {
+      title: t('sectionAssets'),
+      node: (
+        <ErrorBoundary zone="Vos biens">
+          <Manage state={state} me={me} />
+        </ErrorBoundary>
+      ),
+    },
+    players: {
+      title: t('sectionPlayers'),
+      node: (
+        <ErrorBoundary zone="Le panneau des joueuses">
+          <Players state={state} me={me} mine={mine} onFocus={focusOn} />
+        </ErrorBoundary>
+      ),
+    },
+    feed: {
+      title: t('sectionFeed'),
+      node: (
+        <ErrorBoundary zone="Le journal">
+          <Feed state={state} actor={me?.id} />
+        </ErrorBoundary>
+      ),
+    },
+  };
+}
+
 /**
  * Son solde, toujours sous les yeux.
  *
@@ -108,19 +166,31 @@ export default function App() {
   const [settleOpen, setSettleOpen] = useState(false);
   const [inspected, setInspected] = useState(null);
   const [tab, setTab] = useState('jeu');
-  const aside = useRef(null);
+  const leftDock = useRef(null);
+  const rightDock = useRef(null);
   const [recapClosed, setRecapClosed] = useState(false);
+
+  // Les quatre sections qu'on peut replier et faire glisser d'un côté à
+  // l'autre du plateau. `usePanelLayout` est appelé une fois ici, et les deux
+  // colonnes en dessous partagent le même objet — c'est ce qui permet à un
+  // glisser-déposer commencé dans l'une de se terminer dans l'autre.
+  const SECTION_IDS = ['actions', 'assets', 'players', 'feed'];
+  const layout = usePanelLayout(SECTION_IDS);
 
   const finished = state?.phase === 'finished';
   useEffect(() => {
     if (finished) setRecapClosed(false);
   }, [finished]);
 
-  // Quand une nouvelle décision arrive, la colonne remonte : sans ça, le panneau
-  // reste caché sous la liste des biens et on croit qu'il ne se passe rien.
+  // Quand une nouvelle décision arrive, la colonne qui porte les boutons
+  // remonte : sans ça, ils restent cachés sous la liste des biens et on croit
+  // qu'il ne se passe rien. On ne sait plus d'avance laquelle des deux
+  // colonnes les porte — ça dépend de l'agencement choisi.
   const pendingKind = state?.pending?.kind ?? null;
   useEffect(() => {
-    if (pendingKind) aside.current?.scrollTo({ top: 0, behavior: 'smooth' });
+    if (!pendingKind) return;
+    const dock = layout.columns.left.includes('actions') ? leftDock : rightDock;
+    dock.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [pendingKind]);
 
   // Sur téléphone, quand le jeu attend une décision de ce poste, on bascule
@@ -155,6 +225,19 @@ export default function App() {
   const myTurnToDraw = state.pending?.kind === 'draw_card' && me && state.pending.playerIds.includes(me.id);
   const revealedIsMine = revealed && me && state.pending.playerIds.includes(me.id);
 
+  // Construit une seule fois le contenu des sections, puis le distribue selon
+  // l'agencement choisi : gauche, droite, ou — sur téléphone — un seul
+  // ensemble filtré par onglet, dans l'ordre où les colonnes ont été fondues.
+  const content = buildSections({ state, me, mine, t, setTradeOpen, setSettleOpen, focusOn });
+  const toSection = (id) => ({ id, ...content[id] });
+  const leftSections = layout.columns.left.map(toSection);
+  const rightSections = layout.columns.right.map(toSection);
+  const mobileSections = [...layout.columns.left, ...layout.columns.right].map((id) => ({
+    id,
+    ...content[id],
+    className: tab === MOBILE_TAB_OF[id] ? '' : 'hidden',
+  }));
+
   return (
     <div className="min-h-screen p-3 lg:p-5">
       {!connected && (
@@ -168,7 +251,35 @@ export default function App() {
         </div>
       )}
 
-      <div className="mx-auto flex max-w-[1500px] flex-col gap-4 pb-16 xl:h-[calc(100dvh-2.5rem)] xl:flex-row xl:pb-0">
+      {/* Ce qui suit ne se déplace jamais : le code de partie, les règles, la
+          calculatrice, le solde. Une barre pleine largeur — les faire vivre
+          dans une colonne étroite ne servait à rien, la place est là. */}
+      <div className="mx-auto flex max-w-[2000px] flex-col gap-2 pb-16 xl:pb-0">
+        <div className={tab === 'jeu' ? 'contents' : 'hidden xl:contents'}>
+          <ErrorBoundary zone="Le menu de partie">
+            <GameMenu state={state} mine={mine} onLeave={leave} onShowRecap={() => setRecapClosed(false)} />
+          </ErrorBoundary>
+        </div>
+        <CashBar state={state} mine={mine} t={t} />
+      </div>
+
+      {/* Le plateau, flanqué d'une colonne de chaque côté. N'importe quelle
+          section — vos biens, les joueuses, le journal et le chat — se
+          replie, se réordonne, et se glisse d'une colonne à l'autre : c'est
+          l'agencement choisi qui commande, pas un ordre figé d'avance. Une
+          colonne vide ne réserve aucune place, le plateau récupère l'espace. */}
+      <div className="mx-auto flex max-w-[2000px] flex-col gap-2 pb-16 xl:h-[calc(100dvh-6.5rem)] xl:flex-row xl:pb-0">
+        {leftSections.length > 0 && (
+          <aside
+            ref={leftDock}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={() => layout.dropInto('left')}
+            className="scroll-thin hidden shrink-0 flex-col gap-2 overflow-y-auto xl:flex xl:h-full xl:w-[360px]"
+          >
+            <PanelColumn side="left" t={t} layout={layout} sections={leftSections} />
+          </aside>
+        )}
+
         <div
           className={`min-h-0 flex-1 items-start justify-center xl:flex ${
             tab === 'jeu' ? 'flex' : 'hidden'
@@ -189,81 +300,26 @@ export default function App() {
           </ErrorBoundary>
         </div>
 
-        {/* La colonne défile toute seule : le plateau, lui, ne bouge jamais.
-            Ses sections se replient et se déplacent — sur ordinateur, tout ne
-            tient pas de front, alors c'est à chacune de décider ce qu'elle
-            garde sous les yeux. */}
+        {/* Sur téléphone, une seule colonne : les onglets décident de ce qui
+            s'affiche, par des classes, jamais par une détection d'appareil.
+            Elle reçoit les deux côtés à la fois (le côté n'a de sens qu'à
+            deux colonnes visibles). Sur ordinateur, elle ne montre plus que
+            la colonne de droite — la gauche, si elle existe, est au-dessus. */}
         <aside
-          ref={aside}
-          className="scroll-thin flex w-full shrink-0 flex-col gap-2 xl:h-full xl:w-[400px] xl:overflow-y-auto"
+          ref={rightDock}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={() => layout.dropInto('right')}
+          className="scroll-thin flex w-full shrink-0 flex-col gap-2 xl:h-full xl:w-[360px] xl:overflow-y-auto"
         >
-          <div className={tab === 'jeu' ? 'contents' : 'hidden xl:contents'}>
-            <ErrorBoundary zone="Le menu de partie">
-              <GameMenu
-                state={state}
-                mine={mine}
-                onLeave={leave}
-                onShowRecap={() => setRecapClosed(false)}
-              />
-            </ErrorBoundary>
+          {/* Le seul endroit où le téléphone regarde encore l'onglet en cours :
+              une colonne unique, les deux côtés fondus dans l'ordre où
+              l'ordinateur les affiche. */}
+          <div className="contents xl:hidden">
+            <PanelColumn side="right" t={t} layout={layout} sections={mobileSections} />
           </div>
-
-          <CashBar state={state} mine={mine} t={t} />
-
-          {/* Sur téléphone, les onglets décident de ce qui s'affiche — par des
-              classes, jamais par une détection d'appareil. Sur ordinateur, tout
-              est là et c'est l'agencement choisi qui commande. */}
-          <PanelStack
-            t={t}
-            sections={[
-              {
-                id: 'actions',
-                title: t('sectionActions'),
-                className: `${tab === 'jeu' ? '' : 'hidden'} xl:block`,
-                node: (
-                  <ErrorBoundary zone="La barre d'action">
-                    <Actions
-                      state={state}
-                      me={me}
-                      mine={mine}
-                      onOpenTrade={() => setTradeOpen(true)}
-                      onOpenSettlement={() => setSettleOpen(true)}
-                    />
-                  </ErrorBoundary>
-                ),
-              },
-              {
-                id: 'assets',
-                title: t('sectionAssets'),
-                className: `${tab === 'profil' ? '' : 'hidden'} xl:block`,
-                node: (
-                  <ErrorBoundary zone="Vos biens">
-                    <Manage state={state} me={me} />
-                  </ErrorBoundary>
-                ),
-              },
-              {
-                id: 'players',
-                title: t('sectionPlayers'),
-                className: `${tab === 'profil' ? '' : 'hidden'} xl:block`,
-                node: (
-                  <ErrorBoundary zone="Le panneau des joueuses">
-                    <Players state={state} me={me} mine={mine} onFocus={focusOn} />
-                  </ErrorBoundary>
-                ),
-              },
-              {
-                id: 'feed',
-                title: t('sectionFeed'),
-                className: `${tab === 'journal' ? '' : 'hidden'} xl:block`,
-                node: (
-                  <ErrorBoundary zone="Le journal">
-                    <Feed state={state} actor={me?.id} />
-                  </ErrorBoundary>
-                ),
-              },
-            ]}
-          />
+          <div className="hidden xl:contents">
+            <PanelColumn side="right" t={t} layout={layout} sections={rightSections} />
+          </div>
         </aside>
       </div>
 
