@@ -398,24 +398,30 @@ Un défaut signalé en jouant a laissé des tests dédiés
 
 ## 6 bis. Revenir en arrière (`UNDO`)
 
-Un bouton défait le dernier geste — mais **seulement les gestes réversibles** :
-`BUILD_HOUSE`, `SELL_BUILDING`, `MORTGAGE`, `UNMORTGAGE`. Jamais un jet de dés
-ni une carte piochée : ce serait rejouer le hasard une fois le résultat connu,
-c'est-à-dire tricher. Un test verrouille cet invariant ; **ne jamais élargir
-`UNDOABLE` à une action qui révèle de l'information.**
+Un bouton défait le geste qu'on vient de faire — mais **seulement les gestes
+réversibles** (`BUILD_HOUSE`, `SELL_BUILDING`, `MORTGAGE`, `UNMORTGAGE`), et
+**un seul niveau, jamais une chaîne**. Jamais un jet de dés ni une carte
+piochée : ce serait rejouer le hasard une fois le résultat connu, c'est-à-dire
+tricher. Un test verrouille cet invariant ; **ne jamais élargir `UNDOABLE`** à
+une action qui révèle de l'information, et **ne jamais remettre de pile** à la
+place du simple emplacement unique.
 
-Trois décisions de conception, chacune pour une raison :
+Quatre décisions de conception, chacune pour une raison :
 
-- **Les instantanés vivent sur la partie (`game.undo`), pas dans `state`.**
-  L'état part sur le disque à chaque coup ; y empiler des copies complètes le
-  ferait grossir pour rien. On perd donc la pile au redémarrage du serveur —
-  c'est le bon compromis, on n'annule pas le coup d'hier. L'état ne porte qu'un
-  marqueur minuscule, `state.undoable`, pour que le client sache s'il doit
-  proposer le bouton.
-- **Toute action non réversible vide la pile.** C'est ce qui rend la
-  restauration sûre : la pile ne contient jamais qu'une suite ininterrompue de
-  gestes réversibles de la même personne, donc revenir en arrière ne peut pas
-  effacer le coup d'une autre (rappel : `MORTGAGE` est permis hors de son tour).
+- **Un seul emplacement, pas une pile.** `game.undo` est l'unique geste
+  annulable, pas un historique — annuler puis vouloir annuler encore refuse
+  avec « Il n'y a rien à annuler. ». C'est la demande explicite : pouvoir
+  reprendre le dernier coup, jamais remonter de plusieurs.
+- **Toute action non réversible efface l'emplacement.** Lancer les dés, finir
+  son tour, piocher une carte : tout ça vide l'ardoise avant même d'être joué.
+  Un tour qui vient de commencer n'a donc jamais accès à ce qui s'est passé
+  avant le jet de dés qui l'a ouvert — et encore moins à un tour précédent.
+- **L'instantané vit sur la partie (`game.undo`), pas dans `state`.** L'état
+  part sur le disque à chaque coup ; y garder une copie complète le ferait
+  grossir pour rien. On le perd donc au redémarrage du serveur — c'est le bon
+  compromis, on n'annule pas le coup d'hier. L'état ne porte qu'un marqueur
+  minuscule, `state.undoable`, pour que le client sache s'il doit proposer le
+  bouton.
 - **`logSeq` ne recule jamais.** Rembobiner l'état rembobinerait le compteur du
   journal, et deux entrées porteraient la même clé — le piège maison qui fige la
   liste côté React. Le chat non plus n'est pas rembobiné : ce n'est pas un coup

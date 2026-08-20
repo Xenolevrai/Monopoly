@@ -192,47 +192,42 @@ export function updateSettings(game, playerId, settings) {
  */
 const UNDOABLE = new Set(['BUILD_HOUSE', 'SELL_BUILDING', 'MORTGAGE', 'UNMORTGAGE']);
 
-/** Au-delà, on ne garde plus : une pile d'annulation n'est pas un historique. */
-const UNDO_LIMIT = 12;
-
 /**
- * Garde de quoi revenir en arrière.
- *
- * Les instantanés vivent **sur la partie, pas dans son état** : l'état part sur
- * le disque à chaque coup, et y empiler des copies complètes le ferait grossir
- * pour rien. On perd donc la pile au redémarrage du serveur, ce qui est le bon
- * compromis — on n'annule pas le coup d'hier.
+ * Un seul niveau, jamais une chaîne. On revient sur le geste qu'on vient de
+ * faire, pas sur trois d'affilée — et surtout pas sur un tour déjà passé.
+ * L'instantané vit **sur la partie, pas dans son état** : l'état part sur le
+ * disque à chaque coup, et y garder une copie complète le ferait grossir pour
+ * rien. On le perd donc au redémarrage du serveur, ce qui est le bon compromis
+ * — on n'annule pas le coup d'hier.
  *
  * L'état ne porte qu'un marqueur minuscule (`state.undoable`), pour que le
  * client sache s'il doit proposer le bouton.
  */
 function rememberForUndo(game, playerId, action, snapshot) {
-  game.undo ??= [];
-  game.undo.push({ playerId, type: action.type, spaceId: action.spaceId, snapshot });
-  if (game.undo.length > UNDO_LIMIT) game.undo.shift();
+  game.undo = { playerId, type: action.type, spaceId: action.spaceId, snapshot };
   game.state.undoable = { playerId, type: action.type, spaceId: action.spaceId };
 }
 
-/** Vide la pile : l'instantané ne vaut plus rien. */
+/** Efface l'instantané : il ne vaut plus rien au-delà de ce point. */
 function forgetUndo(game) {
-  if (game.undo?.length) game.undo.length = 0;
+  if (game.undo) game.undo = null;
   if (game.state.undoable) game.state.undoable = null;
 }
 
 /**
- * Revient sur le dernier geste réversible de cette joueuse.
+ * Revient sur le geste qu'on vient de faire — un seul, jamais une chaîne.
  *
- * On ne défait que le sommet de la pile, et seulement s'il est à elle. C'est ce
- * qui rend l'opération sûre : toute action non réversible vide la pile, donc
- * elle ne contient jamais qu'une suite ininterrompue de gestes réversibles de la
- * même personne — restaurer ne peut pas effacer le coup d'une autre.
+ * Le principe qui rend ça sûr : **toute** action qui n'est pas elle-même
+ * réversible efface l'instantané avant même d'être jouée (voir `dispatch`).
+ * Lancer les dés, finir son tour, piocher une carte — tout ça vide l'ardoise.
+ * Un tour qui vient de commencer n'a donc jamais accès à ce qui s'est passé
+ * avant le jet de dés qui l'a ouvert, encore moins au tour précédent.
  */
 function undoLast(game, playerId) {
-  const stack = game.undo ?? [];
-  const entry = stack.at(-1);
+  const entry = game.undo;
   if (!entry) return refuse("Il n'y a rien à annuler.");
   if (entry.playerId !== playerId) return refuse("Ce geste n'est pas le vôtre.");
-  stack.pop();
+  game.undo = null;
 
   const live = game.state;
   // Le compteur du journal ne recule jamais : un identifiant déjà affiché ne
@@ -246,12 +241,10 @@ function undoLast(game, playerId) {
   live.logSeq = logSeq;
   live.version = version;
   live.chat = chat; // le bavardage n'est pas un coup de jeu
+  live.undoable = null; // un seul niveau : pas de deuxième annulation en chaîne
 
   const player = playerById(live, playerId);
   log(live, 'undo', say(live, 'undone', { name: player.name }), { playerId, type: entry.type });
-  live.undoable = stack.at(-1)
-    ? { playerId: stack.at(-1).playerId, type: stack.at(-1).type, spaceId: stack.at(-1).spaceId }
-    : null;
   return { ok: true };
 }
 

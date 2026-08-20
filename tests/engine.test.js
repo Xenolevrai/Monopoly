@@ -963,10 +963,9 @@ test('on peut revenir sur une construction revendue trop vite', () => {
   assert.equal(game.state.undoable, null, 'plus rien à annuler');
 });
 
-test("on peut défaire plusieurs gestes d'affilée, dans l'ordre inverse", () => {
+test("l'annulation ne va jamais plus loin qu'un seul geste : pas de chaîne", () => {
   const game = newGame();
   give(game, 'p0', [1, 3, 6]);
-  const avant = playerById(game.state, 'p0').cash;
 
   act(game, 'p0', { type: 'MORTGAGE', spaceId: 6 });
   act(game, 'p0', { type: 'MORTGAGE', spaceId: 1 });
@@ -974,12 +973,14 @@ test("on peut défaire plusieurs gestes d'affilée, dans l'ordre inverse", () =>
   assert.equal(game.state.properties[6].mortgaged, true);
 
   act(game, 'p0', { type: 'UNDO' });
-  assert.equal(game.state.properties[1].mortgaged, false, 'le dernier geste part en premier');
-  assert.equal(game.state.properties[6].mortgaged, true);
+  assert.equal(game.state.properties[1].mortgaged, false, 'seul le tout dernier geste part');
+  assert.equal(game.state.properties[6].mortgaged, true, 'celui d\'avant reste : pas de chaîne');
 
-  act(game, 'p0', { type: 'UNDO' });
-  assert.equal(game.state.properties[6].mortgaged, false);
-  assert.equal(playerById(game.state, 'p0').cash, avant);
+  // Une deuxième annulation à la suite doit être refusée : il n'y a qu'un
+  // niveau, jamais une pile qu'on déroule.
+  const second = dispatch(game, 'p0', { type: 'UNDO' });
+  assert.equal(second.ok, false, "on ne remonte pas à l'hypothèque d'avant");
+  assert.equal(game.state.properties[6].mortgaged, true);
 });
 
 test('un jet de dés ne se défait jamais', () => {
