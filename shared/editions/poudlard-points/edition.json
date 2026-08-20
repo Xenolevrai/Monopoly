@@ -63,7 +63,8 @@
     "freeParkingPot": false,
     "auctionOnDecline": true,
     "evenBuildRule": true,
-    "auctionBankruptcyAssets": false
+    "auctionBankruptcyAssets": false,
+    "doubleGoLanding": false
   },
   "buildingLabels": {
     "house": "Blason",

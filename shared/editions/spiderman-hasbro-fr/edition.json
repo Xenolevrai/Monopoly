@@ -84,7 +84,8 @@
     "auctionOnDecline": true,
     "collectGoOnGoToLyon": true,
     "evenBuildRule": true,
-    "auctionBankruptcyAssets": true
+    "auctionBankruptcyAssets": true,
+    "doubleGoLanding": false
   },
   "tokens": [
     {

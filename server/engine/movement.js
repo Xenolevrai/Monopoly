@@ -49,7 +49,7 @@ export function advance(state, playerId, steps) {
   const raw = player.position + steps;
   queuePassedSpaces(state, player.position, steps);
   player.position = ((raw % size) + size) % size;
-  if (steps > 0 && raw >= size) collectSalary(state, playerId);
+  if (steps > 0 && raw >= size) collectSalary(state, playerId, player.position === 0);
   return player.position;
 }
 
@@ -61,12 +61,20 @@ export function moveTo(state, playerId, target, collectGoSalary = true) {
   const passes = steps > 0 && player.position + steps >= size;
   queuePassedSpaces(state, player.position, steps);
   player.position = target;
-  if (passes && collectGoSalary) collectSalary(state, playerId);
+  if (passes && collectGoSalary) collectSalary(state, playerId, target === 0);
   return target;
 }
 
-function collectSalary(state, playerId) {
-  credit(state, playerId, config(state).currency.goBonus, say(state, 'reasonGo'));
+/**
+ * Verse le salaire de Départ. `landedOnGo` distingue « tombée pile dessus » de
+ * « simplement passée devant » — seule la première profite de la règle maison
+ * `doubleGoLanding`, quel que soit le moyen d'y arriver (dés, carte, raccourci) :
+ * la case ne sait pas comment on l'a atteinte, seulement qu'on s'y arrête.
+ */
+function collectSalary(state, playerId, landedOnGo = false) {
+  const bonus = config(state).currency.goBonus;
+  const doubled = landedOnGo && state.settings.doubleGoLanding;
+  credit(state, playerId, doubled ? bonus * 2 : bonus, say(state, doubled ? 'reasonGoDouble' : 'reasonGo'));
   grantLapWaivers(state, playerId);
 }
 

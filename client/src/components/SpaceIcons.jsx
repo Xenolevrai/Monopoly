@@ -84,11 +84,18 @@ export function Ring({ className = '', style }) {
   );
 }
 
-/** Flèche de la case Départ. */
+/**
+ * Flèche de la case Départ, qui pointe dans le sens du jeu.
+ *
+ * Départ est le coin bas-droit du plateau (case 0) et les cases suivantes
+ * défilent vers la gauche le long du bas (`gridPosition` : la colonne diminue
+ * quand l'identifiant augmente) — la flèche doit donc pointer vers la gauche,
+ * pas vers la droite.
+ */
 export function GoArrow({ className = '', style }) {
   return (
     <svg viewBox="0 0 48 48" className={className} style={style} fill="currentColor">
-      <path d="M40 24L26 12v7H8v10h18v7z" />
+      <path d="M8 24L22 12v7H40v10H22v7z" />
     </svg>
   );
 }

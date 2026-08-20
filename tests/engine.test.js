@@ -61,6 +61,34 @@ test('passer par la case Départ rapporte 200 €', () => {
   assert.equal(playerById(game.state, 'p0').cash, 1700);
 });
 
+test("tomber pile sur Départ ne double pas le salaire, règle maison désactivée", () => {
+  const game = newGame();
+  place(game, 'p0', 35);
+  forceDice(game, [3, 2]); // 35 + 5 = 40 → case 0, pile sur Départ
+  act(game, 'p0', { type: 'ROLL_DICE' });
+
+  assert.equal(playerById(game.state, 'p0').position, 0);
+  assert.equal(playerById(game.state, 'p0').cash, 1700, 'simple salaire, comme un passage');
+});
+
+test('la règle maison « double salaire pile sur Départ » double aux dés', () => {
+  const game = newGame(['Julie', 'Sophie'], { settings: { doubleGoLanding: true } });
+  place(game, 'p0', 35);
+  forceDice(game, [3, 2]); // pile sur la case 0
+  act(game, 'p0', { type: 'ROLL_DICE' });
+
+  assert.equal(playerById(game.state, 'p0').cash, 1900, 'double salaire (400 €)');
+});
+
+test('un simple passage devant Départ ne double jamais, même règle activée', () => {
+  const game = newGame(['Julie', 'Sophie'], { settings: { doubleGoLanding: true } });
+  place(game, 'p0', 38);
+  forceDice(game, [2, 3]); // 38 + 5 = 43 → case 3, on ne s'arrête pas sur Départ
+  act(game, 'p0', { type: 'ROLL_DICE' });
+
+  assert.equal(playerById(game.state, 'p0').cash, 1700, 'un seul salaire, pas de doublement au passage');
+});
+
 test('un double redonne la main à la même joueuse', () => {
   const game = newGame();
   forceDice(game, [3, 3]);
@@ -409,6 +437,14 @@ test('une carte « avancez à la case Départ » déplace et crédite', () => {
   applyCardAction(game.state, 'p0', { type: 'move_to', target: 0, collectGoSalary: true });
   assert.equal(playerById(game.state, 'p0').position, 0);
   assert.equal(playerById(game.state, 'p0').cash, 1700);
+});
+
+test('une carte qui envoie pile sur Départ double aussi, règle maison activée', () => {
+  const game = newGame(['Julie', 'Sophie'], { settings: { doubleGoLanding: true } });
+  place(game, 'p0', 30);
+  applyCardAction(game.state, 'p0', { type: 'move_to', target: 0, collectGoSalary: true });
+  assert.equal(playerById(game.state, 'p0').position, 0);
+  assert.equal(playerById(game.state, 'p0').cash, 1900, 'la règle ne connaît pas la façon dont on arrive');
 });
 
 test('une carte de réparations facture maisons et hôtels', () => {

@@ -810,6 +810,7 @@ export function WaitingRoom({ state, mine, onLeave }) {
           {[
             ['freeParkingPot', "Cagnotte sur le Parc Gratuit (les taxes s'y accumulent)"],
             ['auctionOnDecline', "Enchère quand une joueuse refuse d'acheter (règle officielle)"],
+            ['doubleGoLanding', 'Double salaire en tombant pile sur Départ (dés, carte, raccourci…)'],
           ].map(([key, label]) => (
             <label key={key} className="flex items-center gap-2 text-xs">
               <input

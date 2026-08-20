@@ -66,7 +66,8 @@
     "freeParkingPot": false,
     "auctionOnDecline": true,
     "evenBuildRule": true,
-    "auctionBankruptcyAssets": true
+    "auctionBankruptcyAssets": true,
+    "doubleGoLanding": false
   },
   "buildingLabels": {
     "house": "Chaumière",
