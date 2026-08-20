@@ -249,6 +249,7 @@ const DEFAULT_ICONS = {
   escape: 'officer',
   heist: 'chest',
   super_jail: 'bars',
+  landmark: 'crest',
 };
 
 /**
@@ -261,7 +262,10 @@ const DEFAULT_ICONS = {
  */
 export function iconFor(edition, space) {
   const table = { ...DEFAULT_ICONS, ...(edition?.theming?.icons ?? {}) };
-  const entry = table[space.type];
+  // Une case peut nommer son pictogramme elle-même : c'est ce qui permet à un
+  // titre posé sur Départ de garder sa flèche plutôt que de prendre le symbole
+  // générique de son nouveau type.
+  const entry = space.icon ?? table[space.type];
   if (!entry) return null;
 
   if (Array.isArray(entry)) {

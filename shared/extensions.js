@@ -165,9 +165,11 @@ export const EXTENSIONS = {
     // notre modèle n'ayant que 40 cases, elle n'est pas représentée — les trois
     // coins achetables suffisent à porter la mécanique.
     boardOverrides: [
-      { position: 0, changes: { type: 'landmark', group: 'landmark', price: 400, rent: [75], mortgage: 200 } },
-      { position: 10, changes: { type: 'landmark', group: 'landmark', price: 300, rent: [50], mortgage: 150 } },
-      { position: 20, changes: { type: 'landmark', group: 'landmark', price: 350, rent: [60], mortgage: 175 } },
+      // `icon` garde le pictogramme d'origine : devenue achetable, la case reste
+      // reconnaissable comme Départ, Prison ou Parc Gratuit.
+      { position: 0, changes: { type: 'landmark', group: 'landmark', price: 400, rent: [75], mortgage: 200, icon: 'arrow' } },
+      { position: 10, changes: { type: 'landmark', group: 'landmark', price: 300, rent: [50], mortgage: 150, icon: 'bars' } },
+      { position: 20, changes: { type: 'landmark', group: 'landmark', price: 350, rent: [60], mortgage: 175, icon: 'car' } },
     ],
     addsGroups: {
       landmark: {

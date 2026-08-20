@@ -9,7 +9,9 @@ import {
   LOCALES,
   compatibleExtensions,
   conflictingPositions,
+  editionFor,
 } from '../lib/board.js';
+import { EXTENSIONS } from '../../../shared/extensions.js';
 import { translator } from '../lib/i18n.js';
 import TokenIcon from './TokenIcon.jsx';
 import Rules from './Rules.jsx';
@@ -134,6 +136,9 @@ function EditionBriefing({ edition }) {
     m.mortgage ? "L'hypothèque est autorisée." : "Pas d'hypothèque dans cette édition.",
     m.auctions ? "Refuser d'acheter met la case aux enchères." : null,
     `Piles : ${Object.values(edition.theming.decks).map((d) => d.label).join(' et ')}.`,
+    edition.activeExtensions?.length
+      ? `Extensions : ${edition.activeExtensions.map((id) => EXTENSIONS[id]?.name ?? id).join(', ')}.`
+      : null,
   ].filter(Boolean);
 
   return (
@@ -685,7 +690,9 @@ export function GameMenu({ state, mine, onLeave, onShowRecap }) {
 }
 
 export function WaitingRoom({ state, mine, onLeave }) {
-  const edition = getEdition(state.editionId, state.locale);
+  // Édition **fusionnée** : dans le salon, le récapitulatif doit décrire la
+  // partie telle qu'elle se jouera, extensions comprises, pas la boîte nue.
+  const edition = editionFor(state);
   const t = translator(state.locale);
   const localIds = new Set(mine.map((p) => p.id));
   const [copied, setCopied] = useState(false);

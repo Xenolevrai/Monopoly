@@ -32,6 +32,74 @@ function Button({ children, onClick, tone = 'primary', disabled, className = '' 
   );
 }
 
+/**
+ * Toutes les cartes de l'édition (extensions comprises), indexées par id.
+ * Le client n'a besoin que de leur texte : les effets restent au serveur.
+ */
+function cardIndexOf(state) {
+  const decks = editionFor(state).cards ?? {};
+  return Object.fromEntries(
+    Object.values(decks).flatMap((list) => (list ?? []).map((card) => [card.id, card])),
+  );
+}
+
+/**
+ * Le coffre des ventes : les cartes retournées au centre, et celles qu'on
+ * détient. Ne s'affiche que si la partie en a un — le serveur l'annonce en
+ * posant `state.saleVault`, le client ne connaît aucune extension par son nom.
+ */
+function SaleVault({ state, me, actor }) {
+  const t = useT(state);
+  if (!state.saleVault) return null;
+  const cards = cardIndexOf(state);
+  const held = me?.saleCards ?? [];
+  const colors = { red: '#8c2b2b', yellow: '#b08d3f', green: '#2f6b45' };
+
+  return (
+    <div className="space-y-2 rounded border border-black/10 bg-black/5 p-2">
+      <p className="font-condensed text-xs uppercase tracking-wide opacity-70">{t('saleVault')}</p>
+      <ul className="space-y-1">
+        {state.saleVault.visible.map((cardId) => (
+          <li key={cardId} className="flex gap-2 text-xs leading-snug">
+            <span
+              aria-hidden="true"
+              className="mt-1 h-2 w-2 shrink-0 rounded-full"
+              style={{ background: colors[cards[cardId]?.color] ?? '#666' }}
+            />
+            <span>{cards[cardId]?.text ?? cardId}</span>
+          </li>
+        ))}
+      </ul>
+      {held.length > 0 && (
+        <>
+          <p className="font-condensed text-xs uppercase tracking-wide opacity-70">{t('saleCards')}</p>
+          <ul className="space-y-1">
+            {held.map((cardId) => (
+              <li key={cardId} className="flex items-start gap-2 text-xs leading-snug">
+                <span
+                  aria-hidden="true"
+                  className="mt-1 h-2 w-2 shrink-0 rounded-full"
+                  style={{ background: colors[cards[cardId]?.color] ?? '#666' }}
+                />
+                <span className="flex-1">{cards[cardId]?.text ?? cardId}</span>
+                {cards[cardId]?.action && (
+                  <Button
+                    tone="ghost"
+                    className="!px-2 !py-1 !text-xs"
+                    onClick={() => sendAction({ type: 'PLAY_SALE_CARD', cardId }, actor)}
+                  >
+                    {t('playCard')}
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** Le titre de propriété, dans l'esprit des cartes du jeu. */
 export function PropertyCard({ state, spaceId }) {
   const t = useT(state);
@@ -503,11 +571,19 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
           <Button onClick={() => sendAction({ type: 'END_TURN' }, actor)}>
             {state.dice?.extraRoll ? t('playAgain') : t('endTurn')}
           </Button>
+          {/* Proposé par le serveur seulement quand le jet reste à faire. */}
+          {pending.payload?.canRollBuyDie && (
+            <Button tone="ghost" onClick={() => sendAction({ type: 'ROLL_BUY_DIE' }, actor)}>
+              {t('buyDie')}
+            </Button>
+          )}
           <Button tone="ghost" onClick={onOpenTrade}>
             {t('trade')}
           </Button>
         </div>
       )}
+
+      <SaleVault state={state} me={me} actor={actor} />
 
       {(!mineTurn || pending.kind !== 'end_turn') && state.phase === 'playing' && pending.kind !== 'pay_debt' && (
         <Button tone="ghost" onClick={onOpenTrade}>

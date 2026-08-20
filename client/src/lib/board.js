@@ -6,6 +6,7 @@
  */
 import {
   getEdition,
+  editionOf,
   listEditions,
   DEFAULT_EDITION,
   DEFAULT_LOCALE,
@@ -16,11 +17,15 @@ import { compatibleExtensions, conflictingPositions } from '../../../shared/exte
 export { getEdition, listEditions, DEFAULT_EDITION, DEFAULT_LOCALE, LOCALES, compatibleExtensions, conflictingPositions };
 
 /**
- * L'édition d'une partie, dans sa langue (ou le classique en français tant qu'on
- * n'est dans aucune partie).
+ * L'édition d'une partie, dans sa langue, **extensions comprises** (ou le
+ * classique en français tant qu'on n'est dans aucune partie).
+ *
+ * Passer par `editionOf` et non `getEdition` est indispensable : sans ça, le
+ * client dessinait le plateau d'origine pendant que le serveur en jouait un
+ * autre — cases Spin affichées « Chance », titres spéciaux invisibles.
  */
 export function editionFor(state) {
-  return getEdition(state?.editionId, state?.locale);
+  return editionOf(state);
 }
 
 /** La langue de la partie en cours. */
