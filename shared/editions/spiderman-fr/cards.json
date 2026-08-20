@@ -1,0 +1,273 @@
+{
+  "chance": [
+    {
+      "id": "web-01",
+      "text": "Patrouille d'urgence : avancez jusqu'à la case Départ. Recevez 200 $.",
+      "action": {
+        "type": "move_to",
+        "target": 0,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "web-02",
+      "text": "Affrontement final : rendez-vous directement chez le Bouffon Vert.",
+      "action": {
+        "type": "move_to",
+        "target": 39,
+        "collectGoSalary": false
+      }
+    },
+    {
+      "id": "web-03",
+      "text": "Retour en cours : rendez-vous au Lycée de Midtown. Si vous passez par la case Départ, touchez 200 $.",
+      "action": {
+        "type": "move_to",
+        "target": 9,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "web-04",
+      "text": "Livraison de photos : avancez jusqu'à l'Immeuble du Daily Bugle. Si vous passez par la case Départ, touchez 200 $.",
+      "action": {
+        "type": "move_to",
+        "target": 31,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "web-05",
+      "text": "Véhicule tactique d'urgence : avancez jusqu'au véhicule le plus proche. S'il appartient à quelqu'un, payez le double du loyer normal.",
+      "action": {
+        "type": "nearest",
+        "spaceType": "railroad",
+        "rentMultiplier": 2
+      }
+    },
+    {
+      "id": "web-06",
+      "text": "Véhicule tactique d'urgence : avancez jusqu'au véhicule le plus proche. S'il appartient à quelqu'un, payez le double du loyer normal.",
+      "action": {
+        "type": "nearest",
+        "spaceType": "railroad",
+        "rentMultiplier": 2
+      }
+    },
+    {
+      "id": "web-07",
+      "text": "Panne de secteur : rendez-vous au service le plus proche. Lancez les dés et payez au propriétaire dix fois le total.",
+      "action": {
+        "type": "nearest",
+        "spaceType": "utility",
+        "utilityFactor": 10,
+        "rerollDice": true
+      }
+    },
+    {
+      "id": "web-08",
+      "text": "Décollage en Spider-Mobile : rendez-vous directement sur la case de la Spider-Mobile.",
+      "action": {
+        "type": "move_to",
+        "target": 5,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "web-09",
+      "text": "Dividendes de Parker Industries : recevez 50 $ de la banque.",
+      "action": {
+        "type": "collect",
+        "amount": 50
+      }
+    },
+    {
+      "id": "web-10",
+      "text": "Évasion de la Voûte. Cette carte peut être conservée jusqu'à ce qu'elle soit utilisée ou vendue.",
+      "action": {
+        "type": "get_out_of_jail_free"
+      },
+      "keepable": true
+    },
+    {
+      "id": "web-11",
+      "text": "Esquive en voltige : reculez de 3 cases.",
+      "action": {
+        "type": "move_relative",
+        "offset": -3
+      }
+    },
+    {
+      "id": "web-12",
+      "text": "Piégée par la police de New York : allez directement à la Voûte, sans passer par la case Départ, sans toucher 200 $.",
+      "action": {
+        "type": "go_to_jail"
+      }
+    },
+    {
+      "id": "web-13",
+      "text": "Maintenance des lance-toiles et des repaires : payez 25 $ par traceur et 100 $ par tour de toile que vous possédez.",
+      "action": {
+        "type": "pay_per_building",
+        "perHouse": 25,
+        "perHotel": 100
+      }
+    },
+    {
+      "id": "web-14",
+      "text": "Excès de vitesse entre les gratte-ciels : payez une amende de 15 $.",
+      "action": {
+        "type": "pay",
+        "amount": 15
+      }
+    },
+    {
+      "id": "web-15",
+      "text": "Pizzas chez Joe's pour tout le quartier : versez 50 $ à chaque joueuse.",
+      "action": {
+        "type": "pay_to_each",
+        "amount": 50
+      }
+    },
+    {
+      "id": "web-16",
+      "text": "Prime de bravoure du maire de New York : recevez 150 $ de la banque.",
+      "action": {
+        "type": "collect",
+        "amount": 150
+      }
+    }
+  ],
+  "community_chest": [
+    {
+      "id": "bugle-01",
+      "text": "Spider-Man repéré en ville : avancez jusqu'à la case Départ. Recevez 200 $.",
+      "action": {
+        "type": "move_to",
+        "target": 0,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "bugle-02",
+      "text": "Une exclusive vendue à J. Jonah Jameson — erreur de la banque en votre faveur : recevez 200 $.",
+      "action": {
+        "type": "collect",
+        "amount": 200
+      }
+    },
+    {
+      "id": "bugle-03",
+      "text": "Dégâts matériels causés par le Rhino : payez 50 $ à l'hôpital de Manhattan.",
+      "action": {
+        "type": "pay",
+        "amount": 50
+      }
+    },
+    {
+      "id": "bugle-04",
+      "text": "Vente de clichés acrobatiques : recevez 50 $.",
+      "action": {
+        "type": "collect",
+        "amount": 50
+      }
+    },
+    {
+      "id": "bugle-05",
+      "text": "Innocentée par les caméras de surveillance : sortez gratuitement de la Voûte. Cette carte peut être conservée jusqu'à ce qu'elle soit utilisée ou vendue.",
+      "action": {
+        "type": "get_out_of_jail_free"
+      },
+      "keepable": true
+    },
+    {
+      "id": "bugle-06",
+      "text": "Mandat d'arrêt lancé par Jameson : allez directement à la Voûte, sans passer par la case Départ, sans toucher 200 $.",
+      "action": {
+        "type": "go_to_jail"
+      }
+    },
+    {
+      "id": "bugle-07",
+      "text": "Anniversaire surprise chez Tante May : chaque autre joueuse vous donne 10 $.",
+      "action": {
+        "type": "collect_from_each",
+        "amount": 10
+      }
+    },
+    {
+      "id": "bugle-08",
+      "text": "Bourse d'études scientifiques accordée : recevez 20 $.",
+      "action": {
+        "type": "collect",
+        "amount": 20
+      }
+    },
+    {
+      "id": "bugle-09",
+      "text": "Récompense pour capture de voleurs : recevez 100 $.",
+      "action": {
+        "type": "collect",
+        "amount": 100
+      }
+    },
+    {
+      "id": "bugle-10",
+      "text": "Deuxième place au concours de robotique : recevez 10 $.",
+      "action": {
+        "type": "collect",
+        "amount": 10
+      }
+    },
+    {
+      "id": "bugle-11",
+      "text": "Visite familiale : avancez directement chez Tante May.",
+      "action": {
+        "type": "move_to",
+        "target": 1,
+        "collectGoSalary": false
+      }
+    },
+    {
+      "id": "bugle-12",
+      "text": "Achat de cartouches de fluide de toile : payez 50 $.",
+      "action": {
+        "type": "pay",
+        "amount": 50
+      }
+    },
+    {
+      "id": "bugle-13",
+      "text": "Financement de recherche chez Horizon Labs : recevez 100 $.",
+      "action": {
+        "type": "collect",
+        "amount": 100
+      }
+    },
+    {
+      "id": "bugle-14",
+      "text": "Reconstruction après un combat urbain : payez 40 $ par traceur et 115 $ par tour de toile que vous possédez.",
+      "action": {
+        "type": "pay_per_building",
+        "perHouse": 40,
+        "perHotel": 115
+      }
+    },
+    {
+      "id": "bugle-15",
+      "text": "Vente de technologie de pointe : recevez 100 $.",
+      "action": {
+        "type": "collect",
+        "amount": 100
+      }
+    },
+    {
+      "id": "bugle-16",
+      "text": "Amende pour violation du couvre-feu : payez 100 $.",
+      "action": {
+        "type": "pay",
+        "amount": 100
+      }
+    }
+  ]
+}

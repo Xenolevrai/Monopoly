@@ -1,0 +1,188 @@
+{
+  "id": "spiderman-fr",
+  "name": "Monopoly Spider-Man",
+  "theme": "New York, des toits aux repaires de vilains",
+  "tagline": "Édition Collector : on capture les vilains, on tisse ses tours.",
+  "summary": "Les règles du Monopoly d'origine sur le plateau Spider-Man : on capture les super-vilains et les lieux cultes de New York, on pose traceurs et tours de toile, on hypothèque, et la dernière solvable gagne.",
+  "playerCount": {
+    "min": 2,
+    "max": 6
+  },
+  "board": {
+    "size": 40
+  },
+  "currency": {
+    "type": "money",
+    "label": "$",
+    "startingAmount": 1500,
+    "goBonus": 200,
+    "singleDenomination": false,
+    "denominations": [
+      500,
+      100,
+      50,
+      20,
+      10,
+      5,
+      1
+    ]
+  },
+  "jail": {
+    "space": 10,
+    "bail": 50,
+    "maxTurns": 3
+  },
+  "dice": {
+    "count": 2,
+    "sides": 6,
+    "doublesToJail": 3
+  },
+  "bank": {
+    "houses": 32,
+    "hotels": 12
+  },
+  "mortgage": {
+    "enabled": true,
+    "interestRate": 0.1
+  },
+  "turnMode": "sequential",
+  "winCondition": "lastPlayerStanding",
+  "mechanics": {
+    "houses": true,
+    "hotels": true,
+    "mortgage": true,
+    "bankruptcyEliminates": true,
+    "trading": true,
+    "auctions": true,
+    "negotiableRent": true,
+    "cheatCards": false,
+    "towerMode": false,
+    "explorationMode": false,
+    "draftMode": false,
+    "battleSpaces": false
+  },
+  "houseRules": {
+    "freeParkingPot": false,
+    "auctionOnDecline": true,
+    "collectGoOnGoToLyon": true,
+    "evenBuildRule": true,
+    "auctionBankruptcyAssets": true
+  },
+  "tokens": [
+    {
+      "id": "masque",
+      "label": "Masque",
+      "color": "#C6303A"
+    },
+    {
+      "id": "toile",
+      "label": "Toile",
+      "color": "#2A5CAA"
+    },
+    {
+      "id": "araignee",
+      "label": "Araignée",
+      "color": "#1c1c22"
+    },
+    {
+      "id": "camera",
+      "label": "Appareil photo",
+      "color": "#8A6A4F"
+    },
+    {
+      "id": "planeur",
+      "label": "Planeur",
+      "color": "#2E9E63"
+    },
+    {
+      "id": "citrouille",
+      "label": "Citrouille",
+      "color": "#D98324"
+    }
+  ],
+  "theming": {
+    "palette": {
+      "table": "#101427",
+      "tableDark": "#070a16",
+      "board": "#1b2340",
+      "boardEdge": "#2b3a63",
+      "space": "#e8ecf7",
+      "spaceAlt": "#d7deef",
+      "ink": "#141a2e",
+      "inkSoft": "#4d5878",
+      "panel": "#f0f3fb",
+      "panelEdge": "#c2cbe3",
+      "accent": "#c6303a",
+      "accentDeep": "#8f1b23",
+      "money": "#2f6b45",
+      "house": "#2a5caa",
+      "hotel": "#c6303a",
+      "gold": "#d4a32b",
+      "boardInk": "#141a2e"
+    },
+    "centerTitle": "Monopoly",
+    "centerSubtitle": "New York",
+    "decks": {
+      "chance": {
+        "label": "Lanceur de Toile",
+        "color": "#c6303a",
+        "glyph": "✦"
+      },
+      "community_chest": {
+        "label": "Daily Bugle",
+        "color": "#2a5caa",
+        "glyph": "▤"
+      }
+    },
+    "display": "engraved",
+    "icons": {
+      "railroad": "jet",
+      "utility": [
+        "spark",
+        "bulb"
+      ],
+      "chance": "spark",
+      "community_chest": "chest",
+      "jail": "bars",
+      "go_to_jail": "officer",
+      "free_parking": "castle"
+    },
+    "skin": "night",
+    "art": {
+      "1": "hut",
+      "3": "townhouse",
+      "5": "car",
+      "6": "firework",
+      "8": "telescope",
+      "9": "books",
+      "11": "star",
+      "12": "tower",
+      "13": "hourglass",
+      "14": "fist",
+      "15": "motorcycle",
+      "16": "spaceMask",
+      "18": "wings",
+      "19": "tree",
+      "21": "flask",
+      "23": "blades",
+      "24": "gem",
+      "25": "carrier",
+      "26": "metalArm",
+      "27": "serpent",
+      "28": "shelf",
+      "29": "web",
+      "31": "bank",
+      "32": "tower",
+      "34": "portal",
+      "35": "jet",
+      "37": "hammer",
+      "39": "helmet"
+    }
+  },
+  "buildingLabels": {
+    "house": "Traceur",
+    "houses": "Traceurs",
+    "hotel": "Tour de toile",
+    "hotels": "Tours de toile"
+  }
+}

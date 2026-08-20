@@ -288,6 +288,81 @@ const SHAPES = {
       <rect x="29.4" y="27" width="5.2" height="12" rx="2.6" fill="#fff" opacity=".28" />
     </>
   ),
+
+  // — Monopoly Spider-Man ————————————————————————————————
+  // Masque : ovale à grands yeux cernés, quadrillage de toile en réserve.
+  masque: (
+    <>
+      <path d="M32 10c11 0 19 8.6 19 20 0 10.6-8 21-19 24-11-3-19-13.4-19-24 0-11.4 8-20 19-20z" />
+      <path d="M24 25c3.4-2.4 7.6-2.2 9.6.4 1.2 1.6.7 3.8-1 5.4-2.8 2.6-7.6 3-10 .6-1.6-1.6-1.2-4.6 1.4-6.4z" fill="#fff" opacity=".85" />
+      <path d="M40 25c-3.4-2.4-7.6-2.2-9.6.4-1.2 1.6-.7 3.8 1 5.4 2.8 2.6 7.6 3 10 .6 1.6-1.6 1.2-4.6-1.4-6.4z" fill="#fff" opacity=".85" />
+      <g stroke="#fff" strokeWidth="1" opacity=".3" fill="none">
+        <path d="M32 12v40M15 26h34M17 36h30M21 45h22" />
+      </g>
+    </>
+  ),
+
+  // Toile : rayons et arcs, comme une toile tendue dans un angle.
+  toile: (
+    <>
+      <circle cx="32" cy="32" r="3.4" />
+      <g stroke="currentColor" strokeWidth="2.4" fill="none" strokeLinecap="round">
+        <path d="M32 32L32 8M32 32L53 20M32 32L53 44M32 32L32 56M32 32L11 44M32 32L11 20" />
+      </g>
+      <g stroke="currentColor" strokeWidth="2" fill="none" opacity=".85">
+        <path d="M32 14l11 6.4v13.2L32 40l-11-6.4V20.4z" />
+        <path d="M32 8L53 20v24L32 56 11 44V20z" />
+      </g>
+    </>
+  ),
+
+  // Araignée : corps compact, huit pattes repliées.
+  araignee: (
+    <>
+      <ellipse cx="32" cy="36" rx="9" ry="11" />
+      <circle cx="32" cy="23" r="6" />
+      <g stroke="currentColor" strokeWidth="2.6" fill="none" strokeLinecap="round">
+        <path d="M23 30c-5-1-8-4-9-9M23 36c-6 0-10 2-12 6M41 30c5-1 8-4 9-9M41 36c6 0 10 2 12 6" />
+        <path d="M24 42c-4 2-6 5-7 9M40 42c4 2 6 5 7 9" />
+      </g>
+      <circle cx="29.6" cy="22" r="1.5" fill="#fff" opacity=".8" />
+      <circle cx="34.4" cy="22" r="1.5" fill="#fff" opacity=".8" />
+    </>
+  ),
+
+  // Appareil photo : boîtier, objectif, viseur — celui de Peter au Bugle.
+  camera: (
+    <>
+      <path d="M12 22h9l3.2-4.6c.5-.7 1.3-1.1 2.2-1.1h11.2c.9 0 1.7.4 2.2 1.1L43 22h9c1.7 0 3 1.3 3 3v20c0 1.7-1.3 3-3 3H12c-1.7 0-3-1.3-3-3V25c0-1.7 1.3-3 3-3z" />
+      <circle cx="32" cy="35" r="10" fill="#fff" opacity=".28" />
+      <circle cx="32" cy="35" r="6" fill="#fff" opacity=".55" />
+      <rect x="45" y="26" width="6" height="3.4" rx="1.4" fill="#fff" opacity=".5" />
+    </>
+  ),
+
+  // Planeur : aile en chauve-souris, celle du Bouffon.
+  planeur: (
+    <>
+      <path d="M32 44c-9 0-17-4-22-11 6 1.6 10-1 12-6 2.4 4 5 6 10 6s7.6-2 10-6c2 5 6 7.6 12 6-5 7-13 11-22 11z" />
+      <path d="M28.4 22h7.2c1.2 0 2 1.2 1.6 2.3l-3.6 9.4c-.5 1.3-2.3 1.3-2.8 0l-3.6-9.4c-.4-1.1.4-2.3 1.2-2.3z" fill="#fff" opacity=".35" />
+      <path d="M32 44v8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </>
+  ),
+
+  // Citrouille : la bombe du Bouffon Vert, pédoncule et sourire découpé.
+  citrouille: (
+    <>
+      <path d="M28 15c1-2.6 5-3 6.6-.6l1.4 2.2-4.4 2.6z" />
+      <ellipse cx="32" cy="36" rx="21" ry="18" />
+      <g fill="#fff" opacity=".2">
+        <ellipse cx="22" cy="36" rx="5" ry="17" />
+        <ellipse cx="42" cy="36" rx="5" ry="17" />
+      </g>
+      <path d="M23 30l6 4-6 3zM41 30l-6 4 6 3z" fill="#fff" opacity=".8" />
+      <path d="M22 42c4 4 16 4 20 0-2 5-6 7-10 7s-8-2-10-7z" fill="#fff" opacity=".8" />
+    </>
+  ),
+
 };
 
 /**

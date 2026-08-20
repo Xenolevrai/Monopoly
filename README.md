@@ -7,7 +7,7 @@ wifi ou à distance.
 chat, reconnexion. On peut jouer **à plusieurs sur le même ordinateur**, avec
 d'autres joueuses **à distance** dans la même partie. Les trois extensions Hasbro
 2025 sont activables à la création de la partie (Parc Gratuit Jackpot, Prison,
-Tout Acheter). 153 tests automatisés.
+Tout Acheter). 155 tests automatisés.
 
 ## Les éditions
 
@@ -19,6 +19,7 @@ quand la boîte le demande, **ses règles**.
 | **Monopoly Classique** | € | carton vert de table | la référence |
 | **Harry Potter — Gallions** | G | parchemin, Carte du Maraudeur | comme le classique, noms de Poudlard |
 | **Marvel Avengers** | M$ | acier et néons | bases S.H.I.E.L.D. et quartiers généraux Stark |
+| **Spider-Man — Collector** | $ | New York la nuit, ligne d'horizon | comme le classique : on capture les vilains, on pose traceurs et tours de toile |
 | **Harry Potter — Coupe des Quatre Maisons** | points | ciel de nuit, Grande Salle | **règles Hasbro** : pas d'hôtel, pas d'hypothèque, personne n'est éliminée, on gagne en explorant tout le plateau |
 
 Au moment de créer une partie, on choisit sa boîte **et sa langue** : français ou
@@ -48,7 +49,7 @@ autorisée.
 npm install
 npm run build   # compile l'interface — à refaire après chaque `git pull`
 npm start       # http://localhost:3000 — l'adresse à partager s'affiche au démarrage
-npm run check   # lint + 153 tests : données, éditions, extensions, langues, règles, parties simulées, temps réel
+npm run check   # lint + 155 tests : données, éditions, extensions, langues, règles, parties simulées, temps réel
 ```
 
 Node 22+. Le serveur affiche aussi l'adresse locale (`http://192.168.x.x:3000`) à
@@ -193,10 +194,10 @@ et répondables tout de suite.
 - Relire les trois extensions contre les boîtes physiques : les règles de
   Prison et de Tout Acheter viennent de sources secondaires, pas des livrets
   officiels (voir CLAUDE.md §5)
-- L'édition Spider-Man : mise de côté faute de données fiables (le site officiel
-  des règles Hasbro est inaccessible depuis cet environnement, et le web ne donne
-  que des généralités thématiques, jamais la liste des rues/prix/cartes) — voir
-  CLAUDE.md §11
+- L'édition Spider-Man **moderne** (Hasbro, avec le pion autonome du Bouffon
+  Vert) : contrairement à l'édition Collector déjà livrée, elle demande un pion
+  autonome, des bombes citrouilles et des pouvoirs de héros asymétriques — un
+  chantier de mécaniques, pas un reskin — voir CLAUDE.md §11
 - Junior, Cheaters, Empire, Speed — les drapeaux de mécaniques correspondants
   existent déjà dans `edition.mechanics`
 - Sauvegarde longue durée en SQLite plutôt qu'en fichiers JSON

@@ -13,14 +13,17 @@ navigateur, pour jouer **en famille et entre amis**. Usage strictement privé :
 pas de vente, pas de diffusion publique. Les données de plateau et de cartes
 sont relevées sur les boîtes physiques du propriétaire du dépôt.
 
-Quatre éditions sont livrées, et l'ajout d'une cinquième doit se faire **sans
+Cinq éditions sont livrées, et l'ajout d'une sixième doit se faire **sans
 toucher une ligne de moteur** — c'est le contrat central de l'architecture.
+Spider-Man en est la preuve la plus nette : elle a été ajoutée sans qu'une
+seule ligne de `server/engine/` ne change.
 
 | id | boîte | matière | victoire | particularité |
 |---|---|---|---|---|
 | `classic-fr` | Monopoly classique, plateau parisien | `table` | dernière en jeu | la référence |
 | `harry-potter-fr` | Harry Potter (reskin Winning Moves), Gallions | `parchment` | dernière en jeu | règles classiques, noms Poudlard |
 | `avengers-fr` | Marvel Avengers, M$ | `tech` | dernière en jeu | bases S.H.I.E.L.D. / QG Stark |
+| `spiderman-fr` | Spider-Man Collector (Winning Moves), $ | `night` | dernière en jeu | reskin exact du classique : vilains, traceurs / tours de toile |
 | `poudlard-points` | Harry Potter Hasbro, points de maison | `night` | tout le plateau exploré | **règles différentes** : pas d'hôtel, pas d'hypothèque, pas d'élimination |
 
 Chaque édition se joue **en français ou en anglais** ; la langue ne change que
@@ -114,6 +117,17 @@ if (state.pending.kind) return;
 
 Rien d'autre. Si le moteur doit bouger, c'est que la mécanique manque à
 `edition.mechanics` : ajouter le drapeau, pas un `if (editionId === …)`.
+
+**Cas d'école : `spiderman-fr`.** La boîte Collector reprend le plateau
+classique case pour case — mêmes positions, mêmes prix, mêmes coûts de
+construction. Seuls les prix d'achat figurent sur les cartes de la boîte ; les
+tables de loyers ont donc été reprises de `classic-fr`, ce qui n'est légitime
+que parce que la superposition est exacte. Un test le vérifie et le fige
+(« Spider-Man reprend case pour case la géométrie et les prix du plateau
+classique ») : si un prix diverge un jour, il tombe, et la reprise des loyers
+redevient une question ouverte. Les illustrations de case réutilisent la
+bibliothèque existante de `SpaceArt.jsx` plutôt que d'en dessiner de
+nouvelles ; seuls les six pions ont été dessinés.
 
 ---
 
@@ -297,22 +311,18 @@ personne n'est connecté), le paiement négociable, les enchères, le chat, la
 mise en page téléphone et ordinateur, les **trois** extensions Hasbro sur
 l'édition Classique (Parc Gratuit Jackpot, Prison, Tout Acheter — voir §5,
 avec leurs cases à cocher et la détection de conflit dans l'écran de
-sélection), 153 tests.
+sélection), l'édition Spider-Man Collector, 155 tests.
 
 **Reste à faire**, par ordre de priorité annoncée :
 
-1. **Édition Spider-Man** : mise de côté faute de données fiables. Le site
-   officiel des règles Hasbro (`instructions.hasbro.com`) et les sites de
-   manuels scannés (`manuals.plus`) sont bloqués par le proxy réseau de
-   l'environnement d'agent ; la recherche web ne remonte que des généralités
-   thématiques (pions Peter Parker/Miles Morales/Ghost Spider, cartes
-   « Daily Bugle », objet « Symbol of Great Responsibility », raccourcis en
-   métro) — jamais la liste des noms de rues, leurs prix, les groupes de
-   couleur ni le texte des cartes Chance/Caisse de communauté. Sans ces
-   données, impossible de construire `shared/editions/spiderman-fr/` sans
-   inventer — ce qu'un plateau Poudlard inventé par le passé a déjà coûté cher
-   en corrections. À reprendre si l'utilisateur peut fournir une photo de la
-   boîte physique, ou si l'accès à `instructions.hasbro.com` devient possible.
+1. **Édition Spider-Man moderne (Hasbro, pion autonome du Bouffon Vert)** :
+   l'autre boîte relevée. Elle **ne rentre pas dans le contrat « aucune ligne
+   de moteur »** — il lui faut un pion autonome piloté par un dé de vilain, des
+   jetons Bombe Citrouille qui verrouillent une case, des pouvoirs de héros
+   asymétriques, des cases Raccourci de Toile qui téléportent, et un décompte
+   final au patrimoine. C'est un chantier « extension + édition », pas un
+   reskin ; à traiter comme les extensions Hasbro (drapeaux `mechanics`
+   génériques), jamais par un `if (editionId === …)`.
 2. Relire les trois extensions contre les boîtes physiques : les règles de
    Prison et de Tout Acheter viennent de sources secondaires (voir §5). Points
    les plus incertains : la caution de la Super Jail, les faces exactes du dé

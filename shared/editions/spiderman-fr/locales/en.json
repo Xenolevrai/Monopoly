@@ -1,0 +1,234 @@
+{
+  "name": "Monopoly Spider-Man",
+  "theme": "New York, from the rooftops to the villains' lairs",
+  "tagline": "Collector edition: capture the villains, spin your towers.",
+  "summary": "Classic Monopoly on the Spider-Man board: capture super-villains and New York landmarks, place tracers and web towers, mortgage, and outlast everyone.",
+  "centerTitle": "Monopoly",
+  "centerSubtitle": "New York",
+  "groups": {
+    "brown": "Peter's circle",
+    "lightblue": "New York boroughs",
+    "pink": "Electric villains",
+    "orange": "Hunters and illusionists",
+    "red": "Lab monsters",
+    "yellow": "Symbiotes and mad scientists",
+    "green": "Manhattan skyscrapers",
+    "darkblue": "Arch-enemies",
+    "railroad": "Vehicles",
+    "utility": "Services"
+  },
+  "decks": {
+    "chance": "Web-Slinger",
+    "community_chest": "Daily Bugle"
+  },
+  "buildingLabels": {
+    "house": "Tracer",
+    "houses": "Tracers",
+    "hotel": "Web tower",
+    "hotels": "Web towers"
+  },
+  "tokens": {
+    "masque": "Mask",
+    "toile": "Web",
+    "araignee": "Spider",
+    "camera": "Camera",
+    "planeur": "Glider",
+    "citrouille": "Pumpkin"
+  },
+  "spaces": {
+    "0": {
+      "name": "GO",
+      "shortName": "GO"
+    },
+    "1": {
+      "name": "Aunt May's House",
+      "shortName": "Aunt May"
+    },
+    "2": {
+      "name": "Daily Bugle",
+      "shortName": "Daily Bugle"
+    },
+    "3": {
+      "name": "Peter Parker's Apartment",
+      "shortName": "Peter Parker"
+    },
+    "4": {
+      "name": "Damage Control Tax",
+      "shortName": "Damage Control"
+    },
+    "5": {
+      "name": "Spider-Mobile",
+      "shortName": "Spider-Mobile"
+    },
+    "6": {
+      "name": "Coney Island",
+      "shortName": "Coney Island"
+    },
+    "7": {
+      "name": "Web-Slinger",
+      "shortName": "Web-Slinger"
+    },
+    "8": {
+      "name": "Empire State University",
+      "shortName": "ESU"
+    },
+    "9": {
+      "name": "Midtown High School",
+      "shortName": "Midtown High"
+    },
+    "10": {
+      "name": "In The Vault / Just Visiting",
+      "shortName": "The Vault"
+    },
+    "11": {
+      "name": "Electro",
+      "shortName": "Electro"
+    },
+    "12": {
+      "name": "Oscorp Power Grid",
+      "shortName": "Oscorp Grid"
+    },
+    "13": {
+      "name": "Sandman",
+      "shortName": "Sandman"
+    },
+    "14": {
+      "name": "Rhino",
+      "shortName": "Rhino"
+    },
+    "15": {
+      "name": "Spider-Cycle",
+      "shortName": "Spider-Cycle"
+    },
+    "16": {
+      "name": "Mysterio",
+      "shortName": "Mysterio"
+    },
+    "17": {
+      "name": "Daily Bugle",
+      "shortName": "Daily Bugle"
+    },
+    "18": {
+      "name": "Vulture",
+      "shortName": "Vulture"
+    },
+    "19": {
+      "name": "Kraven the Hunter",
+      "shortName": "Kraven"
+    },
+    "20": {
+      "name": "Rooftop Rest",
+      "shortName": "Rooftops"
+    },
+    "21": {
+      "name": "Lizard",
+      "shortName": "Lizard"
+    },
+    "22": {
+      "name": "Web-Slinger",
+      "shortName": "Web-Slinger"
+    },
+    "23": {
+      "name": "Scorpion",
+      "shortName": "Scorpion"
+    },
+    "24": {
+      "name": "Black Cat",
+      "shortName": "Black Cat"
+    },
+    "25": {
+      "name": "Spider-Copter",
+      "shortName": "Spider-Copter"
+    },
+    "26": {
+      "name": "Doctor Octopus",
+      "shortName": "Doc Ock"
+    },
+    "27": {
+      "name": "Carnage",
+      "shortName": "Carnage"
+    },
+    "28": {
+      "name": "Daily Bugle Press",
+      "shortName": "Bugle Press"
+    },
+    "29": {
+      "name": "Venom",
+      "shortName": "Venom"
+    },
+    "30": {
+      "name": "Go to The Vault!",
+      "shortName": "Go to The Vault"
+    },
+    "31": {
+      "name": "Daily Bugle Building",
+      "shortName": "Bugle Building"
+    },
+    "32": {
+      "name": "Oscorp Tower",
+      "shortName": "Oscorp Tower"
+    },
+    "33": {
+      "name": "Daily Bugle",
+      "shortName": "Daily Bugle"
+    },
+    "34": {
+      "name": "Baxter Building",
+      "shortName": "Baxter"
+    },
+    "35": {
+      "name": "Web-Glider",
+      "shortName": "Web-Glider"
+    },
+    "36": {
+      "name": "Web-Slinger",
+      "shortName": "Web-Slinger"
+    },
+    "37": {
+      "name": "Kingpin",
+      "shortName": "Kingpin"
+    },
+    "38": {
+      "name": "City Property Fine",
+      "shortName": "City Fine"
+    },
+    "39": {
+      "name": "Green Goblin",
+      "shortName": "Green Goblin"
+    }
+  },
+  "cards": {
+    "web-01": "Emergency patrol: advance to GO. Collect $200.",
+    "web-02": "Final showdown: go straight to the Green Goblin.",
+    "web-03": "Back to class: go to Midtown High School. If you pass GO, collect $200.",
+    "web-04": "Photo delivery: advance to the Daily Bugle Building. If you pass GO, collect $200.",
+    "web-05": "Emergency tactical vehicle: advance to the nearest vehicle. If it is owned, pay the owner twice the rental.",
+    "web-06": "Emergency tactical vehicle: advance to the nearest vehicle. If it is owned, pay the owner twice the rental.",
+    "web-07": "Grid failure: go to the nearest service. Throw the dice and pay the owner ten times the amount thrown.",
+    "web-08": "Spider-Mobile launch: go directly to the Spider-Mobile.",
+    "web-09": "Parker Industries dividend: collect $50 from the bank.",
+    "web-10": "Escape from The Vault. This card may be kept until used or sold.",
+    "web-11": "Acrobatic dodge: go back 3 spaces.",
+    "web-12": "Caught by the NYPD: go directly to The Vault. Do not pass GO, do not collect $200.",
+    "web-13": "Web-shooter and hideout maintenance: pay $25 per tracer and $100 per web tower you own.",
+    "web-14": "Speeding between skyscrapers: pay a $15 fine.",
+    "web-15": "Pizza at Joe's for the whole block: pay each player $50.",
+    "web-16": "Bravery award from the Mayor of New York: collect $150 from the bank.",
+    "bugle-01": "Spider-Man spotted in the city: advance to GO. Collect $200.",
+    "bugle-02": "An exclusive sold to J. Jonah Jameson — bank error in your favour: collect $200.",
+    "bugle-03": "Property damage caused by the Rhino: pay $50 to the Manhattan hospital.",
+    "bugle-04": "Acrobatic shots sold: collect $50.",
+    "bugle-05": "Cleared by the security cameras: get out of The Vault free. This card may be kept until used or sold.",
+    "bugle-06": "Arrest warrant issued by Jameson: go directly to The Vault. Do not pass GO, do not collect $200.",
+    "bugle-07": "Surprise birthday at Aunt May's: collect $10 from every other player.",
+    "bugle-08": "Science scholarship awarded: collect $20.",
+    "bugle-09": "Reward for catching thieves: collect $100.",
+    "bugle-10": "Runner-up at the robotics contest: collect $10.",
+    "bugle-11": "Family visit: go directly to Aunt May's House.",
+    "bugle-12": "Web fluid cartridges purchased: pay $50.",
+    "bugle-13": "Research funding from Horizon Labs: collect $100.",
+    "bugle-14": "Rebuilding after an urban fight: pay $40 per tracer and $115 per web tower you own.",
+    "bugle-15": "Cutting-edge technology sold: collect $100.",
+    "bugle-16": "Curfew violation fine: pay $100."
+  }
+}

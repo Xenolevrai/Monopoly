@@ -249,3 +249,36 @@ function decide(state, kind, actor, rng) {
       return { type: 'END_TURN' };
   }
 }
+
+/**
+ * L'édition Spider-Man est un reskin exact du plateau classique : mêmes cases,
+ * mêmes prix, mêmes loyers, seuls les noms changent. Ce test fige ce constat —
+ * c'est lui qui a permis de reprendre les tables de loyers de l'édition
+ * classique en confiance, la boîte ne donnant que les prix d'achat.
+ */
+test('Spider-Man reprend case pour case la géométrie et les prix du plateau classique', () => {
+  const spiderman = EDITIONS['spiderman-fr'];
+  const classic = EDITIONS['classic-fr'];
+  assert.equal(spiderman.board.length, classic.board.length);
+
+  for (let id = 0; id < classic.board.length; id++) {
+    const sm = spiderman.board[id];
+    const cl = classic.board[id];
+    assert.equal(sm.type, cl.type, `case ${id} : type différent`);
+    assert.equal(sm.group, cl.group, `case ${id} : groupe différent`);
+    assert.equal(sm.price, cl.price, `case ${id} : prix différent`);
+    assert.deepEqual(sm.rent, cl.rent, `case ${id} : loyers différents`);
+    assert.equal(sm.amount, cl.amount, `case ${id} : montant de taxe différent`);
+    // Le nom, lui, doit avoir changé partout sauf sur les cases neutres.
+    if (sm.price) assert.notEqual(sm.name, cl.name, `case ${id} : nom non traduit`);
+  }
+});
+
+test('Spider-Man déclare deux piles de seize cartes et ses six pions', () => {
+  const spiderman = EDITIONS['spiderman-fr'];
+  assert.equal(spiderman.cards.chance.length, 16);
+  assert.equal(spiderman.cards.community_chest.length, 16);
+  assert.equal(spiderman.tokens.length, 6);
+  assert.equal(spiderman.currency.label, '$');
+  assert.equal(spiderman.buildingLabels.house, 'Traceur');
+});

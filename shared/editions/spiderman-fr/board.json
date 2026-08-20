@@ -1,0 +1,638 @@
+[
+  {
+    "id": 0,
+    "name": "Départ",
+    "shortName": "Départ",
+    "type": "go",
+    "side": "bottom",
+    "corner": true
+  },
+  {
+    "id": 1,
+    "name": "Maison de Tante May",
+    "shortName": "Tante May",
+    "type": "property",
+    "group": "brown",
+    "price": 60,
+    "rent": [
+      2,
+      10,
+      30,
+      90,
+      160,
+      250
+    ],
+    "houseCost": 50,
+    "mortgage": 30,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 2,
+    "name": "Daily Bugle",
+    "shortName": "Daily Bugle",
+    "type": "community_chest",
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 3,
+    "name": "Appartement de Peter Parker",
+    "shortName": "Peter Parker",
+    "type": "property",
+    "group": "brown",
+    "price": 60,
+    "rent": [
+      4,
+      20,
+      60,
+      180,
+      320,
+      450
+    ],
+    "houseCost": 50,
+    "mortgage": 30,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 4,
+    "name": "Taxe de Dégâts Collatéraux",
+    "shortName": "Dégâts",
+    "type": "tax",
+    "amount": 200,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 5,
+    "name": "La Spider-Mobile",
+    "shortName": "Spider-Mobile",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 200,
+    "rent": [
+      25,
+      50,
+      100,
+      200
+    ],
+    "mortgage": 100,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 6,
+    "name": "Coney Island",
+    "shortName": "Coney Island",
+    "type": "property",
+    "group": "lightblue",
+    "price": 100,
+    "rent": [
+      6,
+      30,
+      90,
+      270,
+      400,
+      550
+    ],
+    "houseCost": 50,
+    "mortgage": 50,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 7,
+    "name": "Lanceur de Toile",
+    "shortName": "Lanceur",
+    "type": "chance",
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 8,
+    "name": "Université ESU",
+    "shortName": "ESU",
+    "type": "property",
+    "group": "lightblue",
+    "price": 100,
+    "rent": [
+      6,
+      30,
+      90,
+      270,
+      400,
+      550
+    ],
+    "houseCost": 50,
+    "mortgage": 50,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 9,
+    "name": "Lycée de Midtown",
+    "shortName": "Midtown",
+    "type": "property",
+    "group": "lightblue",
+    "price": 120,
+    "rent": [
+      8,
+      40,
+      100,
+      300,
+      450,
+      600
+    ],
+    "houseCost": 50,
+    "mortgage": 60,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 10,
+    "name": "La Voûte / Simple visite",
+    "shortName": "La Voûte",
+    "type": "jail",
+    "side": "left",
+    "corner": true
+  },
+  {
+    "id": 11,
+    "name": "Electro",
+    "shortName": "Electro",
+    "type": "property",
+    "group": "pink",
+    "price": 140,
+    "rent": [
+      10,
+      50,
+      150,
+      450,
+      625,
+      750
+    ],
+    "houseCost": 100,
+    "mortgage": 70,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 12,
+    "name": "Réseau Électrique Oscorp",
+    "shortName": "Réseau Oscorp",
+    "type": "utility",
+    "group": "utility",
+    "price": 150,
+    "rentMultipliers": [
+      4,
+      10
+    ],
+    "mortgage": 75,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 13,
+    "name": "L'Homme-Sable",
+    "shortName": "Homme-Sable",
+    "type": "property",
+    "group": "pink",
+    "price": 140,
+    "rent": [
+      10,
+      50,
+      150,
+      450,
+      625,
+      750
+    ],
+    "houseCost": 100,
+    "mortgage": 70,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 14,
+    "name": "Le Rhino",
+    "shortName": "Rhino",
+    "type": "property",
+    "group": "pink",
+    "price": 160,
+    "rent": [
+      12,
+      60,
+      180,
+      500,
+      700,
+      900
+    ],
+    "houseCost": 100,
+    "mortgage": 80,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 15,
+    "name": "La Spider-Moto",
+    "shortName": "Spider-Moto",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 200,
+    "rent": [
+      25,
+      50,
+      100,
+      200
+    ],
+    "mortgage": 100,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 16,
+    "name": "Mystério",
+    "shortName": "Mystério",
+    "type": "property",
+    "group": "orange",
+    "price": 180,
+    "rent": [
+      14,
+      70,
+      200,
+      550,
+      750,
+      950
+    ],
+    "houseCost": 100,
+    "mortgage": 90,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 17,
+    "name": "Daily Bugle",
+    "shortName": "Daily Bugle",
+    "type": "community_chest",
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 18,
+    "name": "Le Vautour",
+    "shortName": "Vautour",
+    "type": "property",
+    "group": "orange",
+    "price": 180,
+    "rent": [
+      14,
+      70,
+      200,
+      550,
+      750,
+      950
+    ],
+    "houseCost": 100,
+    "mortgage": 90,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 19,
+    "name": "Kraven le Chasseur",
+    "shortName": "Kraven",
+    "type": "property",
+    "group": "orange",
+    "price": 200,
+    "rent": [
+      16,
+      80,
+      220,
+      600,
+      800,
+      1000
+    ],
+    "houseCost": 100,
+    "mortgage": 100,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 20,
+    "name": "Toits de New York",
+    "shortName": "Les Toits",
+    "type": "free_parking",
+    "side": "top",
+    "corner": true
+  },
+  {
+    "id": 21,
+    "name": "Le Lézard",
+    "shortName": "Lézard",
+    "type": "property",
+    "group": "red",
+    "price": 220,
+    "rent": [
+      18,
+      90,
+      250,
+      700,
+      875,
+      1050
+    ],
+    "houseCost": 150,
+    "mortgage": 110,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 22,
+    "name": "Lanceur de Toile",
+    "shortName": "Lanceur",
+    "type": "chance",
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 23,
+    "name": "Le Scorpion",
+    "shortName": "Scorpion",
+    "type": "property",
+    "group": "red",
+    "price": 220,
+    "rent": [
+      18,
+      90,
+      250,
+      700,
+      875,
+      1050
+    ],
+    "houseCost": 150,
+    "mortgage": 110,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 24,
+    "name": "La Chatte Noire",
+    "shortName": "Chatte Noire",
+    "type": "property",
+    "group": "red",
+    "price": 240,
+    "rent": [
+      20,
+      100,
+      300,
+      750,
+      925,
+      1100
+    ],
+    "houseCost": 150,
+    "mortgage": 120,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 25,
+    "name": "Le Spider-Hélico",
+    "shortName": "Spider-Hélico",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 200,
+    "rent": [
+      25,
+      50,
+      100,
+      200
+    ],
+    "mortgage": 100,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 26,
+    "name": "Docteur Octopus",
+    "shortName": "Docteur Octopus",
+    "type": "property",
+    "group": "yellow",
+    "price": 260,
+    "rent": [
+      22,
+      110,
+      330,
+      800,
+      975,
+      1150
+    ],
+    "houseCost": 150,
+    "mortgage": 130,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 27,
+    "name": "Carnage",
+    "shortName": "Carnage",
+    "type": "property",
+    "group": "yellow",
+    "price": 260,
+    "rent": [
+      22,
+      110,
+      330,
+      800,
+      975,
+      1150
+    ],
+    "houseCost": 150,
+    "mortgage": 130,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 28,
+    "name": "Imprimerie du Daily Bugle",
+    "shortName": "Imprimerie",
+    "type": "utility",
+    "group": "utility",
+    "price": 150,
+    "rentMultipliers": [
+      4,
+      10
+    ],
+    "mortgage": 75,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 29,
+    "name": "Venom",
+    "shortName": "Venom",
+    "type": "property",
+    "group": "yellow",
+    "price": 280,
+    "rent": [
+      24,
+      120,
+      360,
+      850,
+      1025,
+      1200
+    ],
+    "houseCost": 150,
+    "mortgage": 140,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 30,
+    "name": "Allez à la Voûte !",
+    "shortName": "Allez à la Voûte",
+    "type": "go_to_jail",
+    "side": "right",
+    "corner": true
+  },
+  {
+    "id": 31,
+    "name": "Immeuble du Daily Bugle",
+    "shortName": "Le Bugle",
+    "type": "property",
+    "group": "green",
+    "price": 300,
+    "rent": [
+      26,
+      130,
+      390,
+      900,
+      1100,
+      1275
+    ],
+    "houseCost": 200,
+    "mortgage": 150,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 32,
+    "name": "Tour Oscorp",
+    "shortName": "Tour Oscorp",
+    "type": "property",
+    "group": "green",
+    "price": 300,
+    "rent": [
+      26,
+      130,
+      390,
+      900,
+      1100,
+      1275
+    ],
+    "houseCost": 200,
+    "mortgage": 150,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 33,
+    "name": "Daily Bugle",
+    "shortName": "Daily Bugle",
+    "type": "community_chest",
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 34,
+    "name": "Baxter Building",
+    "shortName": "Baxter",
+    "type": "property",
+    "group": "green",
+    "price": 320,
+    "rent": [
+      28,
+      150,
+      450,
+      1000,
+      1200,
+      1400
+    ],
+    "houseCost": 200,
+    "mortgage": 160,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 35,
+    "name": "Le Planeur de Toile",
+    "shortName": "Planeur",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 200,
+    "rent": [
+      25,
+      50,
+      100,
+      200
+    ],
+    "mortgage": 100,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 36,
+    "name": "Lanceur de Toile",
+    "shortName": "Lanceur",
+    "type": "chance",
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 37,
+    "name": "Le Caïd",
+    "shortName": "Le Caïd",
+    "type": "property",
+    "group": "darkblue",
+    "price": 350,
+    "rent": [
+      35,
+      175,
+      500,
+      1100,
+      1300,
+      1500
+    ],
+    "houseCost": 200,
+    "mortgage": 175,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 38,
+    "name": "Amende de la Ville de NY",
+    "shortName": "Amende NY",
+    "type": "tax",
+    "amount": 100,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 39,
+    "name": "Le Bouffon Vert",
+    "shortName": "Bouffon Vert",
+    "type": "property",
+    "group": "darkblue",
+    "price": 400,
+    "rent": [
+      50,
+      200,
+      600,
+      1400,
+      1700,
+      2000
+    ],
+    "houseCost": 200,
+    "mortgage": 200,
+    "side": "right",
+    "corner": false
+  }
+]
