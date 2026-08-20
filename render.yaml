@@ -1,0 +1,29 @@
+# Déploiement continu sur Render.
+#
+# Un site 24h/24 pour la famille demande deux choses qu'un service gratuit
+# n'offre pas : un disque qui survit aux redémarrages (sinon les parties
+# sauvegardées disparaissent, voir CLAUDE.md §2 bis) et un service qui ne s'éteint
+# jamais faute d'activité (le plan gratuit se met en veille après 15 minutes).
+# Toutes les deux exigent le plan payant `starter`.
+#
+# Pour déployer : sur render.com, « New » → « Blueprint », choisir ce dépôt et
+# la branche `claude/monopoly-multiplayer-game-1q3lo3`. Render lit ce fichier
+# et propose de créer le service tel quel — il ne reste qu'à confirmer.
+services:
+  - type: web
+    name: monopoly
+    runtime: node
+    plan: starter
+    branch: claude/monopoly-multiplayer-game-1q3lo3
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    disk:
+      name: monopoly-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: MONOPOLY_DATA_DIR
+        value: /data
+      - key: NODE_VERSION
+        value: 22

@@ -121,6 +121,14 @@ hors ligne. Détails dans `docs/ART_DIRECTION.md`.
 Les deux modes se mélangent : trois personnes autour d'un portable et deux autres
 à distance, dans la même partie.
 
+**Ou, pour un lien qui tourne en permanence** sans dépendre d'un ordinateur
+personnel allumé : le dépôt contient un `render.yaml` prêt à l'emploi pour
+[Render](https://render.com). Sur render.com, « New » → « Blueprint », choisir
+ce dépôt — Render configure tout seul le service, le disque de sauvegarde et
+les variables d'environnement. Il faut le plan payant **Starter** (le plan
+gratuit met le service en veille et efface les sauvegardes à chaque
+redémarrage) — détails dans `CLAUDE.md` (§2 bis).
+
 Fermer un onglet par erreur ne fait rien perdre : rouvrir la page reprend la
 partie au même point.
 

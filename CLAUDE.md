@@ -41,7 +41,7 @@ invariant est prouvé par `tests/locales.test.js`.
 npm install
 npm run build     # compile le client — à refaire après chaque pull
 npm start         # http://localhost:3000
-npm run check     # lint + 139 tests
+npm run check     # lint + 175 tests
 ```
 
 Node 22+, ESM partout, workspaces npm (racine + `client`).
@@ -55,6 +55,30 @@ cd client && npx vite --host    # port 5173, proxy /api et /socket.io vers 3000
 
 **Dans un conteneur d'agent**, ces serveurs doivent être lancés en tâche de
 fond via `run_in_background: true`. Un `&` en ligne se fait tuer (code 144).
+
+---
+
+## 2 bis. Déployer en continu (Render)
+
+Pour un lien qui tourne 24h/24 sans dépendre d'un ordinateur personnel allumé,
+`render.yaml` à la racine décrit un service Render complet — c'est un
+Blueprint : sur render.com, « New » → « Blueprint », choisir ce dépôt et la
+branche, Render propose de créer le service tel quel.
+
+Deux choses que **le plan gratuit de Render n'offre pas**, et qui sont
+indispensables ici :
+
+- **un disque persistant**, monté sur `/data` (variable `MONOPOLY_DATA_DIR`,
+  lue par `server/rooms.js`) — sans lui, chaque redéploiement ou redémarrage
+  efface `server/data/` et toutes les parties sauvegardées disparaissent, sans
+  la moindre erreur visible ;
+- **l'absence de mise en veille** — le plan gratuit éteint le service après
+  15 minutes d'inactivité, ce qui a le même effet qu'un redémarrage.
+
+Les deux exigent le plan payant **Starter**. `render.yaml` déclare `plan:
+starter` pour cette raison : ce n'est pas négociable avec un plan inférieur.
+
+`server/index.js` expose déjà `/api/health`, utilisé comme `healthCheckPath`.
 
 ---
 
@@ -374,6 +398,13 @@ Le basculement se fait par classes Tailwind dans `client/src/App.jsx`
 - Un commentaire glissé **entre** deux `case` d'un `switch` casse la détection
   de `no-fallthrough` d'ESLint : le placer au-dessus du premier `case` du
   groupe.
+- `DATA_DIR` (`server/rooms.js`) est ancré sur l'emplacement du fichier
+  (`import.meta.url`), **jamais** sur `process.cwd()` : sinon lancer le serveur
+  depuis un autre dossier ou un autre raccourci pointe vers un dossier de
+  sauvegarde différent, et les parties de la veille semblent avoir disparu.
+- **Sur Render, le disque est éphémère par défaut** : sans le disque persistant
+  décrit en §2 bis, chaque redéploiement ou redémarrage efface toutes les
+  parties sauvegardées, sans la moindre erreur visible.
 
 ---
 
