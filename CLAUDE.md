@@ -481,22 +481,56 @@ ou sur le bleu nuit.
 
 ---
 
-## 7 ter. La colonne de droite se réarrange
+## 7 ter. Les sections se glissent des deux côtés du plateau
 
-`client/src/components/PanelStack.jsx` — quatre sections (votre tour, vos biens,
-les joueuses, le journal et le chat) qu'on replie et qu'on déplace, à la souris
-par la poignée ou avec deux flèches (un `draggable` ne se déclenche pas au
-doigt). L'agencement vit dans `localStorage`, pas dans l'état de la partie : il
-appartient à l'écran, pas à la partie.
+Quatre sections — votre tour, vos biens, les joueuses, le journal et le chat —
+qu'on replie, qu'on réordonne, et qu'on envoie **à gauche ou à droite du
+plateau**, à la souris par la poignée, avec deux flèches, ou le bouton ◀/▶ (un
+`draggable` ne se déclenche pas au doigt). Deux fichiers :
 
-Deux détails qui ont coûté un bug chacun :
+- `client/src/lib/usePanelLayout.js` — la seule source de vérité, partagée par
+  les deux colonnes : `{ columns: { left: [...ids], right: [...ids] },
+  collapsed: {...} }`, gardé dans `localStorage` (pas dans l'état de la
+  partie : l'agencement appartient à l'écran, pas à la partie qu'on y joue).
+  Migre l'ancien format à une seule colonne sans perdre l'agencement déjà
+  choisi par une famille qui jouait avant l'ajout de la gauche.
+- `client/src/components/PanelStack.jsx` — `PanelColumn`, qui affiche une des
+  deux colonnes. Les deux instances (une par côté) reçoivent le **même** objet
+  `layout` : c'est ce qui permet à un glisser-déposer commencé dans l'une de se
+  terminer dans l'autre.
+
+Une colonne vide (`columns.left` au départ) ne réserve aucune place : le
+plateau récupère l'espace tout seul, sans code particulier à écrire pour ça —
+un conteneur flex vide n'occupe rien.
+
+**Sur téléphone, le côté ne veut rien dire** : une seule colonne, gouvernée par
+les onglets comme avant. `App.jsx` fond donc `columns.left` et `columns.right`
+en une liste unique (`mobileSections`) pour ce cas-là. Chaque section vit donc
+littéralement **à deux endroits du DOM** — la bonne colonne d'ordinateur, et la
+liste fondue de téléphone — masqués l'un ou l'autre par CSS, jamais par un test
+d'appareil (la convention du projet). Ce n'est pas un bug : c'est délibéré,
+pour ne pas avoir à réécrire toute la disposition en JavaScript selon la
+largeur d'écran. Le seul coût réel est qu'un brouillon de message tapé dans le
+chat ne survit pas à un redimensionnement qui franchit le seuil ordinateur —
+un cas assez rare pour qu'on l'accepte.
+
+Détails qui ont coûté un bug chacun :
 
 - les sections portent **`shrink-0`**. La colonne est un conteneur flex de
   hauteur fixe : sans lui, chaque section se fait comprimer au lieu de laisser
   la colonne défiler, et `overflow-hidden` rogne le contenu ;
 - la visibilité par onglet sur téléphone passe par une **classe** posée sur
-  chaque section (`section.className`), jamais par un filtrage de la liste :
-  filtrer changerait l'ordre gardé.
+  chaque section, jamais par un filtrage de la liste : filtrer changerait
+  l'ordre gardé ;
+- un test qui cherche une section par son titre (`getByText`) doit choisir
+  laquelle des deux copies il vise — sans ça, Playwright échoue en mode strict
+  (« plusieurs éléments trouvés ») ou cible la copie masquée par CSS.
+
+Le plateau lui-même (`Board.jsx`) plafonnait à 900px quel que soit l'espace
+libre — sur un grand écran, avec l'ancienne colonne fixe, il ne restait presque
+rien au milieu. Le plafond est à 1300px désormais, et le code de partie / les
+règles / la calculatrice / le solde vivent dans une barre pleine largeur
+au-dessus, plutôt que dans une colonne étroite.
 
 ---
 

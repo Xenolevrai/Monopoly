@@ -172,8 +172,10 @@ n'importe qui.
 
 ## Sur téléphone comme sur ordinateur
 
-**Sur ordinateur**, le plateau occupe la gauche, tout le reste la droite : on
-voit la partie entière d'un seul coup d'œil, sans onglet.
+**Sur ordinateur**, on choisit soi-même la disposition : vos biens, les
+joueuses, le journal et le chat se replient, se réordonnent, et se glissent à
+gauche ou à droite du plateau — chacune joue autrement, chacune met devant ce
+qu'elle regarde. L'agencement choisi est gardé d'une partie à l'autre.
 
 **Sur téléphone**, trois onglets, et le premier suffit pour jouer : l'onglet
 **Jeu** montre le plateau *et* les boutons — on lance les dés, on voit la case
