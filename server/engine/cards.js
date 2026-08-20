@@ -5,11 +5,12 @@
  * c'est littéralement la règle « remettre la carte sous la pile ». Les deux
  * cartes « libérée de prison » quittent la file tant qu'une joueuse les détient.
  */
-import { cardsOf, editionOf, boardOf } from '../../shared/index.js';
+import { cardsOf, editionOf, boardOf, isOwnable, getSpace } from '../../shared/index.js';
 import { log, say, amountText } from './log.js';
 import { playerById, buildingsOf, activePlayers, propertiesOf, config } from './queries.js';
 import { credit, charge, finishGame } from './money.js';
 import { advance, moveTo, sendToJail, resolveLanding } from './movement.js';
+import { dropHazard, clearHazards, nearestVulnerable, advanceHazardPawn } from './hazard.js';
 import { rollDice } from './rng.js';
 
 /**
@@ -351,6 +352,109 @@ export function applyCardAction(state, playerId, action, ctx = {}) {
     case 'draw_card':
       drawCard(state, playerId, action.deck, ctx);
       return;
+
+    // Plusieurs effets d'affilée sur une même carte. Générique : on réapplique
+    // simplement chaque action, dans l'ordre annoncé.
+    case 'sequence':
+      for (const step of action.actions ?? []) {
+        applyCardAction(state, playerId, step, ctx);
+        if (state.debt || state.pending.kind) return; // un effet a suspendu la partie
+      }
+      return;
+
+    // — Pion hostile autonome (`mechanics.hazardPawn`) ————————
+    case 'place_hazard': {
+      const target = nearestVulnerable(state, player.position);
+      if (target != null) dropHazard(state, target);
+      return;
+    }
+
+    case 'clear_hazard': {
+      const cleared = clearHazards(state, player.position, action.count ?? 1);
+      if (cleared === 0) log(state, 'card', say(state, 'noHazard'), { playerId });
+      return;
+    }
+
+    case 'move_hazard':
+      advanceHazardPawn(state, action.steps ?? 1);
+      return;
+
+    // Un loyer annulé d'avance, gardé jusqu'à ce qu'on en ait besoin.
+    case 'grant_rent_waiver':
+      player.rentWaivers = (player.rentWaivers ?? 0) + (action.count ?? 1);
+      log(state, 'card', say(state, 'rentWaiverGranted', { name: player.name }), { playerId });
+      return;
+
+    // « Avancez jusqu'au prochain bien encore libre. »
+    case 'nearest_unowned': {
+      const board = boardOf(state);
+      let target = null;
+      for (let step = 1; step <= board.length; step++) {
+        const id = (player.position + step) % board.length;
+        if (isOwnable(state, id) && !state.properties[id]?.ownerId) { target = id; break; }
+      }
+      if (target == null) {
+        log(state, 'card', say(state, 'noSuchSpace'), { playerId });
+        return;
+      }
+      moveTo(state, playerId, target, true);
+      resolveLanding(state, playerId, { diceTotal: ctx.diceTotal ?? 0 });
+      return;
+    }
+
+    // Dérobe une somme à la joueuse qui a le plus de liquide.
+    case 'steal_from_richest': {
+      const victim = activePlayers(state)
+        .filter((p) => p.id !== playerId)
+        .sort((a, b) => b.cash - a.cash)[0];
+      if (!victim) return;
+      charge(state, victim.id, action.amount, say(state, 'reasonTheft'), playerId);
+      return;
+    }
+
+    // Fait reculer la joueuse la plus riche — sans la faire résoudre sa case :
+    // le recul est une gêne, pas un événement.
+    case 'rival_move_relative': {
+      const rival = activePlayers(state)
+        .filter((p) => p.id !== playerId)
+        .sort((a, b) => b.cash - a.cash)[0];
+      if (!rival) return;
+      advance(state, rival.id, action.offset);
+      log(state, 'card', say(state, 'rivalPushed', { name: rival.name, space: getSpace(state, rival.position).name }), {
+        playerId: rival.id,
+      });
+      return;
+    }
+
+    // Une construction offerte : on la pose sur le bien le moins bâti qu'on
+    // possède et qui l'accepte, sans rien débourser.
+    case 'free_building': {
+      const target = propertiesOf(state, playerId)
+        .filter((prop) => getSpace(state, prop.spaceId).type === 'property' && !prop.mortgaged)
+        .sort((a, b) => a.houses - b.houses)[0];
+      if (!target || state.bank.houses < 1) {
+        log(state, 'card', say(state, 'noFreeBuilding', { name: player.name }), { playerId });
+        return;
+      }
+      target.houses += 1;
+      state.bank.houses -= 1;
+      log(state, 'build', say(state, 'freeBuilding', {
+        name: player.name,
+        space: getSpace(state, target.spaceId).name,
+      }), { playerId, spaceId: target.spaceId });
+      return;
+    }
+
+    // Se balancer d'un raccourci à l'autre, contre le prix annoncé.
+    case 'warp': {
+      if (action.cost > 0) charge(state, playerId, action.cost, say(state, 'reasonWarp'));
+      moveTo(state, playerId, action.target, false);
+      log(state, 'land', say(state, 'warped', {
+        name: player.name,
+        space: getSpace(state, action.target).name,
+      }), { playerId, spaceId: action.target });
+      return;
+    }
 
     // Choisir une carte parmi celles retournées dans le coffre.
     case 'take_sale_card':

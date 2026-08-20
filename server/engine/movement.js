@@ -9,6 +9,7 @@ import { getSpace, boardOf, isOwnable } from '../../shared/index.js';
 import { log, say, amountText } from './log.js';
 import { playerById, rentFor, config } from './queries.js';
 import { credit, charge } from './money.js';
+import { resolveHazardOnLanding } from './hazard.js';
 
 /**
  * Les cases achetables encore libres franchies sans s'y arrêter.
@@ -29,6 +30,16 @@ function queuePassedSpaces(state, from, steps) {
       state.auctionQueue.push(id);
     }
   }
+}
+
+/** La prochaine case d'un type donné en avançant, ou null. */
+export function nextSpaceOfType(state, from, type) {
+  const board = boardOf(state);
+  for (let step = 1; step <= board.length; step++) {
+    const id = (from + step) % board.length;
+    if (board[id].type === type) return id;
+  }
+  return null;
 }
 
 /** Avance de `steps` cases, en encaissant le salaire si on passe par Départ. */
@@ -56,6 +67,26 @@ export function moveTo(state, playerId, target, collectGoSalary = true) {
 
 function collectSalary(state, playerId) {
   credit(state, playerId, config(state).currency.goBonus, say(state, 'reasonGo'));
+  grantLapWaivers(state, playerId);
+}
+
+/** Le camp d'une joueuse, si l'édition en propose. */
+export function factionOf(state, player) {
+  if (!player?.faction) return null;
+  return config(state).factions?.options?.find((f) => f.id === player.faction) ?? null;
+}
+
+/**
+ * Certains camps épargnent un loyer à chaque tour de plateau
+ * (`rentWaiverPerLap`). On crédite le compteur au passage de la case Départ —
+ * et une fois au lancement de la partie, pour que le premier tour compte.
+ */
+export function grantLapWaivers(state, playerId = null) {
+  const targets = playerId ? [playerById(state, playerId)] : state.players;
+  for (const player of targets) {
+    const perLap = factionOf(state, player)?.rentWaiverPerLap ?? 0;
+    if (perLap > 0) player.rentWaivers = (player.rentWaivers ?? 0) + perLap;
+  }
 }
 
 /**
@@ -132,6 +163,28 @@ export function resolveLanding(state, playerId, ctx = {}) {
     case 'jail':
       return; // Départ (salaire déjà versé) et simple visite : rien à faire.
 
+    // Raccourci : on peut se balancer jusqu'au prochain raccourci du plateau.
+    // Le prix est celui de l'édition, gratuit pour un camp qui l'annonce.
+    case 'warp': {
+      const warp = config(state).mechanics?.warpSpaces;
+      const target = nextSpaceOfType(state, player.position, 'warp');
+      if (!warp || target == null) return;
+      const cost = factionOf(state, player)?.freeWarp ? 0 : (warp.cost ?? 0);
+      if (player.cash < cost) return; // pas les moyens : on reste, sans invite
+      state.pending = {
+        kind: 'card_choice',
+        playerIds: [playerId],
+        payload: {
+          options: [
+            { index: 0, label: say(state, 'warpGo', { space: getSpace(state, target).name, amount: amountText(state, cost) }) },
+            { index: 1, label: say(state, 'warpStay') },
+          ],
+          actions: [{ type: 'warp', target, cost }, { type: 'collect', amount: 0 }],
+        },
+      };
+      return;
+    }
+
     default:
       // Toute case dont le type nomme un paquet de cartes existant (chance,
       // community_chest, mais aussi les paquets ajoutés par une extension —
@@ -151,6 +204,17 @@ export function resolveLanding(state, playerId, ctx = {}) {
 function resolveOwnable(state, player, space, ctx) {
   const prop = state.properties[space.id];
   const home = homeSpaceOf(state, player);
+
+  // Une case piégée coûte une pénalité à qui s'y arrête et ne rapporte aucun
+  // loyer à sa propriétaire pour cette visite. Elle reste **achetable** : la
+  // règle de la boîte verrouille le loyer du propriétaire, pas la capture.
+  // (Le bloquer aussi à l'achat asséchait la partie — les pièges s'accumulaient
+  // plus vite que les captures et la victoire « tout capturé » ne tombait
+  // jamais. Mesuré, puis corrigé.)
+  const wasHazarded = resolveHazardOnLanding(state, player.id, space.id);
+  // La pénalité peut avoir ouvert une dette : on ne pose surtout pas d'invite
+  // d'achat par-dessus, elle écraserait le règlement en cours.
+  if (wasHazarded && state.debt) return;
 
   // Libre : achat ou enchère. Sauf le fief de sa propre maison — sa salle
   // commune —, qu'on explore gratuitement en y arrivant : on est chez soi.
@@ -179,6 +243,15 @@ function resolveOwnable(state, player, space, ctx) {
   // À soi, ou hypothéquée : rien à payer.
   if (prop.ownerId === player.id) return;
 
+  // Le piège vient d'être encaissé : le loyer saute pour cette visite.
+  if (wasHazarded) {
+    log(state, 'rent', say(state, 'rentBlocked', { space: space.name }), {
+      playerId: player.id,
+      spaceId: space.id,
+    });
+    return;
+  }
+
   // Chez soi, même si quelqu'un d'autre y est passé avant : aucun droit à payer.
   if (home === space.id) {
     log(state, 'rent', say(state, 'rentHome', { space: space.name, name: player.name }), {
@@ -189,6 +262,15 @@ function resolveOwnable(state, player, space, ctx) {
   }
   if (prop.mortgaged) {
     log(state, 'rent', say(state, 'rentMortgaged', { space: space.name }), {
+      playerId: player.id,
+      spaceId: space.id,
+    });
+    return;
+  }
+
+  if ((player.rentWaivers ?? 0) > 0) {
+    player.rentWaivers -= 1;
+    log(state, 'rent', say(state, 'rentWaived', { name: player.name, space: space.name }), {
       playerId: player.id,
       spaceId: space.id,
     });

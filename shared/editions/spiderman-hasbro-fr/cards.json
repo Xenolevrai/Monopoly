@@ -1,0 +1,224 @@
+{
+  "community_chest": [
+    {
+      "id": "bugle-01",
+      "text": "Scoop en une : recevez 100 $ pour la vente de photos exclusives à J. Jonah Jameson.",
+      "action": {
+        "type": "collect",
+        "amount": 100
+      }
+    },
+    {
+      "id": "bugle-02",
+      "text": "Alerte Bombe Citrouille : le Bouffon Vert frappe. Une bombe est posée sur la propriété non protégée la plus proche.",
+      "action": {
+        "type": "place_hazard"
+      }
+    },
+    {
+      "id": "bugle-03",
+      "text": "Désamorçage héroïque : retirez une Bombe Citrouille du plateau et recevez 50 $ de prime municipale.",
+      "action": {
+        "type": "sequence",
+        "actions": [
+          {
+            "type": "clear_hazard",
+            "count": 1
+          },
+          {
+            "type": "collect",
+            "amount": 50
+          }
+        ]
+      }
+    },
+    {
+      "id": "bugle-04",
+      "text": "Tir de toile d'urgence : avancez directement jusqu'à la case Départ. Recevez 200 $.",
+      "action": {
+        "type": "move_to",
+        "target": 0,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "bugle-05",
+      "text": "Intervention des Avengers : le prochain loyer qu'on vous réclame est annulé.",
+      "action": {
+        "type": "grant_rent_waiver",
+        "count": 1
+      }
+    },
+    {
+      "id": "bugle-06",
+      "text": "Patrouille nocturne : avancez jusqu'au prochain super-vilain encore libre.",
+      "action": {
+        "type": "nearest_unowned"
+      }
+    },
+    {
+      "id": "bugle-07",
+      "text": "Alerte symbiote : rendez-vous chez Venom ou chez Carnage. Si vous passez par la case Départ, touchez 200 $.",
+      "action": {
+        "type": "choice",
+        "options": [
+          {
+            "label": "Venom",
+            "action": {
+              "type": "move_to",
+              "target": 29,
+              "collectGoSalary": true
+            }
+          },
+          {
+            "label": "Carnage",
+            "action": {
+              "type": "move_to",
+              "target": 24,
+              "collectGoSalary": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "bugle-08",
+      "text": "Mandat d'arrêt de Jameson : allez directement à la Voûte, sans passer par la case Départ, sans toucher 200 $.",
+      "action": {
+        "type": "go_to_jail"
+      }
+    },
+    {
+      "id": "bugle-09",
+      "text": "Passe de sortie de la Voûte. Cette carte peut être conservée jusqu'à ce qu'elle soit utilisée ou vendue.",
+      "action": {
+        "type": "get_out_of_jail_free"
+      },
+      "keepable": true
+    },
+    {
+      "id": "bugle-10",
+      "text": "Assaut aérien du Bouffon : le Bouffon Vert avance de 3 cases et frappe là où il s'arrête.",
+      "action": {
+        "type": "move_hazard",
+        "steps": 3
+      }
+    },
+    {
+      "id": "bugle-11",
+      "text": "Bourse scientifique Parker : recevez 50 $ de subvention d'Horizon Labs.",
+      "action": {
+        "type": "collect",
+        "amount": 50
+      }
+    },
+    {
+      "id": "bugle-12",
+      "text": "Maintenance des Spider-Bots : payez 25 $ à la banque pour chaque Spider-Bot déployé.",
+      "action": {
+        "type": "pay_per_building",
+        "perHouse": 25,
+        "perHotel": 125
+      }
+    },
+    {
+      "id": "bugle-13",
+      "text": "Livraison de pizzas en retard : votre double identité vous met en retard. Payez 20 $ d'amende.",
+      "action": {
+        "type": "pay",
+        "amount": 20
+      }
+    },
+    {
+      "id": "bugle-14",
+      "text": "Surveillance piratée : vous lisez la dépêche suivante dans la foulée.",
+      "action": {
+        "type": "draw_card",
+        "deck": "community_chest"
+      }
+    },
+    {
+      "id": "bugle-15",
+      "text": "Infiltration furtive : dérobez 50 $ à la joueuse qui a la plus grosse réserve de liquide.",
+      "action": {
+        "type": "steal_from_richest",
+        "amount": 50
+      }
+    },
+    {
+      "id": "bugle-16",
+      "text": "Sauvetage de haute voltige : chaque autre joueuse vous verse 10 $.",
+      "action": {
+        "type": "collect_from_each",
+        "amount": 10
+      }
+    },
+    {
+      "id": "bugle-17",
+      "text": "Panne de secteur Oscorp : rendez-vous au service le plus proche. Lancez les dés et payez dix fois le total.",
+      "action": {
+        "type": "nearest",
+        "spaceType": "utility",
+        "utilityFactor": 10,
+        "rerollDice": true
+      }
+    },
+    {
+      "id": "bugle-18",
+      "text": "Embuscade des Sinister Six : la chaussée est détruite. Payez 50 $ de dégâts collatéraux.",
+      "action": {
+        "type": "pay",
+        "amount": 50
+      }
+    },
+    {
+      "id": "bugle-19",
+      "text": "Course en Spider-Moto : avancez jusqu'à la Spider-Moto. Si vous passez par la case Départ, touchez 200 $.",
+      "action": {
+        "type": "move_to",
+        "target": 15,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "bugle-20",
+      "text": "Vol en planeur de toile : avancez jusqu'au Planeur de Toile. Si vous passez par la case Départ, touchez 200 $.",
+      "action": {
+        "type": "move_to",
+        "target": 25,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "bugle-21",
+      "text": "Chantage photographique : la joueuse la plus riche recule de 2 cases.",
+      "action": {
+        "type": "rival_move_relative",
+        "offset": -2
+      }
+    },
+    {
+      "id": "bugle-22",
+      "text": "Ralliement des Web-Warriors : déployez gratuitement un Spider-Bot sur l'une de vos propriétés.",
+      "action": {
+        "type": "free_building"
+      }
+    },
+    {
+      "id": "bugle-23",
+      "text": "Grand nettoyage urbain : retirez jusqu'à 2 Bombes Citrouilles du plateau.",
+      "action": {
+        "type": "clear_hazard",
+        "count": 2
+      }
+    },
+    {
+      "id": "bugle-24",
+      "text": "Soutien de Tante May : recevez 100 $ d'économies familiales pour votre équipement.",
+      "action": {
+        "type": "collect",
+        "amount": 100
+      }
+    }
+  ]
+}

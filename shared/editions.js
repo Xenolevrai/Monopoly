@@ -41,6 +41,12 @@ import smCards from './editions/spiderman-fr/cards.json' with { type: 'json' };
 import smMeta from './editions/spiderman-fr/edition.json' with { type: 'json' };
 import smEn from './editions/spiderman-fr/locales/en.json' with { type: 'json' };
 
+import shBoard from './editions/spiderman-hasbro-fr/board.json' with { type: 'json' };
+import shGroups from './editions/spiderman-hasbro-fr/groups.json' with { type: 'json' };
+import shCards from './editions/spiderman-hasbro-fr/cards.json' with { type: 'json' };
+import shMeta from './editions/spiderman-hasbro-fr/edition.json' with { type: 'json' };
+import shEn from './editions/spiderman-hasbro-fr/locales/en.json' with { type: 'json' };
+
 import { applyExtensions } from './extensions.js';
 
 /**
@@ -67,6 +73,7 @@ const SOURCES = {
   'harry-potter-fr': build(hpMeta, hpBoard, hpGroups, hpCards, { en: hpEn }),
   'avengers-fr': build(avMeta, avBoard, avGroups, avCards, { en: avEn }),
   'spiderman-fr': build(smMeta, smBoard, smGroups, smCards, { en: smEn }),
+  'spiderman-hasbro-fr': build(shMeta, shBoard, shGroups, shCards, { en: shEn }),
   'poudlard-points': build(hogMeta, hogBoard, hogGroups, hogCards, { en: hogEn }),
 };
 

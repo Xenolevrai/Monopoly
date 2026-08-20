@@ -103,6 +103,8 @@
  * @property {{ chance: string[], community_chest: string[] }} decks - piles mélangées (ids de cartes)
  * @property {string|null} drawnCardId
  * @property {number} freeParkingPot  - utilisé seulement si houseRules.freeParkingPot
+ * @property {{position: number, lastRoll: *}|null} hazardPawn - pion hostile autonome
+ * @property {Record<number, boolean>} hazards - cases piégées, par numéro de case
  * @property {Pending} pending
  * @property {Auction|null} auction
  * @property {number[]} auctionQueue  - biens d'une faillite à liquider un par un
@@ -176,6 +178,13 @@ export function createGameState(code, hostId, editionId = DEFAULT_EDITION, local
     // un (`mechanics.saleVault`). `null` partout ailleurs : rien à afficher,
     // rien à sauvegarder.
     saleVault: merged.mechanics?.saleVault ? { visible: [] } : null,
+    // Pion hostile qui avance seul (`mechanics.hazardPawn`), et les dangers
+    // qu'il sème. `null` / objet vide partout ailleurs : une édition sans pion
+    // autonome ne porte rien de plus dans son état.
+    hazardPawn: merged.mechanics?.hazardPawn
+      ? { position: merged.mechanics.hazardPawn.start ?? 0, lastRoll: null }
+      : null,
+    hazards: {},
     freeParkingPot: 0,
     pending: { kind: null, playerIds: [] },
     auction: null,
@@ -218,6 +227,9 @@ export function createPlayer({ id, name, token, color, order, edition, faction =
     // Cartes gagnées dans un coffre (`mechanics.saleVault`) : toujours un
     // tableau, même sans extension qui en distribue — l'état reste homogène.
     saleCards: [],
+    // Loyers à annuler (carte, ou pouvoir de camp accordé à chaque tour de
+    // plateau). Toujours un nombre : l'état reste homogène sans extension.
+    rentWaivers: 0,
     bankrupt: false,
     connected: true,
     order,

@@ -1,0 +1,255 @@
+{
+  "id": "spiderman-hasbro-fr",
+  "name": "Monopoly Spider-Man — Bouffon Vert",
+  "theme": "Une alliance de Spider-Héros contre un vilain qui joue tout seul",
+  "tagline": "Le Bouffon Vert avance sans personne pour le tenir.",
+  "summary": "Chaque joueuse incarne un Spider-Héros avec son pouvoir. On capture les super-vilains, on déploie des Spider-Bots pour protéger la ville, et on esquive le Bouffon Vert — un pion autonome qui avance à chaque tour et sème des Bombes Citrouilles. La partie s'arrête quand tous les vilains sont capturés, ou qu'il ne reste qu'une héroïne.",
+  "playerCount": {
+    "min": 2,
+    "max": 6
+  },
+  "board": {
+    "size": 40
+  },
+  "currency": {
+    "type": "money",
+    "label": "$",
+    "startingAmount": 1500,
+    "goBonus": 200,
+    "singleDenomination": false,
+    "denominations": [
+      500,
+      100,
+      50,
+      20,
+      10,
+      5,
+      1
+    ]
+  },
+  "jail": {
+    "space": 10,
+    "bail": 50,
+    "maxTurns": 3
+  },
+  "dice": {
+    "count": 2,
+    "sides": 6,
+    "doublesToJail": 3
+  },
+  "bank": {
+    "houses": 32,
+    "hotels": 0
+  },
+  "mortgage": {
+    "enabled": true,
+    "interestRate": 0.1
+  },
+  "turnMode": "sequential",
+  "winCondition": "allOwnedOrLastStanding",
+  "mechanics": {
+    "houses": true,
+    "hotels": false,
+    "mortgage": true,
+    "bankruptcyEliminates": true,
+    "trading": true,
+    "auctions": true,
+    "negotiableRent": true,
+    "cheatCards": false,
+    "towerMode": false,
+    "explorationMode": false,
+    "draftMode": false,
+    "battleSpaces": false,
+    "abilityTokens": true,
+    "hazardPawn": {
+      "label": "Bouffon Vert",
+      "start": 30,
+      "faces": [
+        1,
+        2,
+        2,
+        3,
+        3,
+        "chase"
+      ],
+      "penalty": 50,
+      "dropsOnOwnedOnly": true
+    },
+    "warpSpaces": {
+      "cost": 50
+    }
+  },
+  "houseRules": {
+    "freeParkingPot": false,
+    "auctionOnDecline": true,
+    "collectGoOnGoToLyon": true,
+    "evenBuildRule": true,
+    "auctionBankruptcyAssets": true
+  },
+  "tokens": [
+    {
+      "id": "masque",
+      "label": "Masque",
+      "color": "#C6303A"
+    },
+    {
+      "id": "toile",
+      "label": "Toile",
+      "color": "#2A5CAA"
+    },
+    {
+      "id": "araignee",
+      "label": "Araignée",
+      "color": "#1c1c22"
+    },
+    {
+      "id": "camera",
+      "label": "Appareil photo",
+      "color": "#8A6A4F"
+    },
+    {
+      "id": "planeur",
+      "label": "Planeur",
+      "color": "#2E9E63"
+    },
+    {
+      "id": "citrouille",
+      "label": "Citrouille",
+      "color": "#D98324"
+    }
+  ],
+  "theming": {
+    "palette": {
+      "table": "#101427",
+      "tableDark": "#070a16",
+      "board": "#1b2340",
+      "boardEdge": "#2b3a63",
+      "space": "#e8ecf7",
+      "spaceAlt": "#d7deef",
+      "ink": "#141a2e",
+      "inkSoft": "#4d5878",
+      "panel": "#f0f3fb",
+      "panelEdge": "#c2cbe3",
+      "accent": "#c6303a",
+      "accentDeep": "#8f1b23",
+      "money": "#2f6b45",
+      "house": "#2a5caa",
+      "hotel": "#c6303a",
+      "gold": "#d4a32b",
+      "boardInk": "#141a2e"
+    },
+    "centerTitle": "Monopoly",
+    "centerSubtitle": "New York",
+    "decks": {
+      "community_chest": {
+        "label": "Daily Bugle",
+        "color": "#2a5caa",
+        "glyph": "▤"
+      }
+    },
+    "display": "engraved",
+    "icons": {
+      "railroad": "jet",
+      "utility": [
+        "spark",
+        "bulb"
+      ],
+      "community_chest": "chest",
+      "jail": "bars",
+      "go_to_jail": "officer",
+      "free_parking": "castle",
+      "warp": "web"
+    },
+    "skin": "night",
+    "art": {
+      "1": "star",
+      "3": "shell",
+      "5": "bus",
+      "6": "fist",
+      "8": "star",
+      "9": "hourglass",
+      "11": "spaceMask",
+      "12": "tower",
+      "13": "tree",
+      "14": "wings",
+      "15": "motorcycle",
+      "16": "flask",
+      "18": "blades",
+      "19": "gem",
+      "21": "portal",
+      "23": "metalArm",
+      "24": "serpent",
+      "25": "jet",
+      "26": "helmet",
+      "27": "phoenix",
+      "28": "shelf",
+      "29": "web",
+      "31": "helmet",
+      "32": "gem",
+      "34": "hammer",
+      "35": "carrier",
+      "37": "tower",
+      "39": "helmet"
+    }
+  },
+  "buildingLabels": {
+    "house": "Spider-Bot",
+    "houses": "Spider-Bots",
+    "hotel": "Essaim",
+    "hotels": "Essaims"
+  },
+  "factions": {
+    "label": "Votre Spider-Héros",
+    "prompt": "Qui enfile le costume ?",
+    "options": [
+      {
+        "id": "peter",
+        "label": "Peter Parker",
+        "color": "#c6303a",
+        "emblem": "masque",
+        "power": "Toile renforcée : vous pouvez relancer vos dés une fois par tour.",
+        "rerollDice": true
+      },
+      {
+        "id": "miles",
+        "label": "Miles Morales",
+        "color": "#1c1c22",
+        "emblem": "araignee",
+        "power": "Venom Blast : une Bombe Citrouille explose sans vous blesser quand vous arrivez dessus.",
+        "clearsHazardOnLand": true
+      },
+      {
+        "id": "gwen",
+        "label": "Ghost-Spider",
+        "color": "#e8ecf7",
+        "emblem": "toile",
+        "power": "Agilité acrobatique : les raccourcis de toile vous sont gratuits.",
+        "freeWarp": true
+      },
+      {
+        "id": "silk",
+        "label": "Silk",
+        "color": "#d4a32b",
+        "emblem": "camera",
+        "power": "Sens d'araignée supérieur : vous voyez la prochaine dépêche du Daily Bugle.",
+        "peekDeck": "community_chest"
+      },
+      {
+        "id": "ham",
+        "label": "Spider-Ham",
+        "color": "#e08fb0",
+        "emblem": "citrouille",
+        "power": "Physique cartoon : le premier loyer de chaque tour de plateau vous est épargné.",
+        "rentWaiverPerLap": 1
+      },
+      {
+        "id": "miguel",
+        "label": "Spider-Man 2099",
+        "color": "#2a5caa",
+        "emblem": "planeur",
+        "power": "Technologie du futur : vos Spider-Bots coûtent moitié prix.",
+        "buildCostFactor": 0.5
+      }
+    ]
+  }
+}

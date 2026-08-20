@@ -27,6 +27,7 @@ import {
 import { declareBankruptcy, checkGameOver, settleDebt, finishGame } from './money.js';
 import { buyProperty, mortgage, unmortgage, buildHouse, sellBuilding } from './property.js';
 import { startAuction, placeBid, passBid, startQueuedAuction } from './auction.js';
+import { grantLapWaivers } from './movement.js';
 import { proposeTrade, respondToTrade, cancelTrade } from './trade.js';
 import {
   startTurn,
@@ -38,6 +39,8 @@ import {
   determineTurnOrder,
   finishResolution,
   rollBuyDie,
+  rerollDice,
+  keepRoll,
 } from './turn.js';
 
 export * from './queries.js';
@@ -146,6 +149,7 @@ export function startGame(game, playerId) {
 
   log(state, 'setup', say(state, 'starts', { name: playerById(state, playerId).name }), { playerId });
   buildDecks(state, rng);
+  grantLapWaivers(state);
   determineTurnOrder(state, rng);
   state.phase = 'playing';
   state.turnCount = 1;
@@ -212,6 +216,15 @@ function applyAction(game, state, rng, player, action) {
       if (pending.kind !== 'roll' || !isMine) return refuse("Ce n'est pas à vous de lancer les dés.");
       return roll(state, playerId, rng);
 
+    // Relance offerte par un pouvoir de camp (`factions[].rerollDice`).
+    case 'REROLL_DICE':
+      if (pending.kind !== 'reroll' || !isMine) return refuse('Aucun jet à relancer.');
+      return rerollDice(state, playerId, rng);
+
+    case 'KEEP_ROLL':
+      if (pending.kind !== 'reroll' || !isMine) return refuse('Aucun jet à garder.');
+      return keepRoll(state, playerId);
+
     case 'PAY_BAIL':
       if (pending.kind !== 'roll' || !isMine) return refuse('Action impossible maintenant.');
       return payBail(state, playerId);
@@ -222,7 +235,7 @@ function applyAction(game, state, rng, player, action) {
 
     case 'END_TURN':
       if (pending.kind !== 'end_turn' || !isMine) return refuse('Vous ne pouvez pas finir votre tour maintenant.');
-      return endTurn(state, playerId);
+      return endTurn(state, playerId, rng);
 
     // Jet facultatif proposé par `mechanics.buyDie`, une fois la case résolue.
     case 'ROLL_BUY_DIE':
@@ -289,6 +302,7 @@ function applyAction(game, state, rng, player, action) {
       if (pending.kind !== 'card_choice' || !isMine) return refuse('Aucun choix de carte en attente.');
       return resolveCardChoice(state, playerId, action.optionIndex, {
         diceTotal: (state.dice.values ?? []).reduce((a, b) => a + b, 0),
+        rng,
       });
 
     // — Gestion du patrimoine ————————————————————————————————
@@ -369,7 +383,14 @@ function advanceFlow(state) {
   // dernier lieu exploré met fin à la partie sur-le-champ. On teste avant les
   // gardes ci-dessous : sinon l'invite « finir le tour », posée juste avant,
   // ferait sortir d'ici et la partie continuerait un tour de trop.
-  if (editionOf(state).winCondition === 'allLocationsExplored' && checkGameOver(state))
+  // Ces conditions-là peuvent tomber au milieu d'un tour : on les teste avant
+  // les gardes ci-dessous, sinon l'invite posée juste avant nous ferait sortir
+  // d'ici et la partie continuerait un tour de trop.
+  const winCondition = editionOf(state).winCondition;
+  if (
+    (winCondition === 'allLocationsExplored' || winCondition === 'allOwnedOrLastStanding') &&
+    checkGameOver(state)
+  )
     return;
 
   // Même raison, même place : une condition de victoire portée par une carte

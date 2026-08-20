@@ -38,6 +38,17 @@ export function groupIsClear(state, groupId) {
   return getGroup(state, groupId).spaces.every((id) => !state.properties[id].mortgaged);
 }
 
+/**
+ * Ce que coûte une construction à cette joueuse. Un camp peut annoncer un
+ * `buildCostFactor` (pouvoir de héros) : le moteur applique le facteur sans
+ * savoir de quel camp il s'agit.
+ */
+export function buildCostFor(state, player, baseCost) {
+  const faction = config(state).factions?.options?.find((f) => f.id === player?.faction);
+  const factor = faction?.buildCostFactor ?? 1;
+  return Math.floor(baseCost * factor);
+}
+
 /** Niveau de construction d'une case : 0-4 maisons, 5 = hôtel. */
 export function buildingLevel(prop) {
   return prop.hotel ? 5 : prop.houses;
@@ -135,8 +146,8 @@ export function canBuild(state, playerId, spaceId) {
   if (buildingLevel(prop) > Math.min(...levels))
     return { ok: false, reason: 'La construction doit être répartie également sur le groupe.' };
 
-  const cost = space.houseCost;
   const player = playerById(state, playerId);
+  const cost = buildCostFor(state, player, space.houseCost);
   if (player.cash < cost) return { ok: false, reason: 'Fonds insuffisants.' };
 
   return { ok: true, cost, isHotel };

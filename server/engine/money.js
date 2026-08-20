@@ -330,6 +330,21 @@ export function returnBuildingsToBank(state, prop) {
 export function checkGameOver(state) {
   const edition = rulesOf(state);
 
+  // Deux fins possibles, la première atteinte l'emporte : tout le plateau
+  // capturé, ou une seule joueuse encore debout. Le classement se fait au
+  // patrimoine, comme une partie classique arrêtée d'un commun accord.
+  if (edition.winCondition === 'allOwnedOrLastStanding') {
+    const remaining = ownableSpaces(state).filter((space) => !state.properties[space.id].ownerId);
+    if (remaining.length === 0) {
+      finishGame(state, say(state, 'allCaptured'));
+      return true;
+    }
+    const standing = activePlayers(state);
+    if (standing.length > 1) return false;
+    finishGame(state, standing[0] ? say(state, 'lastStanding', { name: standing[0].name }) : say(state, 'noneLeft'));
+    return true;
+  }
+
   if (edition.winCondition === 'allLocationsExplored') {
     const remaining = ownableSpaces(state).filter((space) => !state.properties[space.id].ownerId);
     if (remaining.length > 0) return false;

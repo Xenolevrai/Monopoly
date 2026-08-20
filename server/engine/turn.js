@@ -6,6 +6,8 @@ import { playerById, currentPlayer, activePlayers, config } from './queries.js';
 import { charge, checkGameOver } from './money.js';
 import { advance, resolveLanding, sendToJail } from './movement.js';
 import { returnJailCard, getCard, applyCardAction, loseVaultCard } from './cards.js';
+import { playHazardTurn } from './hazard.js';
+import { factionOf } from './movement.js';
 import { startQueuedAuction } from './auction.js';
 
 /**
@@ -61,6 +63,12 @@ export function startTurn(state) {
     return;
   }
 
+  // Un camp peut annoncer `peekDeck` : sa détentrice voit la prochaine carte
+  // du paquet avant de lancer. Lecture seule, aucune pioche.
+  const peekDeck = factionOf(state, player)?.peekDeck;
+  const peekId = peekDeck ? state.decks?.[peekDeck]?.[0] : null;
+  const peek = peekId ? getCard(state, peekId)?.text ?? null : null;
+
   state.pending = {
     kind: 'roll',
     playerIds: [player.id],
@@ -71,31 +79,82 @@ export function startTurn(state) {
           canPayBail: player.cash >= jail.bail,
           hasJailCard: player.getOutOfJailCards > 0,
           bail: jail.bail,
+          ...(peek ? { peek } : {}),
         }
-      : {},
+      : peek
+        ? { peek }
+        : {},
   };
   log(state, 'turn', say(state, 'turnOf', { name: player.name }), { playerId: player.id, turn: state.turnCount });
 }
 
-/** Lancer de dés — gère aussi les tentatives de sortie de prison. */
-export function roll(state, playerId, rng) {
-  const player = playerById(state, playerId);
+/** Jette les dés, les journalise, et les pose dans l'état — sans rien résoudre. */
+function throwDice(state, player, rng) {
   const values = rollDice(rng, config(state).dice.count, config(state).dice.sides);
   const total = values.reduce((a, b) => a + b, 0);
   const isDouble = values.every((v) => v === values[0]);
   state.dice.values = values;
   state.dice.rolled = true;
   state.dice.rollId = (state.dice.rollId ?? 0) + 1;
-  // Le jet est consommé : la résolution de la case décidera de la suite, et à
-  // défaut `finishResolution` proposera la fin de tour.
-  state.pending = { kind: null, playerIds: [] };
   log(state, 'roll', say(state, 'rolls', { name: player.name, values: values.join(' + '), total, isDouble }), {
-    playerId,
+    playerId: player.id,
     values,
     total,
     isDouble,
   });
+  return { values, total, isDouble };
+}
 
+/**
+ * Un camp peut annoncer `rerollDice` : sa détentrice regarde son jet avant de
+ * le valider, et peut le refaire une fois par tour. Hors de prison seulement —
+ * en cellule, le jet sert à tenter les doubles, pas à se déplacer.
+ */
+function offersReroll(state, player) {
+  return Boolean(factionOf(state, player)?.rerollDice) && !player.inJail && !state.dice.rerollUsed;
+}
+
+/** Lancer de dés — gère aussi les tentatives de sortie de prison. */
+export function roll(state, playerId, rng) {
+  const player = playerById(state, playerId);
+  const { total, isDouble, values } = throwDice(state, player, rng);
+  state.pending = { kind: null, playerIds: [] };
+
+  if (offersReroll(state, player)) {
+    state.pending = {
+      kind: 'reroll',
+      playerIds: [playerId],
+      payload: { values, total, isDouble },
+    };
+    return { ok: true };
+  }
+
+  return commitRoll(state, player, total, isDouble);
+}
+
+/** Relance imposée par un pouvoir de camp : une seule fois, puis on résout. */
+export function rerollDice(state, playerId, rng) {
+  const player = playerById(state, playerId);
+  state.dice.rerollUsed = true;
+  const { total, isDouble } = throwDice(state, player, rng);
+  state.pending = { kind: null, playerIds: [] };
+  log(state, 'roll', say(state, 'rerolls', { name: player.name }), { playerId });
+  return commitRoll(state, player, total, isDouble);
+}
+
+/** Garde le jet tel quel et le résout. */
+export function keepRoll(state, playerId) {
+  const player = playerById(state, playerId);
+  const values = state.dice.values ?? [];
+  const total = values.reduce((a, b) => a + b, 0);
+  const isDouble = values.length > 0 && values.every((v) => v === values[0]);
+  state.pending = { kind: null, playerIds: [] };
+  return commitRoll(state, player, total, isDouble);
+}
+
+/** Ce que le jet déclenche une fois arrêté : prison, doubles, déplacement. */
+function commitRoll(state, player, total, isDouble) {
+  const playerId = player.id;
   if (player.inJail) return rollInJail(state, player, total, isDouble);
 
   state.dice.doublesCount = isDouble ? state.dice.doublesCount + 1 : 0;
@@ -234,8 +293,12 @@ export function finishResolution(state) {
 }
 
 /** Termine le tour : relance si double, sinon passe à la joueuse suivante. */
-export function endTurn(state, playerId) {
+export function endTurn(state, playerId, rng = null) {
   if (state.phase === 'finished') return { ok: false, error: 'La partie est terminée.' };
+
+  // Le pion hostile joue après la joueuse — une fois par jet, comme le dé de
+  // vilain qu'on lance en même temps que les siens sur le plateau.
+  if (rng) playHazardTurn(state, rng);
 
   // Les biens d'une faillite envers la banque partent aux enchères avant la suite.
   if (state.auctionQueue?.length && startQueuedAuction(state)) return { ok: true };

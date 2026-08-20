@@ -222,13 +222,29 @@ export function Badge({ className = '', style }) {
   );
 }
 
+/** Toile tendue — les raccourcis d'un plateau où l'on se balance d'un coin à l'autre. */
+export function Web({ className = '', style }) {
+  return (
+    <svg {...box} className={className} style={style}>
+      <g stroke="currentColor" strokeWidth="2.4" fill="none" strokeLinecap="round">
+        <path d="M24 24V4M24 24l17.3 10M24 24l-17.3 10M24 24l17.3-10M24 24L6.7 14M24 24v20" />
+      </g>
+      <g stroke="currentColor" strokeWidth="2" fill="none">
+        <path d="M24 11l11.3 6.5v13L24 37l-11.3-6.5v-13z" />
+        <path d="M24 4l17.3 10v20L24 44 6.7 34V14z" />
+      </g>
+      <circle cx="24" cy="24" r="2.6" />
+    </svg>
+  );
+}
+
 /** La bibliothèque de pictogrammes adressables depuis une config d'édition. */
 const LIBRARY = {
   locomotive: Locomotive, bulb: Bulb, faucet: Faucet, question: QuestionMark,
   chest: Chest, diamond: Diamond, ring: Ring, arrow: GoArrow, bars: JailBars,
   car: ParkedCar, officer: Officer,
   crest: Crest, spark: Spark, owl: Owl, castle: Castle,
-  jet: Jet, reactor: Reactor, badge: Badge,
+  jet: Jet, reactor: Reactor, badge: Badge, web: Web,
 };
 
 /** Les pictogrammes du Monopoly d'origine, si l'édition n'en impose pas d'autres. */

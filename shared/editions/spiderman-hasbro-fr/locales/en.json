@@ -1,0 +1,237 @@
+{
+  "name": "Monopoly Spider-Man — Green Goblin",
+  "theme": "A team of Spider-Heroes against a villain who plays himself",
+  "tagline": "The Green Goblin moves with nobody holding him.",
+  "summary": "Each player takes a Spider-Hero with their own power. Capture the super-villains, deploy Spider-Bots to protect the city, and dodge the Green Goblin — an autonomous pawn that moves every turn and drops Pumpkin Bombs. The game ends when every villain is captured, or only one hero is left.",
+  "centerTitle": "Monopoly",
+  "centerSubtitle": "New York",
+  "groups": {
+    "brown": "Small-timers",
+    "lightblue": "Bruisers",
+    "pink": "Illusionists",
+    "orange": "Predators",
+    "red": "Criminal masterminds",
+    "yellow": "Symbiotes and monsters",
+    "green": "Major threats",
+    "darkblue": "The Goblin's empire",
+    "railroad": "Transport",
+    "utility": "Services"
+  },
+  "decks": {
+    "community_chest": "Daily Bugle"
+  },
+  "buildingLabels": {
+    "house": "Spider-Bot",
+    "houses": "Spider-Bots",
+    "hotel": "Swarm",
+    "hotels": "Swarms"
+  },
+  "tokens": {
+    "masque": "Mask",
+    "toile": "Web",
+    "araignee": "Spider",
+    "camera": "Camera",
+    "planeur": "Glider",
+    "citrouille": "Pumpkin"
+  },
+  "factions": {
+    "label": "Your Spider-Hero",
+    "prompt": "Who suits up?",
+    "options": {
+      "peter": "Peter Parker",
+      "miles": "Miles Morales",
+      "gwen": "Ghost-Spider",
+      "silk": "Silk",
+      "ham": "Spider-Ham",
+      "miguel": "Spider-Man 2099"
+    }
+  },
+  "spaces": {
+    "0": {
+      "name": "GO",
+      "shortName": "GO"
+    },
+    "1": {
+      "name": "Shocker",
+      "shortName": "Shocker"
+    },
+    "2": {
+      "name": "Daily Bugle",
+      "shortName": "Daily Bugle"
+    },
+    "3": {
+      "name": "Hydro-Man",
+      "shortName": "Hydro-Man"
+    },
+    "4": {
+      "name": "Pumpkin Bomb Attack",
+      "shortName": "Bomb Attack"
+    },
+    "5": {
+      "name": "Web-Line Subway",
+      "shortName": "Web-Line"
+    },
+    "6": {
+      "name": "Rhino",
+      "shortName": "Rhino"
+    },
+    "7": {
+      "name": "Web Space",
+      "shortName": "Web Space"
+    },
+    "8": {
+      "name": "Electro",
+      "shortName": "Electro"
+    },
+    "9": {
+      "name": "Sandman",
+      "shortName": "Sandman"
+    },
+    "10": {
+      "name": "In The Vault / Just Visiting",
+      "shortName": "The Vault"
+    },
+    "11": {
+      "name": "Mysterio",
+      "shortName": "Mysterio"
+    },
+    "12": {
+      "name": "Oscorp Power Grid",
+      "shortName": "Oscorp Grid"
+    },
+    "13": {
+      "name": "Kraven the Hunter",
+      "shortName": "Kraven"
+    },
+    "14": {
+      "name": "Vulture",
+      "shortName": "Vulture"
+    },
+    "15": {
+      "name": "Spider-Cycle",
+      "shortName": "Spider-Cycle"
+    },
+    "16": {
+      "name": "Lizard",
+      "shortName": "Lizard"
+    },
+    "17": {
+      "name": "Daily Bugle",
+      "shortName": "Daily Bugle"
+    },
+    "18": {
+      "name": "Scorpion",
+      "shortName": "Scorpion"
+    },
+    "19": {
+      "name": "Black Cat",
+      "shortName": "Black Cat"
+    },
+    "20": {
+      "name": "Rooftop Rest",
+      "shortName": "Rooftops"
+    },
+    "21": {
+      "name": "Chameleon",
+      "shortName": "Chameleon"
+    },
+    "22": {
+      "name": "Web Space",
+      "shortName": "Web Space"
+    },
+    "23": {
+      "name": "Doctor Octopus",
+      "shortName": "Doc Ock"
+    },
+    "24": {
+      "name": "Carnage",
+      "shortName": "Carnage"
+    },
+    "25": {
+      "name": "Web-Glider",
+      "shortName": "Web-Glider"
+    },
+    "26": {
+      "name": "Jack O'Lantern",
+      "shortName": "Jack O'Lantern"
+    },
+    "27": {
+      "name": "Morbius",
+      "shortName": "Morbius"
+    },
+    "28": {
+      "name": "Daily Bugle Press",
+      "shortName": "Bugle Press"
+    },
+    "29": {
+      "name": "Venom",
+      "shortName": "Venom"
+    },
+    "30": {
+      "name": "Go to The Vault!",
+      "shortName": "Go to The Vault"
+    },
+    "31": {
+      "name": "Hobgoblin",
+      "shortName": "Hobgoblin"
+    },
+    "32": {
+      "name": "Mister Negative",
+      "shortName": "Mr Negative"
+    },
+    "33": {
+      "name": "Daily Bugle",
+      "shortName": "Daily Bugle"
+    },
+    "34": {
+      "name": "Kingpin",
+      "shortName": "Kingpin"
+    },
+    "35": {
+      "name": "Spider-Copter",
+      "shortName": "Spider-Copter"
+    },
+    "36": {
+      "name": "Web Space",
+      "shortName": "Web Space"
+    },
+    "37": {
+      "name": "Oscorp Tower",
+      "shortName": "Oscorp Tower"
+    },
+    "38": {
+      "name": "City Emergency Repairs",
+      "shortName": "City Repairs"
+    },
+    "39": {
+      "name": "Green Goblin's Lair",
+      "shortName": "Goblin's Lair"
+    }
+  },
+  "cards": {
+    "bugle-01": "Front-page scoop: collect $100 for selling exclusive photos to J. Jonah Jameson.",
+    "bugle-02": "Pumpkin Bomb alert: the Green Goblin strikes. A bomb lands on the nearest unprotected property.",
+    "bugle-03": "Heroic defusal: remove a Pumpkin Bomb from the board and collect a $50 city reward.",
+    "bugle-04": "Emergency web-line: advance directly to GO. Collect $200.",
+    "bugle-05": "Avengers assist: the next rent charged to you is cancelled.",
+    "bugle-06": "Night patrol: advance to the next super-villain still at large.",
+    "bugle-07": "Symbiote alert: go to Venom or to Carnage. If you pass GO, collect $200.",
+    "bugle-08": "Arrest warrant from Jameson: go directly to The Vault. Do not pass GO, do not collect $200.",
+    "bugle-09": "Vault release pass. This card may be kept until used or sold.",
+    "bugle-10": "Goblin air raid: the Green Goblin advances 3 spaces and strikes where he lands.",
+    "bugle-11": "Parker science scholarship: collect $50 from Horizon Labs.",
+    "bugle-12": "Spider-Bot maintenance: pay the bank $25 for every Spider-Bot you have deployed.",
+    "bugle-13": "Late pizza delivery: your double life makes you late. Pay a $20 fine.",
+    "bugle-14": "Hacked surveillance: you read the next dispatch straight away.",
+    "bugle-15": "Stealth infiltration: steal $50 from the player holding the most cash.",
+    "bugle-16": "High-flying rescue: every other player pays you $10.",
+    "bugle-17": "Oscorp grid failure: go to the nearest service. Throw the dice and pay ten times the amount thrown.",
+    "bugle-18": "Sinister Six ambush: the street is wrecked. Pay $50 in collateral damage.",
+    "bugle-19": "Spider-Cycle chase: advance to the Spider-Cycle. If you pass GO, collect $200.",
+    "bugle-20": "Web-Glider flight: advance to the Web-Glider. If you pass GO, collect $200.",
+    "bugle-21": "Photo blackmail: the wealthiest player goes back 2 spaces.",
+    "bugle-22": "Web-Warriors rally: deploy one Spider-Bot free of charge on one of your properties.",
+    "bugle-23": "Great city clean-up: remove up to 2 Pumpkin Bombs from the board.",
+    "bugle-24": "Aunt May's support: collect $100 of family savings for your gear."
+  }
+}

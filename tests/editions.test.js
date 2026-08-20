@@ -20,7 +20,10 @@ const ALL = Object.entries(EDITIONS);
 const KNOWN_ACTIONS = new Set([
   'collect', 'pay', 'move_to', 'move_relative', 'go_to_jail', 'pay_per_building',
   'collect_from_each', 'pay_to_each', 'get_out_of_jail_free', 'draw_card',
-  'nearest', 'choice',
+  'nearest', 'choice', 'sequence',
+  // Pion hostile autonome et pouvoirs qui vont avec (`mechanics.hazardPawn`).
+  'place_hazard', 'clear_hazard', 'move_hazard', 'grant_rent_waiver',
+  'nearest_unowned', 'steal_from_richest', 'rival_move_relative', 'free_building',
 ]);
 
 test('chaque édition déclare une identité et des bornes de joueuses cohérentes', () => {
@@ -158,8 +161,14 @@ test('chaque pile compte des cartes uniques, applicables, et visant le plateau',
 
       for (const card of list) {
         assert.ok(card.text?.length, `${id}/${deck} : ${card.id} sans texte`);
+        // Une carte peut enchaîner plusieurs effets (`sequence`) ou en proposer
+        // au choix (`choice`) : on vérifie chaque effet, pas seulement le premier.
         const actions =
-          card.action.type === 'choice' ? card.action.options.map((o) => o.action) : [card.action];
+          card.action.type === 'choice'
+            ? card.action.options.map((o) => o.action)
+            : card.action.type === 'sequence'
+              ? card.action.actions
+              : [card.action];
         for (const action of actions) {
           assert.ok(KNOWN_ACTIONS.has(action.type), `${id}/${deck} : action inconnue « ${action.type} »`);
           if (action.type === 'move_to') {
@@ -177,9 +186,16 @@ test('chaque pile compte des cartes uniques, applicables, et visant le plateau',
         }
       }
     }
-    // Une carte « libérée de prison » par pile, comme dans la boîte.
+    // Une carte « libérée de prison » par pile, comme dans la boîte. Les
+    // éditions classiques en ont deux (deux piles) ; celle qui fusionne ses
+    // piles en une seule n'en a qu'une, et c'est juste.
     const keepable = Object.values(edition.cards).flat().filter((c) => c.keepable);
-    assert.equal(keepable.length, 2, `${id} : il faut deux cartes de sortie de prison`);
+    const deckCount = Object.keys(edition.cards).length;
+    assert.equal(
+      keepable.length,
+      deckCount,
+      `${id} : il faut une carte de sortie de prison par pile (${deckCount} pile(s))`,
+    );
   }
 });
 
@@ -198,6 +214,7 @@ test('une partie entière se joue sur chaque édition sans intervention du moteu
     assert.ok(startGame(game, 'p0').ok, `${id} : la partie n'a pas démarré`);
 
     const rng = createRng(7);
+    const turnsAtStart = game.state.turnCount;
     for (let step = 0; step < 4000 && game.state.phase === 'playing'; step++) {
       const { kind, playerIds } = game.state.pending;
       if (!kind) break;
@@ -214,6 +231,13 @@ test('une partie entière se joue sur chaque édition sans intervention du moteu
       }
       assert.ok(game.state.bank.houses >= 0 && game.state.bank.hotels >= 0, `${id} : stock négatif`);
     }
+
+    // La partie doit avoir réellement avancé : sans ça, une boucle qui tourne
+    // à vide sur un `pending` refusé passerait pour un succès.
+    assert.ok(
+      game.state.phase === 'finished' || game.state.turnCount > turnsAtStart + 10,
+      `${id} : la partie n'a pas avancé (tour ${game.state.turnCount})`,
+    );
   }
 });
 
@@ -245,8 +269,14 @@ function decide(state, kind, actor, rng) {
         : { type: 'DECLARE_BANKRUPTCY' };
     case 'end_turn':
       return { type: 'END_TURN' };
+    // Relance offerte par un pouvoir de camp : on garde une fois sur deux.
+    case 'reroll':
+      return rng.next() > 0.5 ? { type: 'REROLL_DICE' } : { type: 'KEEP_ROLL' };
     default:
-      return { type: 'END_TURN' };
+      // Surtout pas de repli silencieux : un `pending` que ce pilote ne connaît
+      // pas ferait tourner la boucle à vide et le test passerait sans rien
+      // jouer. On préfère qu'il tombe, en nommant ce qui manque.
+      throw new Error(`pilote de test : « ${kind} » non géré`);
   }
 }
 

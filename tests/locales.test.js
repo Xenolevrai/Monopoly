@@ -149,6 +149,8 @@ test('une partie complète en anglais ne laisse pas une phrase de français au j
         : kind === 'draw_card' ? { type: 'DRAW_CARD' }
         : kind === 'card_reveal' ? { type: 'ACKNOWLEDGE_CARD' }
         : kind === 'card_choice' ? { type: 'CARD_CHOICE', optionIndex: 0 }
+        // Relance offerte par un pouvoir de camp : on garde le jet.
+        : kind === 'reroll' ? { type: 'KEEP_ROLL' }
         : kind === 'pay_debt'
           ? (player.cash >= game.state.debt.amount
               ? { type: 'PAY_DEBT' }
