@@ -14,6 +14,7 @@ import Feed from './components/Feed.jsx';
 import TradeDialog from './components/TradeDialog.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import GameOver from './components/GameOver.jsx';
+import BroadcastOverlay from './components/BroadcastOverlay.jsx';
 import { PropertyCard } from './components/Actions.jsx';
 import { money } from './lib/board.js';
 import { editionFor } from './lib/board.js';
@@ -276,6 +277,8 @@ export default function App() {
           <ErrorBoundary zone="Le plateau">
             <Board
               state={state}
+              me={me}
+              onSpin={() => sendAction({ type: 'SPIN_SPINNER' }, me?.id)}
               drawnCard={drawnCard}
               onSelectSpace={setInspected}
               rolling={rolling}
@@ -364,6 +367,8 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <BroadcastOverlay state={state} me={me} />
     </div>
   );
 }

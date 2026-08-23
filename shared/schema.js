@@ -189,6 +189,10 @@ export function createGameState(code, hostId, editionId = DEFAULT_EDITION, local
     freeParkingPot: 0,
     // Marqueur du dernier geste annulable. Les instantanés, eux, vivent hors de
     // l'état (voir `rememberForUndo`) : les y mettre gonflerait la sauvegarde.
+    dealMobileOwnerId: null,
+    freeParkingSpinner: null,
+    escapeDie: null,
+    heistDie: null,
     undoable: null,
     pending: { kind: null, playerIds: [] },
     auction: null,
@@ -226,14 +230,27 @@ export function createPlayer({ id, name, token, color, order, edition, faction =
     // Niveau de difficulté si c'est une joueuse artificielle, `null` si humaine.
     // Vit dans l'état — donc une partie reprise le lendemain retrouve ses bots.
     bot,
-    cash: config.currency.startingAmount,
+    cash: config.mechanics?.startingCash ?? config.currency.startingAmount,
     position: 0,
     inJail: false,
     jailTurns: 0,
+    superJail: false,
+    superJailTurns: 0,
+    superJailSenderId: null,
+    superJailCollectedCards: [],
     getOutOfJailCards: 0,
     // Cartes gagnées dans un coffre (`mechanics.saleVault`) : toujours un
     // tableau, même sans extension qui en distribue — l'état reste homogène.
     saleCards: [],
+    saleCardsDrawnTurn: {},
+    // Jetons Spin (extension Parc Gratuit Jackpot)
+    spinChips: config.mechanics?.startSpinChips ?? 0,
+    // Cartes Bonus (extension Parc Gratuit Jackpot)
+    bonusCards: [],
+    // Cartes Corruption & Super Corruption (extension Prison)
+    corruptionCards: [],
+    superCorruptionCards: [],
+    cardsDrawnTurn: {},
     // Loyers à annuler (carte, ou pouvoir de camp accordé à chaque tour de
     // plateau). Toujours un nombre : l'état reste homogène sans extension.
     rentWaivers: 0,

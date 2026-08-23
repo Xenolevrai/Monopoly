@@ -5,10 +5,11 @@
  * c'est littéralement la règle « remettre la carte sous la pile ». Les deux
  * cartes « libérée de prison » quittent la file tant qu'une joueuse les détient.
  */
-import { cardsOf, editionOf, boardOf, isOwnable, getSpace } from '../../shared/index.js';
+import { cardsOf, editionOf, boardOf, isOwnable, getSpace, ownableSpaces, getGroup } from '../../shared/index.js';
+import { FREE_PARKING_SPINNER_SECTORS, ESCAPE_DIE_FACES, HEIST_DIE_FACES, BUY_DIE_FACES } from '../../shared/extensions.js';
 import { log, say, amountText } from './log.js';
-import { playerById, buildingsOf, activePlayers, propertiesOf, config } from './queries.js';
-import { credit, charge, finishGame } from './money.js';
+import { playerById, buildingsOf, activePlayers, propertiesOf, ownsFullGroup, config } from './queries.js';
+import { credit, charge, finishGame, potCollects } from './money.js';
 import { advance, moveTo, sendToJail, resolveLanding } from './movement.js';
 import { dropHazard, clearHazards, nearestVulnerable, advanceHazardPawn } from './hazard.js';
 import { rollDice } from './rng.js';
@@ -46,6 +47,10 @@ function deckLabel(state, deck) {
   return editionOf(state).theming?.decks?.[deck]?.label ?? deck;
 }
 
+/**
+ * Retrouve une carte par son identifiant unique.
+ * @returns {(import('../../shared/index.js').Card & { deck: string })|undefined}
+ */
 export function getCard(state, cardId) {
   return cardIndex(state)[cardId];
 }
@@ -57,6 +62,33 @@ export function buildDecks(state, rng) {
     state.decks[deck] = rng.shuffle((decks[deck] ?? []).map((c) => c.id));
   }
   refillVault(state);
+
+  const startBonus = config(state).mechanics?.startBonusCards;
+  const bonusDeck = config(state).mechanics?.bonusCardsDeck ?? 'free_parking_bonus';
+  if (startBonus && state.decks[bonusDeck]?.length) {
+    for (const player of state.players) {
+      player.bonusCards = [];
+      for (let i = 0; i < startBonus; i++) {
+        if (state.decks[bonusDeck].length) {
+          player.bonusCards.push(state.decks[bonusDeck].shift());
+        }
+      }
+    }
+  }
+
+  const startCorruption = config(state).mechanics?.startCorruptionCards;
+  if (startCorruption && state.decks.corruption?.length) {
+    for (const player of state.players) {
+      player.corruptionCards = [];
+      for (let i = 0; i < startCorruption; i++) {
+        if (state.decks.corruption.length) {
+          const cardId = state.decks.corruption.shift();
+          player.corruptionCards.push(cardId);
+          player.cardsDrawnTurn[cardId] = 0;
+        }
+      }
+    }
+  }
 }
 
 // — Coffre de cartes visibles ————————————————————————————————
@@ -123,6 +155,16 @@ function victoryMet(state, player, condition) {
       const { houses, hotels } = buildingsOf(state, player.id);
       return houses + hotels >= condition.count;
     }
+    case 'own_all_railroads': {
+      const railroads = propertiesOf(state, player.id).filter((p) => getSpace(state, p.spaceId)?.type === 'railroad');
+      return railroads.length >= 4;
+    }
+    case 'own_corners_at_least': {
+      const cornersOwned = [0, 10, 20, 30].filter((id) => state.properties[id]?.ownerId === player.id).length;
+      return cornersOwned >= (condition.count ?? 3);
+    }
+    case 'hotel_on_space':
+      return Boolean(state.properties[condition.spaceId]?.hotel && state.properties[condition.spaceId]?.ownerId === player.id);
     default:
       return false;
   }
@@ -540,6 +582,1109 @@ export function resolveCardChoice(state, playerId, optionIndex, ctx = {}) {
   log(state, 'card', say(state, 'cardChoice', { name: playerById(state, playerId).name, label }), { playerId, optionIndex });
   state.pending = { kind: null, playerIds: [] };
   applyCardAction(state, playerId, action, ctx);
+  return { ok: true };
+}
+
+/** Pioche 1 carte Bonus Parc Gratuit et l'ajoute à la main de la joueuse. */
+export function drawBonusCard(state, playerId) {
+  const bonusDeck = config(state).mechanics?.bonusCardsDeck ?? 'free_parking_bonus';
+  const queue = state.decks[bonusDeck];
+  if (!queue || !queue.length) return null;
+  const cardId = queue.shift();
+  const player = playerById(state, playerId);
+  if (!player) return null;
+  player.bonusCards = player.bonusCards ?? [];
+  player.bonusCards.push(cardId);
+  const card = getCard(state, cardId);
+  const title = card?.title ?? card?.text ?? cardId;
+  log(state, 'card', say(state, 'drawsBonusCard', { name: player.name, title }), { playerId, cardId });
+  return cardId;
+}
+
+/** Applique l'effet d'un secteur de la roulette Parc Gratuit. */
+export function applySpinnerSector(state, playerId, sector, _rng = null) {
+  const player = playerById(state, playerId);
+  if (!player) return;
+
+  switch (sector.type) {
+    case 'pay_to_pot': {
+      const res = charge(state, playerId, sector.amount, say(state, 'reasonParking'));
+      if (res.paid) state.freeParkingPot += sector.amount;
+      break;
+    }
+    case 'free_house': {
+      const owned = propertiesOf(state, playerId).filter((p) => {
+        const sp = getSpace(state, p.spaceId);
+        return sp.type === 'property' && !p.mortgaged && p.houses < 4 && !p.hotel;
+      });
+      if (owned.length && state.bank.houses > 0) {
+        owned.sort((a, b) => a.houses - b.houses);
+        const target = owned[0];
+        target.houses += 1;
+        state.bank.houses -= 1;
+        log(state, 'build', say(state, 'bonusFreeHouse', { name: player.name, space: getSpace(state, target.spaceId).name }), {
+          playerId,
+          spaceId: target.spaceId,
+        });
+      }
+      break;
+    }
+    case 'jackpot': {
+      const pot = state.freeParkingPot;
+      state.freeParkingPot = 0;
+      if (pot > 0) {
+        credit(state, playerId, pot, say(state, 'reasonParking'));
+      }
+      break;
+    }
+    case 'deal_mobile': {
+      state.dealMobileOwnerId = playerId;
+      log(state, 'card', say(state, 'takesDealMobile', { name: player.name }), { playerId });
+      break;
+    }
+    case 'buy_any_1': {
+      const unowned = ownableSpaces(state).filter((s) => !state.properties[s.id]?.ownerId);
+      if (unowned.length) {
+        const affordable = unowned.filter((s) => player.cash >= s.price);
+        const chosen = affordable.length ? affordable[affordable.length - 1] : unowned[0];
+        if (player.cash >= chosen.price) {
+          player.cash -= chosen.price;
+          if (potCollects(state)) state.freeParkingPot += chosen.price;
+          state.properties[chosen.id].ownerId = playerId;
+          log(state, 'buy', say(state, 'buys', { name: player.name, space: chosen.name, amount: amountText(state, chosen.price) }), {
+            playerId,
+            spaceId: chosen.id,
+            price: chosen.price,
+          });
+        }
+      }
+      break;
+    }
+  }
+}
+
+export function broadcastAction(state, event) {
+  state.lastEvent = {
+    id: `evt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    at: Date.now(),
+    ...event,
+  };
+}
+
+/** Tourne la roulette du Parc Gratuit et pioche 1 carte Bonus. */
+export function spinFreeParking(state, playerId, rng = null, opts = {}) {
+  const player = playerById(state, playerId);
+  if (!player) return { ok: false, error: 'Joueuse inconnue.' };
+
+  const sectors = config(state).mechanics?.spinnerSectors ?? FREE_PARKING_SPINNER_SECTORS;
+  let sectorIndex = opts.sectorIndex ?? (rng ? Math.floor(rng.next() * sectors.length) : Math.floor(Math.random() * sectors.length));
+  if (sectorIndex < 0 || sectorIndex >= sectors.length) sectorIndex = 0;
+
+  const sector = sectors[sectorIndex];
+  state.freeParkingSpinner = { playerId, sectorIndex, sector };
+
+  // Pioche obligatoire d'1 carte Bonus à chaque spin (règles officielles)
+  const drawnBonus = drawBonusCard(state, playerId);
+
+  const label = state.locale === 'en' ? (sector.labelEn ?? sector.labelFr) : (sector.labelFr ?? sector.labelEn);
+  log(state, 'spin', say(state, 'spinsFreeParking', { name: player.name, label }), {
+    playerId,
+    sectorIndex,
+    sectorId: sector.id,
+    drawnBonus,
+  });
+
+  broadcastAction(state, {
+    type: 'spinner_spun',
+    actorId: playerId,
+    actorName: player.name,
+    actorColor: player.color,
+    actorToken: player.token,
+    sectorIndex,
+    sector,
+    drawnBonusTitle: drawnBonus ? (getCard(state, drawnBonus)?.title ?? drawnBonus) : null,
+    drawnBonusText: drawnBonus ? getCard(state, drawnBonus)?.text : null,
+  });
+
+  applySpinnerSector(state, playerId, sector, rng);
+  return { ok: true, sectorIndex, sector, drawnBonus };
+}
+
+/** Joue une carte Bonus Parc Gratuit depuis sa main. */
+export function playBonusCard(state, playerId, cardId, payload = {}, rng = null) {
+  const player = playerById(state, playerId);
+  if (!player) return { ok: false, error: 'Joueuse inconnue.' };
+  if (!player.bonusCards?.includes(cardId)) return { ok: false, error: 'Vous ne possédez pas cette carte Bonus.' };
+
+  const card = getCard(state, cardId);
+  if (!card) return { ok: false, error: 'Carte inconnue.' };
+
+  player.bonusCards = player.bonusCards.filter((id) => id !== cardId);
+  const bonusDeck = config(state).mechanics?.bonusCardsDeck ?? 'free_parking_bonus';
+  (state.decks[bonusDeck] ??= []).push(cardId);
+
+  const title = card.title ?? card.text ?? cardId;
+  log(state, 'card', say(state, 'playsBonusCard', { name: player.name, title }), { playerId, cardId });
+
+  broadcastAction(state, {
+    type: 'card_played',
+    actorId: playerId,
+    actorName: player.name,
+    actorColor: player.color,
+    actorToken: player.token,
+    cardId: card.id,
+    title: card.title ?? card.text ?? card.id,
+    text: card.text,
+    cardType: 'bonus',
+    category: 'bonus',
+    actionType: card.action?.type,
+  });
+
+  switch (card.action?.type) {
+    case 'deal_mobile':
+      state.dealMobileOwnerId = playerId;
+      log(state, 'card', say(state, 'takesDealMobile', { name: player.name }), { playerId });
+      break;
+
+    case 'shortcut': {
+      let target = payload.targetSpaceId;
+      if (target == null) {
+        const unowned = ownableSpaces(state).filter((s) => !state.properties[s.id]?.ownerId);
+        target = unowned.length ? unowned[0].id : (player.position + 10) % boardOf(state).length;
+      }
+      log(state, 'movement', say(state, 'bonusShortcut', { name: player.name, space: getSpace(state, target).name }), { playerId, targetSpaceId: target });
+      moveTo(state, playerId, target, true);
+      resolveLanding(state, playerId, {});
+      break;
+    }
+
+    case 'cancel_bonus':
+      break;
+
+    case 'modify_roll': {
+      const offset = card.action.offset ?? 1;
+      advance(state, playerId, offset);
+      resolveLanding(state, playerId, {});
+      break;
+    }
+
+    case 'green_light': {
+      if (state.freeParkingSpinner && state.freeParkingSpinner.sector?.color === 'red') {
+        const sectors = config(state).mechanics?.spinnerSectors ?? FREE_PARKING_SPINNER_SECTORS;
+        const currentIdx = state.freeParkingSpinner.sectorIndex;
+        const nextGreenIdx = (currentIdx + 1) % sectors.length;
+        const targetSector = sectors[nextGreenIdx];
+        state.freeParkingSpinner = { playerId, sectorIndex: nextGreenIdx, sector: targetSector };
+        applySpinnerSector(state, playerId, targetSector, rng);
+      }
+      break;
+    }
+
+    case 'take_two': {
+      const unowned = ownableSpaces(state).filter((s) => !state.properties[s.id]?.ownerId);
+      if (unowned.length) {
+        const target = unowned[0];
+        if (player.cash >= target.price) {
+          player.cash -= target.price;
+          if (potCollects(state)) state.freeParkingPot += target.price;
+          state.properties[target.id].ownerId = playerId;
+          log(state, 'buy', say(state, 'bonusTakeTwo', { name: player.name, space: target.name }), { playerId, spaceId: target.id });
+        }
+      }
+      break;
+    }
+
+    case 'spin_it':
+      spinFreeParking(state, playerId, rng);
+      break;
+
+    case 'collect_jackpot': {
+      const pot = state.freeParkingPot;
+      state.freeParkingPot = 0;
+      if (pot > 0) credit(state, playerId, pot, say(state, 'reasonParking'));
+      break;
+    }
+
+    case 'free_house': {
+      const owned = propertiesOf(state, playerId).filter((p) => {
+        const sp = getSpace(state, p.spaceId);
+        return sp.type === 'property' && !p.mortgaged && p.houses < 4 && !p.hotel;
+      });
+      if (owned.length && state.bank.houses > 0) {
+        owned.sort((a, b) => a.houses - b.houses);
+        const target = payload.spaceId != null ? state.properties[payload.spaceId] : owned[0];
+        if (target && target.houses < 4 && !target.hotel && state.bank.houses > 0) {
+          target.houses += 1;
+          state.bank.houses -= 1;
+          log(state, 'build', say(state, 'bonusFreeHouse', { name: player.name, space: getSpace(state, target.spaceId).name }), {
+            playerId,
+            spaceId: target.spaceId,
+          });
+        }
+      }
+      break;
+    }
+
+    case 'free_property': {
+      const unowned = ownableSpaces(state).filter((s) => !state.properties[s.id]?.ownerId);
+      if (unowned.length) {
+        const target = payload.spaceId != null ? getSpace(state, payload.spaceId) : unowned[0];
+        if (target && !state.properties[target.id]?.ownerId) {
+          state.properties[target.id].ownerId = playerId;
+          log(state, 'buy', say(state, 'bonusFreeProperty', { name: player.name, space: target.name }), {
+            playerId,
+            spaceId: target.id,
+          });
+        }
+      }
+      break;
+    }
+
+    case 'go_green': {
+      const sectors = config(state).mechanics?.spinnerSectors ?? FREE_PARKING_SPINNER_SECTORS;
+      const greenSectors = sectors.filter((s) => s.color === 'green');
+      const chosen = greenSectors.find((s) => s.id === payload.sectorId) ?? greenSectors[0];
+      if (chosen) {
+        const idx = sectors.findIndex((s) => s.id === chosen.id);
+        state.freeParkingSpinner = { playerId, sectorIndex: idx, sector: chosen };
+        applySpinnerSector(state, playerId, chosen, rng);
+      }
+      break;
+    }
+
+    case 'do_over':
+      spinFreeParking(state, playerId, rng);
+      break;
+
+    case 'trade_in': {
+      const owned = propertiesOf(state, playerId).filter((p) => p.houses === 0 && !p.hotel && !p.mortgaged);
+      const unowned = ownableSpaces(state).filter((s) => !state.properties[s.id]?.ownerId);
+      if (owned.length && unowned.length) {
+        const give = payload.giveSpaceId != null ? state.properties[payload.giveSpaceId] : owned[0];
+        const take = payload.takeSpaceId != null ? getSpace(state, payload.takeSpaceId) : unowned[0];
+        if (give && take && give.ownerId === playerId && !state.properties[take.id]?.ownerId) {
+          give.ownerId = null;
+          state.properties[take.id].ownerId = playerId;
+          log(state, 'trade', say(state, 'bonusTradeIn', { name: player.name, given: getSpace(state, give.spaceId).name, received: take.name }), {
+            playerId,
+            givenSpaceId: give.spaceId,
+            receivedSpaceId: take.id,
+          });
+        }
+      }
+      break;
+    }
+  }
+
+  return { ok: true };
+}
+
+function isPartOfCompleteSet(state, spaceId) {
+  const space = getSpace(state, spaceId);
+  if (!space?.group) return false;
+  const prop = state.properties[spaceId];
+  if (!prop?.ownerId) return false;
+  return ownsFullGroup(state, prop.ownerId, space.group);
+}
+
+/** Pioche 1 carte Corruption. */
+export function drawCorruptionCard(state, playerId) {
+  const queue = state.decks.corruption;
+  if (!queue || !queue.length) return null;
+  const cardId = queue.shift();
+  const player = playerById(state, playerId);
+  if (!player) return null;
+  player.corruptionCards = player.corruptionCards ?? [];
+  player.corruptionCards.push(cardId);
+  player.cardsDrawnTurn = player.cardsDrawnTurn ?? {};
+  player.cardsDrawnTurn[cardId] = state.turnCount;
+  const card = getCard(state, cardId);
+  const title = card?.title ?? card?.text ?? cardId;
+  log(state, 'card', say(state, 'drawsCorruptionCard', { name: player.name, title }), { playerId, cardId });
+  return cardId;
+}
+
+/** Pioche 1 carte Super Corruption. */
+export function drawSuperCorruptionCard(state, playerId) {
+  const queue = state.decks.super_corruption;
+  if (!queue || !queue.length) return null;
+  const cardId = queue.shift();
+  const player = playerById(state, playerId);
+  if (!player) return null;
+  player.superCorruptionCards = player.superCorruptionCards ?? [];
+  player.superCorruptionCards.push(cardId);
+  player.superJailCollectedCards = player.superJailCollectedCards ?? [];
+  player.superJailCollectedCards.push(cardId);
+  player.cardsDrawnTurn = player.cardsDrawnTurn ?? {};
+  player.cardsDrawnTurn[cardId] = state.turnCount;
+  const card = getCard(state, cardId);
+  const title = card?.title ?? card?.text ?? cardId;
+  log(state, 'card', say(state, 'drawsSuperCorruptionCard', { name: player.name, title }), { playerId, cardId });
+  return cardId;
+}
+
+/** Lance le dé Évasion (cases Chance). */
+export function rollEscapeDie(state, playerId, rng = null) {
+  const player = playerById(state, playerId);
+  if (!player) return { ok: false, error: 'Joueuse inconnue.' };
+
+  const faces = ESCAPE_DIE_FACES;
+  const faceIndex = rng ? Math.floor(rng.next() * faces.length) : Math.floor(Math.random() * faces.length);
+  const face = faces[faceIndex];
+  state.escapeDie = { playerId, faceIndex, face, at: Date.now() };
+
+  broadcastAction(state, {
+    type: 'escape_die_rolled',
+    actorId: playerId,
+    actorName: player.name,
+    actorColor: player.color,
+    actorToken: player.token,
+    faceIndex,
+    face,
+  });
+
+  if (face.isGreen) {
+    for (let i = 0; i < face.count; i++) {
+      drawCorruptionCard(state, playerId);
+    }
+    log(state, 'card', say(state, 'rollsEscapeSuccess', { name: player.name, count: face.count }), { playerId, count: face.count });
+  } else if (face.isPolice) {
+    sendToJail(state, playerId, 'normal');
+    log(state, 'jail', say(state, 'rollsEscapeBusted', { name: player.name }), { playerId });
+  }
+
+  state.pending = { kind: null, playerIds: [] };
+  return { ok: true, faceIndex, face };
+}
+
+/** Lance le dé Casse (cases Caisse de communauté). */
+export function rollHeistDie(state, playerId, rng = null) {
+  const player = playerById(state, playerId);
+  if (!player) return { ok: false, error: 'Joueuse inconnue.' };
+
+  const faces = HEIST_DIE_FACES;
+  const faceIndex = rng ? Math.floor(rng.next() * faces.length) : Math.floor(Math.random() * faces.length);
+  const face = faces[faceIndex];
+  state.heistDie = { playerId, faceIndex, face, at: Date.now() };
+
+  broadcastAction(state, {
+    type: 'heist_die_rolled',
+    actorId: playerId,
+    actorName: player.name,
+    actorColor: player.color,
+    actorToken: player.token,
+    faceIndex,
+    face,
+  });
+
+  if (face.isCash) {
+    credit(state, playerId, face.amount, say(state, 'reasonTheft'));
+    log(state, 'money', say(state, 'rollsHeistSuccess', { name: player.name, amount: amountText(state, face.amount) }), { playerId, amount: face.amount });
+  } else if (face.isPolice) {
+    sendToJail(state, playerId, 'normal');
+    log(state, 'jail', say(state, 'rollsHeistBusted', { name: player.name }), { playerId });
+  }
+
+  state.pending = { kind: null, playerIds: [] };
+  return { ok: true, faceIndex, face };
+}
+
+/** Joue une carte Corruption depuis sa main. */
+export function playCorruptionCard(state, playerId, cardId, payload = {}, rng = null) {
+  const player = playerById(state, playerId);
+  if (!player) return { ok: false, error: 'Joueuse inconnue.' };
+  if (!player.corruptionCards?.includes(cardId)) return { ok: false, error: 'Vous ne possédez pas cette carte Corruption.' };
+
+  const card = getCard(state, cardId);
+  if (!card) return { ok: false, error: 'Carte inconnue.' };
+
+  if (player.cardsDrawnTurn?.[cardId] === state.turnCount && !card.reaction) {
+    return { ok: false, error: 'Une carte Corruption ne peut pas être jouée le tour où elle est piochée.' };
+  }
+
+  player.corruptionCards = player.corruptionCards.filter((id) => id !== cardId);
+  (state.decks.corruption ??= []).push(cardId);
+
+  const title = card.title ?? card.text ?? cardId;
+  log(state, 'card', say(state, 'corruptionPlay', { name: player.name, title }), { playerId, cardId });
+
+  broadcastAction(state, {
+    type: 'card_played',
+    actorId: playerId,
+    actorName: player.name,
+    actorColor: player.color,
+    actorToken: player.token,
+    cardId: card.id,
+    title: card.title ?? card.text ?? card.id,
+    text: card.text,
+    cardType: 'corruption',
+    category: 'corruption',
+    actionType: card.action?.type,
+  });
+
+  switch (card.action?.type) {
+    case 'trespass': {
+      const board = boardOf(state);
+      let target = null;
+      for (let step = 1; step <= board.length; step++) {
+        const id = (player.position + step) % board.length;
+        if (isOwnable(state, id) && !state.properties[id]?.ownerId) {
+          target = id;
+          break;
+        }
+      }
+      if (target != null) {
+        moveTo(state, playerId, target, true);
+        resolveLanding(state, playerId, {});
+      }
+      break;
+    }
+
+    case 'framed': {
+      if (payload.targetPlayerId) {
+        sendToJail(state, payload.targetPlayerId, player.superJail ? 'super' : 'normal', playerId);
+      }
+      break;
+    }
+
+    case 'loan_shark': {
+      const targetId = payload.targetPlayerId;
+      if (targetId) {
+        charge(state, targetId, 150, say(state, 'reasonTheft'), playerId);
+      }
+      break;
+    }
+
+    case 'pickpocket': {
+      const opponents = activePlayers(state).filter((p) => p.id !== playerId);
+      for (const opp of opponents) {
+        const stolen = Math.min(opp.cash, 50);
+        if (stolen > 0) {
+          opp.cash -= stolen;
+          player.cash += stolen;
+        }
+      }
+      break;
+    }
+
+    case 'petty_theft': {
+      const targetSpaceId = payload.targetSpaceId;
+      if (targetSpaceId != null && state.properties[targetSpaceId]) {
+        state.properties[targetSpaceId].ownerId = playerId;
+      }
+      break;
+    }
+
+    case 'bank_fraud': {
+      const targetSpaceId = payload.targetSpaceId;
+      const prop = state.properties[targetSpaceId];
+      if (prop && prop.ownerId && prop.ownerId !== playerId && !isPartOfCompleteSet(state, targetSpaceId)) {
+        const space = getSpace(state, targetSpaceId);
+        const cost = Math.floor(space.price / 2);
+        if (player.cash >= cost) {
+          player.cash -= cost;
+          credit(state, prop.ownerId, cost, say(state, 'reasonTheft'));
+          prop.ownerId = playerId;
+        }
+      }
+      break;
+    }
+
+    case 'creative_zoning': {
+      const owned = propertiesOf(state, playerId).filter((p) => {
+        const sp = getSpace(state, p.spaceId);
+        return sp.type === 'property' && !p.mortgaged && p.houses < 4 && !p.hotel;
+      });
+      if (owned.length && state.bank.houses > 0) {
+        const target = payload.spaceId != null ? state.properties[payload.spaceId] : owned[0];
+        if (target && target.ownerId === playerId && target.houses < 4 && !target.hotel) {
+          const count = Math.min(2, 4 - target.houses, state.bank.houses);
+          target.houses += count;
+          state.bank.houses -= count;
+          log(state, 'build', say(state, 'bonusFreeHouse', { name: player.name, space: getSpace(state, target.spaceId).name }), {
+            playerId,
+            spaceId: target.spaceId,
+          });
+        }
+      }
+      break;
+    }
+
+    case 'money_laundering': {
+      const unowned = ownableSpaces(state).filter((s) => !state.properties[s.id]?.ownerId);
+      if (unowned.length && player.cash >= 50) {
+        const chosen = payload.targetSpaceId != null ? getSpace(state, payload.targetSpaceId) : unowned[0];
+        if (chosen && !state.properties[chosen.id]?.ownerId) {
+          player.cash -= 50;
+          if (potCollects(state)) state.freeParkingPot += 50;
+          state.properties[chosen.id].ownerId = playerId;
+        }
+      }
+      break;
+    }
+
+    case 'on_the_lam': {
+      const target = payload.targetSpaceId ?? ((player.position + 10) % boardOf(state).length);
+      moveTo(state, playerId, target, true);
+      resolveLanding(state, playerId, {});
+      break;
+    }
+
+    case 'bribe': {
+      const propsCount = propertiesOf(state, playerId).length;
+      const amountPerPlayer = propsCount * 10;
+      if (amountPerPlayer > 0) {
+        for (const opp of activePlayers(state).filter((p) => p.id !== playerId)) {
+          charge(state, opp.id, amountPerPlayer, say(state, 'reasonTheft'), playerId);
+        }
+      }
+      break;
+    }
+
+    case 'citizens_arrest': {
+      const targetOpponentId = payload.targetPlayerId;
+      if (targetOpponentId) {
+        sendToJail(state, targetOpponentId, 'super', playerId);
+      }
+      break;
+    }
+
+    case 'evict_that': {
+      const landlordId = payload.targetPlayerId;
+      if (landlordId) {
+        sendToJail(state, landlordId, 'super', playerId);
+      }
+      break;
+    }
+
+    case 'bait_switch': {
+      const give = state.properties[payload.giveSpaceId];
+      const take = state.properties[payload.takeSpaceId];
+      if (give && take && give.ownerId === playerId && take.ownerId && take.ownerId !== playerId && !isPartOfCompleteSet(state, payload.takeSpaceId)) {
+        const oppId = take.ownerId;
+        give.ownerId = oppId;
+        take.ownerId = playerId;
+      }
+      break;
+    }
+
+    case 'rent_hike':
+      break;
+
+    case 'swindle': {
+      const give = state.properties[payload.giveSpaceId];
+      const take = state.properties[payload.takeSpaceId];
+      if (give && take && give.ownerId === playerId && !take.ownerId) {
+        give.ownerId = null;
+        take.ownerId = playerId;
+      }
+      break;
+    }
+
+    case 'insider_trading': {
+      const gives = payload.giveSpaceIds ?? [];
+      const takes = payload.takeSpaceIds ?? [];
+      if (gives.length === 2 && takes.length === 2) {
+        const pGive1 = state.properties[gives[0]];
+        const pGive2 = state.properties[gives[1]];
+        const pTake1 = state.properties[takes[0]];
+        const pTake2 = state.properties[takes[1]];
+        if (pGive1?.ownerId === playerId && pGive2?.ownerId === playerId &&
+            pTake1?.ownerId && pTake2?.ownerId && pTake1.ownerId === pTake2.ownerId && pTake1.ownerId !== playerId &&
+            !isPartOfCompleteSet(state, takes[0]) && !isPartOfCompleteSet(state, takes[1])) {
+          const oppId = pTake1.ownerId;
+          pGive1.ownerId = oppId;
+          pGive2.ownerId = oppId;
+          pTake1.ownerId = playerId;
+          pTake2.ownerId = playerId;
+        }
+      }
+      break;
+    }
+
+    case 'train_heist': {
+      const target = nextSpaceOfType(state, player.position, 'railroad');
+      if (target != null) {
+        moveTo(state, playerId, target, true);
+        const prop = state.properties[target];
+        if (!prop.ownerId) {
+          prop.ownerId = playerId;
+        } else if (prop.ownerId !== playerId) {
+          const owner = playerById(state, prop.ownerId);
+          const rent = 25;
+          charge(state, owner.id, rent, say(state, 'reasonTheft'), playerId);
+        }
+      }
+      break;
+    }
+
+    case 'stick_up':
+      break;
+
+    case 'snitch': {
+      const targetOpponentId = payload.targetPlayerId;
+      if (targetOpponentId) {
+        sendToJail(state, targetOpponentId, 'super', playerId);
+      }
+      break;
+    }
+  }
+
+  return { ok: true };
+}
+
+/** Joue une carte Super Corruption depuis sa main. */
+export function playSuperCorruptionCard(state, playerId, cardId, payload = {}, rng = null) {
+  const player = playerById(state, playerId);
+  if (!player) return { ok: false, error: 'Joueuse inconnue.' };
+  if (!player.superCorruptionCards?.includes(cardId)) return { ok: false, error: 'Vous ne possédez pas cette carte Super Corruption.' };
+
+  const card = getCard(state, cardId);
+  if (!card) return { ok: false, error: 'Carte inconnue.' };
+
+  if (player.cardsDrawnTurn?.[cardId] === state.turnCount && !card.reaction) {
+    return { ok: false, error: 'Une carte Super Corruption ne peut pas être jouée le tour où elle est piochée.' };
+  }
+
+  player.superCorruptionCards = player.superCorruptionCards.filter((id) => id !== cardId);
+  if (player.superJailCollectedCards?.includes(cardId)) {
+    player.superJailCollectedCards = player.superJailCollectedCards.filter((id) => id !== cardId);
+  }
+  (state.decks.super_corruption ??= []).push(cardId);
+
+  const title = card.title ?? card.text ?? cardId;
+  log(state, 'card', say(state, 'superCorruptionPlay', { name: player.name, title }), { playerId, cardId });
+
+  broadcastAction(state, {
+    type: 'card_played',
+    actorId: playerId,
+    actorName: player.name,
+    actorColor: player.color,
+    actorToken: player.token,
+    cardId: card.id,
+    title: card.title ?? card.text ?? card.id,
+    text: card.text,
+    cardType: 'super_corruption',
+    category: 'super_corruption',
+    actionType: card.action?.type,
+  });
+
+  switch (card.action?.type) {
+    case 'auction_hoax': {
+      const unowned = ownableSpaces(state).filter((s) => !state.properties[s.id]?.ownerId);
+      if (unowned.length) {
+        const chosen = payload.spaceId != null ? getSpace(state, payload.spaceId) : unowned[0];
+        if (chosen && !state.properties[chosen.id]?.ownerId) {
+          state.properties[chosen.id].ownerId = playerId;
+          credit(state, playerId, chosen.price, say(state, 'reasonTheft'));
+        }
+      }
+      break;
+    }
+
+    case 'identity_theft': {
+      const targetOpponentId = payload.targetPlayerId;
+      const target = playerById(state, targetOpponentId);
+      if (target && !target.bankrupt) {
+        const temp = player.cash;
+        player.cash = target.cash;
+        target.cash = temp;
+      }
+      break;
+    }
+
+    case 'good_ol_scam': {
+      const targetSpaceId = payload.targetSpaceId;
+      const prop = state.properties[targetSpaceId];
+      if (prop && prop.ownerId && prop.ownerId !== playerId && !isPartOfCompleteSet(state, targetSpaceId) && player.cash >= 1) {
+        player.cash -= 1;
+        credit(state, prop.ownerId, 1, say(state, 'reasonTheft'));
+        prop.ownerId = playerId;
+      }
+      break;
+    }
+
+    case 'caper': {
+      for (const opp of activePlayers(state).filter((p) => p.id !== playerId)) {
+        if (opp.cash >= 100) {
+          opp.cash -= 100;
+          player.cash += 100;
+        } else {
+          sendToJail(state, opp.id, 'super', playerId);
+        }
+      }
+      break;
+    }
+
+    case 'blackmail': {
+      if (payload.targetPlayerId) {
+        charge(state, payload.targetPlayerId, 150, say(state, 'reasonTheft'), playerId);
+      } else {
+        for (const opp of activePlayers(state).filter((p) => p.id !== playerId)) {
+          charge(state, opp.id, 50, say(state, 'reasonTheft'), playerId);
+        }
+      }
+      break;
+    }
+
+    case 'shoplift': {
+      for (const opp of activePlayers(state).filter((p) => p.id !== playerId)) {
+        if (opp.corruptionCards?.length) {
+          const stolenId = opp.corruptionCards.shift();
+          player.corruptionCards.push(stolenId);
+          player.cardsDrawnTurn[stolenId] = state.turnCount;
+        }
+      }
+      break;
+    }
+
+    case 'greasy_palms': {
+      const groupId = payload.groupId;
+      const oppId = payload.targetPlayerId;
+      if (groupId && oppId && player.cash >= 500) {
+        const grp = getGroup(state, groupId);
+        if (grp && ownsFullGroup(state, oppId, groupId)) {
+          player.cash -= 500;
+          credit(state, oppId, 500, say(state, 'reasonTheft'));
+          for (const spId of grp.spaces) {
+            state.properties[spId].ownerId = playerId;
+          }
+        }
+      }
+      break;
+    }
+
+    case 'obstructing_injustice':
+      break;
+
+    case 'robbery': {
+      for (const p of activePlayers(state).filter((pl) => (pl.inJail || pl.superJail) && pl.id !== playerId)) {
+        const owned = propertiesOf(state, p.id);
+        if (owned.length) {
+          const stolenProp = owned[0];
+          stolenProp.ownerId = playerId;
+        }
+      }
+      break;
+    }
+
+    case 'long_con': {
+      const owned = propertiesOf(state, playerId);
+      if (owned.length && state.bank.hotels > 0) {
+        const target = payload.spaceId != null ? state.properties[payload.spaceId] : owned[0];
+        if (target && target.ownerId === playerId && !target.hotel) {
+          state.bank.houses += target.houses;
+          target.houses = 0;
+          target.hotel = true;
+          state.bank.hotels -= 1;
+        }
+      }
+      break;
+    }
+
+    case 'cook_the_books': {
+      if (player.cash >= 1) {
+        player.cash -= 1;
+        credit(state, playerId, 500, say(state, 'reasonTheft'));
+      }
+      break;
+    }
+
+    case 'forgery': {
+      const targetSpaceId = payload.targetSpaceId;
+      const prop = state.properties[targetSpaceId];
+      if (prop && prop.ownerId && prop.ownerId !== playerId) {
+        prop.ownerId = playerId;
+      }
+      break;
+    }
+  }
+
+  return { ok: true };
+}
+
+// — Actions de l'extension Tout Acheter (Buy Everything) —————————————
+
+/**
+ * Lance le dé d'Achat (6 faces).
+ */
+export function rollBuyDie(state, playerId, rng) {
+  const player = playerById(state, playerId);
+  if (!player) return { ok: false, error: 'Joueuse inconnue.' };
+
+  const faces = BUY_DIE_FACES;
+  const faceIndex = rng.int(faces.length);
+  const face = faces[faceIndex];
+  state.buyDie = { faceIndex, face, timestamp: Date.now() };
+
+  broadcastAction(state, {
+    type: 'buy_die_rolled',
+    actorId: playerId,
+    actorName: player.name,
+    actorColor: player.color,
+    actorToken: player.token,
+    faceIndex,
+    face,
+  });
+
+  if (face.type === 'buy_card') {
+    log(state, 'card', say(state, 'rollsBuyCard', { name: player.name }), { playerId, face });
+    const vault = state.saleVault?.visible ?? [];
+    const maxHand = config(state).mechanics?.saleVault?.maxHand ?? 3;
+    state.pending = {
+      kind: 'buy_sale_card',
+      playerIds: [playerId],
+      payload: {
+        visibleCards: vault,
+        mustDiscardFirst: (player.saleCards?.length ?? 0) >= maxHand,
+      },
+    };
+  } else if (face.type === 'force_discard') {
+    log(state, 'card', say(state, 'rollsForceDiscard', { name: player.name }), { playerId, face });
+    const victims = activePlayers(state).filter((p) => p.id !== playerId && (p.saleCards?.length ?? 0) > 0);
+    if (victims.length > 0) {
+      state.pending = {
+        kind: 'force_discard_sale_card',
+        playerIds: [playerId],
+        payload: {
+          victimIds: victims.map((v) => v.id),
+        },
+      };
+    } else {
+      state.pending = { kind: 'end_turn', playerIds: [playerId], payload: { canRollBuyDie: false } };
+    }
+  } else if (face.type === 'refresh_vault') {
+    log(state, 'card', say(state, 'rollsRefreshVault', { name: player.name }), { playerId, face });
+    const vault = state.saleVault?.visible ?? [];
+    if (vault.length > 0) {
+      state.pending = {
+        kind: 'refresh_sale_vault',
+        playerIds: [playerId],
+        payload: {
+          visibleCards: vault,
+        },
+      };
+    } else {
+      state.pending = { kind: 'end_turn', playerIds: [playerId], payload: { canRollBuyDie: false } };
+    }
+  }
+
+  return { ok: true, face };
+}
+
+/**
+ * Achète une carte Vente depuis le Coffre-Fort.
+ */
+export function buySaleCard(state, playerId, cardId, discardCardId = null) {
+  const player = playerById(state, playerId);
+  if (!player) return { ok: false, error: 'Joueuse inconnue.' };
+  if (!state.saleVault?.visible?.includes(cardId)) {
+    return { ok: false, error: "Cette carte n'est pas disponible dans le Coffre-Fort." };
+  }
+  const card = getCard(state, cardId);
+  if (!card) return { ok: false, error: 'Carte inconnue.' };
+
+  const price = card.price ?? 150;
+  const ownsBank = player.saleCards?.some((cId) => getCard(state, cId)?.ability?.type === 'the_bank');
+
+  if (!ownsBank && player.cash < price) {
+    return { ok: false, error: 'Fonds insuffisants pour acheter cette carte Vente.' };
+  }
+
+  const maxHand = config(state).mechanics?.saleVault?.maxHand ?? 3;
+  if ((player.saleCards?.length ?? 0) >= maxHand) {
+    if (!discardCardId || !player.saleCards.includes(discardCardId)) {
+      return { ok: false, error: 'Vous avez déjà 3 cartes Vente. Choisissez-en une à défausser d’abord.' };
+    }
+    player.saleCards = player.saleCards.filter((cId) => cId !== discardCardId);
+    (state.decks.sale ??= []).push(discardCardId);
+  }
+
+  if (ownsBank) {
+    log(state, 'card', say(state, 'theBankPaid', { name: player.name, amount: amountText(state, price) }), {
+      playerId,
+      amount: price,
+    });
+  } else {
+    player.cash -= price;
+    if (potCollects(state)) state.freeParkingPot += price;
+  }
+
+  state.saleVault.visible = state.saleVault.visible.filter((cId) => cId !== cardId);
+  player.saleCards = player.saleCards ?? [];
+  player.saleCards.push(cardId);
+  player.saleCardsDrawnTurn = player.saleCardsDrawnTurn ?? {};
+  player.saleCardsDrawnTurn[cardId] = state.turnCount;
+
+  log(
+    state,
+    'card',
+    say(state, 'buysSaleCard', { name: player.name, title: card.title ?? cardId, amount: amountText(state, price) }),
+    { playerId, cardId, price },
+  );
+
+  broadcastAction(state, {
+    type: 'sale_card_bought',
+    actorId: playerId,
+    actorName: player.name,
+    actorColor: player.color,
+    actorToken: player.token,
+    cardId: card.id,
+    title: card.title ?? card.text,
+    text: card.text,
+    price,
+    cardType: card.cardType,
+  });
+
+  refillVault(state);
+  checkSaleVictory(state);
+
+  state.pending = { kind: 'end_turn', playerIds: [playerId], payload: { canRollBuyDie: false } };
+  return { ok: true };
+}
+
+/**
+ * Force une joueuse adverse à défausser l'une de ses cartes Vente.
+ */
+export function forceDiscardSaleCard(state, playerId, targetPlayerId, targetCardId) {
+  const player = playerById(state, playerId);
+  const target = playerById(state, targetPlayerId);
+  if (!player || !target) return { ok: false, error: 'Joueuse inconnue.' };
+  if (!target.saleCards?.includes(targetCardId)) {
+    return { ok: false, error: 'La cible ne possède pas cette carte Vente.' };
+  }
+  const card = getCard(state, targetCardId);
+  target.saleCards = target.saleCards.filter((cId) => cId !== targetCardId);
+  (state.decks.sale ??= []).push(targetCardId);
+
+  log(
+    state,
+    'card',
+    say(state, 'forcedDiscard', {
+      name: player.name,
+      target: target.name,
+      title: card?.title ?? targetCardId,
+    }),
+    { playerId, targetPlayerId, cardId: targetCardId },
+  );
+
+  broadcastAction(state, {
+    type: 'force_discard_sale_card',
+    actorId: playerId,
+    actorName: player.name,
+    actorColor: player.color,
+    actorToken: player.token,
+    targetPlayerId,
+    targetPlayerName: target.name,
+    targetCardId,
+    cardTitle: card?.title ?? targetCardId,
+  });
+
+  state.pending = { kind: 'end_turn', playerIds: [playerId], payload: { canRollBuyDie: false } };
+  return { ok: true };
+}
+
+/**
+ * Renouvelle une carte du Coffre-Fort en la remettant sous la pioche.
+ */
+export function refreshSaleVault(state, playerId, cardIdToReplace) {
+  const player = playerById(state, playerId);
+  if (!player) return { ok: false, error: 'Joueuse inconnue.' };
+  if (!state.saleVault?.visible?.includes(cardIdToReplace)) {
+    return { ok: false, error: "Cette carte n'est pas dans le Coffre-Fort." };
+  }
+  state.saleVault.visible = state.saleVault.visible.filter((cId) => cId !== cardIdToReplace);
+  (state.decks.sale ??= []).push(cardIdToReplace);
+  refillVault(state);
+
+  log(state, 'card', say(state, 'refreshedVault', { name: player.name }), { playerId, cardId: cardIdToReplace });
+
+  broadcastAction(state, {
+    type: 'refresh_sale_vault',
+    actorId: playerId,
+    actorName: player.name,
+    actorColor: player.color,
+    actorToken: player.token,
+    replacedCardId: cardIdToReplace,
+    cardTitle: getCard(state, cardIdToReplace)?.title ?? cardIdToReplace,
+  });
+
+  state.pending = { kind: 'end_turn', playerIds: [playerId], payload: { canRollBuyDie: false } };
+  return { ok: true };
+}
+
+/**
+ * Joue une carte Vente à usage unique.
+ */
+export function playSaleCard(state, playerId, cardId, payload = {}, rng = null) {
+  const player = playerById(state, playerId);
+  if (!player) return { ok: false, error: 'Joueuse inconnue.' };
+  if (!player.saleCards?.includes(cardId)) {
+    return { ok: false, error: 'Vous ne possédez pas cette carte Vente.' };
+  }
+  if (player.saleCardsDrawnTurn?.[cardId] === state.turnCount) {
+    return { ok: false, error: 'Vous devez attendre le début de votre prochain tour pour utiliser cette carte Vente.' };
+  }
+
+  const card = getCard(state, cardId);
+  if (!card) return { ok: false, error: 'Carte inconnue.' };
+  if (card.cardType !== 'single_use' && !card.action) {
+    return { ok: false, error: 'Cette carte est un pouvoir permanent et ne peut pas être jouée comme une action.' };
+  }
+
+  player.saleCards = player.saleCards.filter((cId) => cId !== cardId);
+  (state.decks.sale ??= []).push(cardId);
+
+  log(state, 'card', say(state, 'saleCardPlayed', { name: player.name, title: card.title ?? cardId }), {
+    playerId,
+    cardId,
+  });
+
+  broadcastAction(state, {
+    type: 'card_played',
+    actorId: playerId,
+    actorName: player.name,
+    actorColor: player.color,
+    actorToken: player.token,
+    cardId: card.id,
+    title: card.title ?? card.text ?? card.id,
+    text: card.text,
+    cardType: card.cardType ?? 'single_use',
+    category: 'sale',
+    actionType: card.action?.type,
+  });
+
+  const act = card.action;
+  if (act.type === 'collect') {
+    credit(state, playerId, act.amount, say(state, 'reasonCard'));
+  } else if (act.type === 'collect_from_each') {
+    for (const opponent of activePlayers(state)) {
+      if (opponent.id === playerId) continue;
+      charge(state, opponent.id, act.amount, say(state, 'reasonTheft'), playerId);
+    }
+  } else if (act.type === 'get_out_of_jail_free') {
+    player.getOutOfJailCards += 1;
+  } else if (act.type === 'teleport') {
+    const targetSpaceId = payload.spaceId ?? 0;
+    moveTo(state, playerId, targetSpaceId, false);
+    resolveLanding(state, playerId, {});
+  } else if (act.type === 'swap_property') {
+    const myProp = state.properties[payload.mySpaceId];
+    const targetProp = state.properties[payload.targetSpaceId];
+    if (myProp?.ownerId === playerId && targetProp?.ownerId && targetProp.ownerId !== playerId) {
+      if (!ownsFullGroup(state, targetProp.ownerId, getSpace(state, payload.targetSpaceId)?.group)) {
+        myProp.ownerId = targetProp.ownerId;
+        targetProp.ownerId = playerId;
+      }
+    }
+  } else if (act.type === 'discount_property') {
+    player.nextPropertyDiscount = 0.5;
+  } else if (act.type === 'shield') {
+    player.rentWaivers = (player.rentWaivers ?? 0) + 1;
+  } else if (act.type === 'double_rent') {
+    player.doubleNextRent = true;
+  }
+
   return { ok: true };
 }
 

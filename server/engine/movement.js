@@ -10,6 +10,7 @@ import { log, say, amountText } from './log.js';
 import { playerById, rentFor, config } from './queries.js';
 import { credit, charge } from './money.js';
 import { resolveHazardOnLanding } from './hazard.js';
+import { drawBonusCard, drawCorruptionCard, broadcastAction } from './cards.js';
 
 /**
  * Les cases achetables encore libres franchies sans s'y arrêter.
@@ -32,6 +33,19 @@ function queuePassedSpaces(state, from, steps) {
   }
 }
 
+/** Vérifie si le déplacement fait franchir la case Prison (position 10). */
+function checkPassedJail(state, playerId, from, steps) {
+  if (!config(state).mechanics?.jailPassBonus || steps <= 0) return;
+  const size = boardOf(state).length;
+  for (let step = 1; step <= steps; step++) {
+    const id = (from + step) % size;
+    if (id === 10) {
+      drawCorruptionCard(state, playerId);
+      break;
+    }
+  }
+}
+
 /** La prochaine case d'un type donné en avançant, ou null. */
 export function nextSpaceOfType(state, from, type) {
   const board = boardOf(state);
@@ -48,6 +62,7 @@ export function advance(state, playerId, steps) {
   const size = boardOf(state).length;
   const raw = player.position + steps;
   queuePassedSpaces(state, player.position, steps);
+  checkPassedJail(state, playerId, player.position, steps);
   player.position = ((raw % size) + size) % size;
   if (steps > 0 && raw >= size) collectSalary(state, playerId, player.position === 0);
   return player.position;
@@ -60,6 +75,7 @@ export function moveTo(state, playerId, target, collectGoSalary = true) {
   const steps = (((target - player.position) % size) + size) % size;
   const passes = steps > 0 && player.position + steps >= size;
   queuePassedSpaces(state, player.position, steps);
+  checkPassedJail(state, playerId, player.position, steps);
   player.position = target;
   if (passes && collectGoSalary) collectSalary(state, playerId, target === 0);
   return target;
@@ -109,20 +125,47 @@ function homeSpaceOf(state, player) {
 
 /**
  * Envoie en prison : pas de salaire, pas de tour supplémentaire.
- * @param {'normal'|'super'} tier - une extension (Prison Hasbro) peut définir
- *   `jail.superSpace`/`jail.superBail`/`jail.superDeck` pour une geôle plus
- *   sévère ; sans ça, `tier` n'a aucun effet et tout retombe sur `jail.space`.
+ * @param {'normal'|'super'} tier
+ * @param {string|null} senderId - qui l'y a envoyée (pour Super Prison)
  */
-export function sendToJail(state, playerId, tier = 'normal') {
+export function sendToJail(state, playerId, tier = 'normal', senderId = null) {
   const player = playerById(state, playerId);
   const jail = config(state).jail;
-  player.position = (tier === 'super' && jail.superSpace != null) ? jail.superSpace : jail.space;
-  player.inJail = true;
+  if (tier === 'super') {
+    player.position = (jail.superSpace != null) ? jail.superSpace : 30;
+    player.inJail = true;
+    player.superJail = true;
+    player.superJailSenderId = senderId;
+    player.superJailTurns = 0;
+    player.superJailCollectedCards = [];
+    log(state, 'jail', say(state, 'sentToSuperJail', { name: player.name, by: playerById(state, senderId)?.name ?? 'Police' }), { playerId, senderId });
+  } else {
+    player.position = jail.space ?? 10;
+    player.inJail = true;
+    player.superJail = false;
+    player.jailTurns = 0;
+    log(state, 'jail', say(state, 'toJail', { name: player.name }), { playerId });
+    if (config(state).mechanics?.corruptionCards) {
+      drawCorruptionCard(state, playerId);
+    }
+  }
   player.jailTier = tier;
-  player.jailTurns = 0;
   state.dice.extraRoll = false;
   state.dice.doublesCount = 0;
-  log(state, 'jail', say(state, 'toJail', { name: player.name }), { playerId });
+  if (state.dealMobileOwnerId === playerId) {
+    state.dealMobileOwnerId = null;
+  }
+
+  broadcastAction(state, {
+    type: 'sent_to_jail',
+    targetId: playerId,
+    targetName: player.name,
+    targetColor: player.color,
+    targetToken: player.token,
+    senderId,
+    senderName: senderId ? playerById(state, senderId)?.name : null,
+    tier,
+  });
 }
 
 /**
@@ -152,19 +195,48 @@ export function resolveLanding(state, playerId, ctx = {}) {
       sendToJail(state, playerId);
       return;
 
-    // Geôle plus sévère qu'une extension peut ajouter en plus de `go_to_jail`
-    // (case et paquet distincts, caution plus haute) : générique, jamais lié à
-    // un nom d'extension — juste un second niveau de sévérité.
     case 'super_jail':
-      sendToJail(state, playerId, 'super');
+      // Seul un autre joueur peut vous envoyer en Super Prison. Si on y atterrit normalement, simple visite.
       return;
 
+    case 'escape_die':
+      state.pending = {
+        kind: 'roll_escape_die',
+        playerIds: [playerId],
+        payload: { spaceId: space.id },
+      };
+      return;
+
+    case 'heist_die':
+      state.pending = {
+        kind: 'roll_heist_die',
+        playerIds: [playerId],
+        payload: { spaceId: space.id },
+      };
+      return;
+
+
     case 'free_parking':
-      if (state.settings.freeParkingPot && state.freeParkingPot > 0) {
+      if ((state.settings?.freeParkingPot || config(state).mechanics?.jackpotPot) && state.freeParkingPot > 0) {
         const pot = state.freeParkingPot;
         state.freeParkingPot = 0;
         credit(state, playerId, pot, say(state, 'reasonParking'));
       }
+      if (config(state).mechanics?.dealMobile) {
+        state.dealMobileOwnerId = playerId;
+        log(state, 'card', say(state, 'takesDealMobile', { name: player.name }), { playerId });
+      }
+      if (config(state).mechanics?.bonusCardsDeck) {
+        drawBonusCard(state, playerId);
+      }
+      return;
+
+    case 'spin':
+      state.pending = {
+        kind: 'spin_spinner',
+        playerIds: [playerId],
+        payload: { spaceId: space.id, diceTotal: ctx.diceTotal ?? 0 },
+      };
       return;
 
     case 'go':
@@ -236,6 +308,15 @@ function resolveOwnable(state, player, space, ctx) {
       });
       return;
     }
+    if (state.dealMobileOwnerId === player.id) {
+      prop.ownerId = player.id;
+      log(state, 'buy', say(state, 'dealMobileClaim', { name: player.name, space: space.name }), {
+        playerId: player.id,
+        spaceId: space.id,
+        amount: 0,
+      });
+      return;
+    }
     state.pending = {
       kind: 'buy_or_auction',
       playerIds: [player.id],
@@ -249,7 +330,16 @@ function resolveOwnable(state, player, space, ctx) {
   }
 
   // À soi, ou hypothéquée : rien à payer.
-  if (prop.ownerId === player.id) return;
+  if (prop.ownerId === player.id) {
+    if (config(state).mechanics?.spinOnOwn) {
+      state.pending = {
+        kind: 'spin_spinner',
+        playerIds: [player.id],
+        payload: { spaceId: space.id, reason: 'own_property' },
+      };
+    }
+    return;
+  }
 
   // Le piège vient d'être encaissé : le loyer saute pour cette visite.
   if (wasHazarded) {
@@ -292,6 +382,30 @@ function resolveOwnable(state, player, space, ctx) {
     utilityFactor: ctx.utilityFactor,
   });
   if (rent <= 0) return;
+
+  if (state.dealMobileOwnerId === player.id) {
+    log(state, 'rent', say(state, 'dealMobileNoRent', { name: player.name, space: space.name }), {
+      playerId: player.id,
+      spaceId: space.id,
+    });
+    if (config(state).mechanics?.rentChoiceChip) {
+      state.pending = {
+        kind: 'choose_rent_or_chip',
+        playerIds: [owner.id],
+        payload: { tenantId: player.id, spaceId: space.id, rent: 0, dealMobile: true },
+      };
+    }
+    return;
+  }
+
+  if (config(state).mechanics?.rentChoiceChip) {
+    state.pending = {
+      kind: 'choose_rent_or_chip',
+      playerIds: [owner.id],
+      payload: { tenantId: player.id, spaceId: space.id, rent, dealMobile: false },
+    };
+    return;
+  }
 
   log(state, 'rent', say(state, 'rentDue', { name: player.name, amount: amountText(state, rent), owner: owner.name, space: space.name }), {
     playerId: player.id,

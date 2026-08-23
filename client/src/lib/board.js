@@ -37,6 +37,10 @@ export function boardOf(state) {
   return editionFor(state).board;
 }
 
+export function ownableSpaces(state) {
+  return boardOf(state).filter((s) => ['property', 'railroad', 'utility', 'special_property'].includes(s.type));
+}
+
 export function groupsOf(state) {
   return editionFor(state).groups;
 }

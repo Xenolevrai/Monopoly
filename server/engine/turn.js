@@ -1,11 +1,10 @@
-/** Déroulé d'un tour : lancer, prison, doubles, fin de tour. */
-
+import { getSpace } from '../../shared/index.js';
 import { rollDice } from './rng.js';
 import { log, say, amountText } from './log.js';
 import { playerById, currentPlayer, activePlayers, config } from './queries.js';
-import { checkGameOver } from './money.js';
+import { checkGameOver, charge, potCollects, credit } from './money.js';
 import { advance, resolveLanding, sendToJail } from './movement.js';
-import { returnJailCard, getCard, applyCardAction, loseVaultCard } from './cards.js';
+import { returnJailCard, getCard, applyCardAction, loseVaultCard, spinFreeParking, drawCorruptionCard, drawSuperCorruptionCard, checkSaleVictory, rollBuyDie as rollBuyDieCards } from './cards.js';
 import { playHazardTurn } from './hazard.js';
 import { factionOf } from './movement.js';
 import { startQueuedAuction } from './auction.js';
@@ -33,6 +32,9 @@ function applyRecurringCards(state, player) {
   for (const cardId of player.saleCards ?? []) {
     const card = getCard(state, cardId);
     if (card?.perTurn) applyCardAction(state, player.id, card.perTurn, {});
+    if (card?.ability?.type === 'per_turn_cash') {
+      credit(state, player.id, card.ability.amount, 'Rente Vente');
+    }
   }
 }
 
@@ -41,7 +43,51 @@ export function startTurn(state) {
   const player = currentPlayer(state);
   if (!player) return;
   state.dice = { values: null, doublesCount: 0, rolled: false, extraRoll: false, rollId: state.dice?.rollId ?? 0 };
+  state.buyDie = null;
   applyRecurringCards(state, player);
+  checkSaleVictory(state);
+  if (state.phase === 'finished') return;
+
+  if (player.inJail && config(state).mechanics?.noDoublesOut) {
+    if (player.superJail) {
+      player.superJailTurns = (player.superJailTurns ?? 0) + 1;
+      drawSuperCorruptionCard(state, player.id);
+      const bailCash = config(state).mechanics?.superJailBailCash ?? 300;
+      state.pending = {
+        kind: 'leave_super_jail',
+        playerIds: [player.id],
+        payload: {
+          superJailTurns: player.superJailTurns,
+          senderId: player.superJailSenderId,
+          senderName: playerById(state, player.superJailSenderId)?.name ?? 'Police',
+          collectedCardsCount: player.superJailCollectedCards?.length ?? 0,
+          canPayCash: player.cash >= bailCash,
+          canGiveCards: (player.superJailCollectedCards?.length ?? 0) > 0,
+          canStay: player.superJailTurns < 3,
+          forced: player.superJailTurns >= 3,
+        },
+      };
+      log(state, 'turn', say(state, 'turnOf', { name: player.name }), { playerId: player.id, turn: state.turnCount });
+      return;
+    } else {
+      player.jailTurns = (player.jailTurns ?? 0) + 1;
+      drawCorruptionCard(state, player.id);
+      const bail = config(state).mechanics?.jailBail ?? 100;
+      state.pending = {
+        kind: 'jail_decision',
+        playerIds: [player.id],
+        payload: {
+          jailTurns: player.jailTurns,
+          bail,
+          canPayBail: player.cash >= bail,
+          canStay: player.jailTurns < 3,
+          forced: player.jailTurns >= 3,
+        },
+      };
+      log(state, 'turn', say(state, 'turnOf', { name: player.name }), { playerId: player.id, turn: state.turnCount });
+      return;
+    }
+  }
 
   // Une édition/extension qui déclare `jail.deck` remplace le jet de dés pour
   // tenter les doubles par un choix explicite : payer, ou tirer une carte du
@@ -120,100 +166,175 @@ export function roll(state, playerId, rng) {
   const { total, isDouble, values } = throwDice(state, player, rng);
   state.pending = { kind: null, playerIds: [] };
 
+  if (player.inJail) {
+    if (isDouble) {
+      player.inJail = false;
+      player.jailTurns = 0;
+      state.dice.extraRoll = false; // Sortir par un double ne donne pas de tour supplémentaire
+      log(state, 'jail', say(state, 'jailDouble', { name: player.name }), { playerId });
+      advance(state, playerId, total);
+      resolveLanding(state, playerId, { diceTotal: total });
+      return finishResolution(state);
+    }
+    player.jailTurns += 1;
+    if (player.jailTurns >= config(state).jail.maxTurns) {
+      log(state, 'jail', say(state, 'jailMaxed', { name: player.name, max: config(state).jail.maxTurns }), { playerId });
+      player.inJail = false;
+      player.jailTurns = 0;
+      state.dice.extraRoll = false;
+      advance(state, playerId, total);
+      resolveLanding(state, playerId, { diceTotal: total });
+      return finishResolution(state);
+    }
+    log(state, 'jail', say(state, 'jailStays', { name: player.name, turns: player.jailTurns }), { playerId });
+    return finishResolution(state);
+  }
+
+  const doublesToJail = config(state).dice.doublesToJail;
+  const doublesNeverJail = config(state).mechanics?.doublesNeverJail;
+  if (isDouble) {
+    state.dice.doublesCount += 1;
+    if (!doublesNeverJail && doublesToJail && state.dice.doublesCount >= doublesToJail) {
+      log(state, 'jail', say(state, 'threeDoubles', { name: player.name }), { playerId });
+      sendToJail(state, playerId);
+      return finishResolution(state);
+    }
+    state.dice.extraRoll = true;
+  } else {
+    state.dice.extraRoll = false;
+    state.dice.doublesCount = 0;
+  }
+
   if (offersReroll(state, player)) {
     state.pending = {
       kind: 'reroll',
       playerIds: [playerId],
       payload: { values, total, isDouble },
     };
-    return { ok: true };
+    return { ok: true, pendingReroll: true };
   }
 
-  return commitRoll(state, player, total, isDouble);
-}
-
-/** Relance imposée par un pouvoir de camp : une seule fois, puis on résout. */
-export function rerollDice(state, playerId, rng) {
-  const player = playerById(state, playerId);
-  state.dice.rerollUsed = true;
-  const { total, isDouble } = throwDice(state, player, rng);
-  state.pending = { kind: null, playerIds: [] };
-  log(state, 'roll', say(state, 'rerolls', { name: player.name }), { playerId });
-  return commitRoll(state, player, total, isDouble);
-}
-
-/** Garde le jet tel quel et le résout. */
-export function keepRoll(state, playerId) {
-  const player = playerById(state, playerId);
-  const values = state.dice.values ?? [];
-  const total = values.reduce((a, b) => a + b, 0);
-  const isDouble = values.length > 0 && values.every((v) => v === values[0]);
-  state.pending = { kind: null, playerIds: [] };
-  return commitRoll(state, player, total, isDouble);
-}
-
-/** Ce que le jet déclenche une fois arrêté : prison, doubles, déplacement. */
-function commitRoll(state, player, total, isDouble) {
-  const playerId = player.id;
-  if (player.inJail) return rollInJail(state, player, total, isDouble);
-
-  state.dice.doublesCount = isDouble ? state.dice.doublesCount + 1 : 0;
-  // Une extension peut désactiver l'envoi en prison au bout de trois doubles :
-  // on relance et on continue d'avancer, comme n'importe quel double normal.
-  const doublesJailEnabled = !config(state).mechanics?.doublesNeverJail;
-  if (doublesJailEnabled && state.dice.doublesCount >= config(state).dice.doublesToJail) {
-    log(state, 'jail', say(state, 'thirdDouble', { name: player.name }), { playerId });
-    sendToJail(state, playerId);
-    return finishResolution(state);
-  }
-
-  state.dice.extraRoll = isDouble;
   advance(state, playerId, total);
   resolveLanding(state, playerId, { diceTotal: total });
   return finishResolution(state);
 }
 
-function rollInJail(state, player, total, isDouble) {
+/** La joueuse choisit de relancer son jet de dés (pouvoir de camp). */
+export function rerollDice(state, playerId, rng) {
+  const player = playerById(state, playerId);
+  if (!offersReroll(state, player)) return { ok: false, error: 'Relance impossible.' };
+  state.dice.rerollUsed = true;
+  log(state, 'roll', say(state, 'rerolls', { name: player.name }), { playerId });
+  const { total, isDouble } = throwDice(state, player, rng);
+
+  const doublesToJail = config(state).dice.doublesToJail;
+  const doublesNeverJail = config(state).mechanics?.doublesNeverJail;
   if (isDouble) {
-    player.inJail = false;
-    player.jailTurns = 0;
-    log(state, 'jail', say(state, 'jailDouble', { name: player.name }), { playerId: player.id });
-    advance(state, player.id, total);
-    resolveLanding(state, player.id, { diceTotal: total });
-    return finishResolution(state); // un double en prison ne donne pas de tour supplémentaire
+    state.dice.doublesCount += 1;
+    if (!doublesNeverJail && doublesToJail && state.dice.doublesCount >= doublesToJail) {
+      log(state, 'jail', say(state, 'threeDoubles', { name: player.name }), { playerId });
+      sendToJail(state, playerId);
+      return finishResolution(state);
+    }
+    state.dice.extraRoll = true;
+  } else {
+    state.dice.extraRoll = false;
+    state.dice.doublesCount = 0;
   }
 
-  player.jailTurns += 1;
-  if (player.jailTurns >= config(state).jail.maxTurns) {
-    // La peine est purgée : on sort, et l'on ne paie rien. Faire payer la
-    // caution au troisième tour revenait à punir deux fois — on avait déjà
-    // perdu trois tours à attendre.
-    log(state, 'jail', say(state, 'jailMaxed', { name: player.name, max: config(state).jail.maxTurns }), {
-      playerId: player.id,
-    });
-    player.inJail = false;
-    player.jailTurns = 0;
-    advance(state, player.id, total);
-    resolveLanding(state, player.id, { diceTotal: total });
-  } else {
-    log(state, 'jail', say(state, 'jailStays', { name: player.name, turn: player.jailTurns, max: config(state).jail.maxTurns }), {
-      playerId: player.id,
-    });
-  }
+  state.pending = { kind: null, playerIds: [] };
+  advance(state, playerId, total);
+  resolveLanding(state, playerId, { diceTotal: total });
   return finishResolution(state);
 }
 
-/** Paie la caution de 50 € pour sortir avant de lancer les dés. */
+/** La joueuse garde son premier jet sans le relancer. */
+export function keepRoll(state, playerId) {
+  const total = (state.dice.values ?? []).reduce((a, b) => a + b, 0);
+  state.pending = { kind: null, playerIds: [] };
+  advance(state, playerId, total);
+  resolveLanding(state, playerId, { diceTotal: total });
+  return finishResolution(state);
+}
+
+/** Paie la caution pour sortir avant de lancer les dés. */
 export function payBail(state, playerId) {
   const player = playerById(state, playerId);
   if (!player.inJail) return { ok: false, error: "Vous n'êtes pas en prison." };
-  const bail = jailContext(state, player).bail;
+  const bail = config(state).mechanics?.jailBail ?? jailContext(state, player).bail;
   if (player.cash < bail) return { ok: false, error: 'Fonds insuffisants pour la caution.' };
   player.cash -= bail;
+  if (potCollects(state)) {
+    state.freeParkingPot += bail;
+  }
   player.inJail = false;
   player.jailTurns = 0;
   log(state, 'jail', say(state, 'jailBail', { name: player.name, amount: amountText(state, bail) }), { playerId });
   state.pending = { kind: 'roll', playerIds: [playerId], payload: {} };
+  return { ok: true };
+}
+
+/** Sort de Super Prison (en payant 300 € au commanditaire ou en lui donnant les cartes collectées). */
+export function leaveSuperJail(state, playerId, choice) {
+  const player = playerById(state, playerId);
+  if (!player || !player.superJail) return { ok: false, error: "Vous n'êtes pas en Super Prison." };
+
+  const senderId = player.superJailSenderId;
+  const sender = senderId ? playerById(state, senderId) : null;
+  const bailCash = config(state).mechanics?.superJailBailCash ?? 300;
+
+  if (choice === 'cash') {
+    if (player.cash < bailCash) return { ok: false, error: 'Fonds insuffisants pour la caution de Super Prison.' };
+    player.cash -= bailCash;
+    if (sender && !sender.bankrupt) {
+      sender.cash += bailCash;
+    } else if (potCollects(state)) {
+      state.freeParkingPot += bailCash;
+    }
+    log(state, 'jail', say(state, 'leavesSuperJailCash', {
+      name: player.name,
+      to: sender ? sender.name : 'la Banque',
+      amount: amountText(state, bailCash),
+    }), { playerId, senderId, amount: bailCash });
+  } else if (choice === 'cards') {
+    const cardsToTransfer = [...(player.superJailCollectedCards ?? [])];
+    if (sender && !sender.bankrupt) {
+      sender.superCorruptionCards = sender.superCorruptionCards ?? [];
+      for (const cId of cardsToTransfer) {
+        sender.superCorruptionCards.push(cId);
+        sender.cardsDrawnTurn = sender.cardsDrawnTurn ?? {};
+        sender.cardsDrawnTurn[cId] = state.turnCount;
+      }
+    } else {
+      for (const cId of cardsToTransfer) {
+        (state.decks.super_corruption ??= []).push(cId);
+      }
+    }
+    player.superCorruptionCards = (player.superCorruptionCards ?? []).filter((id) => !cardsToTransfer.includes(id));
+    log(state, 'jail', say(state, 'leavesSuperJailCards', {
+      name: player.name,
+      to: sender ? sender.name : 'la Banque',
+      count: cardsToTransfer.length,
+    }), { playerId, senderId, count: cardsToTransfer.length });
+  }
+
+  player.inJail = false;
+  player.superJail = false;
+  player.superJailTurns = 0;
+  player.superJailCollectedCards = [];
+  player.superJailSenderId = null;
+  player.position = 30;
+
+  state.pending = { kind: 'roll', playerIds: [playerId], payload: {} };
+  return { ok: true };
+}
+
+/** La joueuse choisit de passer son tour en prison pour piocher plus de cartes. */
+export function stayInJail(state, playerId) {
+  const player = playerById(state, playerId);
+  if (!player || !player.inJail) return { ok: false, error: "Vous n'êtes pas en prison." };
+  log(state, 'jail', say(state, 'jailStays', { name: player.name, turns: player.superJail ? player.superJailTurns : player.jailTurns }), { playerId });
+  state.pending = { kind: 'end_turn', playerIds: [playerId], payload: { extraRoll: false } };
   return { ok: true };
 }
 
@@ -230,6 +351,53 @@ export function useJailCard(state, playerId) {
   return { ok: true };
 }
 
+/** Dépense 1 jeton Spin pour tourner la roulette. */
+export function useSpinChip(state, playerId, rng) {
+  const player = playerById(state, playerId);
+  if (!player) return { ok: false, error: 'Joueuse inconnue.' };
+  if ((player.spinChips ?? 0) <= 0) return { ok: false, error: "Vous n'avez pas de jeton Spin." };
+  player.spinChips -= 1;
+  log(state, 'action', say(state, 'spinsChipUsed', { name: player.name }), { playerId });
+  return spinFreeParking(state, playerId, rng);
+}
+
+/** Choix du propriétaire : loyer ou jeton Spin à la banque. */
+export function chooseRentOrChip(state, landlordId, choice) {
+  const pending = state.pending;
+  if (pending.kind !== 'choose_rent_or_chip' || !pending.playerIds.includes(landlordId)) {
+    return { ok: false, error: 'Aucun choix de loyer ou jeton en attente.' };
+  }
+  const { tenantId, spaceId, rent, dealMobile } = pending.payload;
+  const landlord = playerById(state, landlordId);
+  const tenant = playerById(state, tenantId);
+  const space = getSpace(state, spaceId);
+
+  state.pending = { kind: null, playerIds: [] };
+
+  if (choice === 'chip' || dealMobile) {
+    landlord.spinChips = (landlord.spinChips ?? 0) + 1;
+    log(state, 'rent', say(state, 'landlordTakesChip', {
+      name: landlord.name,
+      tenant: tenant.name,
+      space: space.name,
+    }), { playerId: landlordId, tenantId, spaceId });
+  } else {
+    log(state, 'rent', say(state, 'rentDue', {
+      name: tenant.name,
+      amount: amountText(state, rent),
+      owner: landlord.name,
+      space: space.name,
+    }), {
+      playerId: tenant.id,
+      creditorId: landlord.id,
+      spaceId: space.id,
+      amount: rent,
+    });
+    charge(state, tenant.id, rent, say(state, 'reasonRent', { space: space.name }), landlord.id, { negotiable: true });
+  }
+  return { ok: true };
+}
+
 /**
  * Le dé facultatif que certaines éditions/extensions posent en fin de case
  * (`mechanics.buyDie`) : un jet de plus, une fois par lancer, pour tenter de
@@ -240,36 +408,8 @@ export function rollBuyDie(state, playerId, rng) {
   const cfg = config(state).mechanics?.buyDie;
   if (!cfg) return { ok: false, error: "Cette partie n'a pas de dé d'Achat." };
   if (state.dice.buyDieUsed) return { ok: false, error: "Vous avez déjà lancé le dé d'Achat." };
-
-  const player = playerById(state, playerId);
-  const value = rollDice(rng, 1, cfg.sides)[0];
   state.dice.buyDieUsed = true;
-  log(state, 'roll', say(state, 'buyDieRoll', { name: player.name, value }), { playerId, value });
-
-  const visible = state.saleVault?.visible ?? [];
-  if (value >= cfg.gainFrom && visible.length) {
-    // On choisit soi-même la carte prise dans le présentoir : c'est tout
-    // l'intérêt d'un coffre à cartes visibles.
-    state.pending = {
-      kind: 'card_choice',
-      playerIds: [playerId],
-      payload: {
-        options: visible.map((cardId, index) => ({ index, label: getCard(state, cardId)?.text ?? cardId })),
-        actions: visible.map((cardId) => ({ type: 'take_sale_card', cardId })),
-      },
-    };
-    return { ok: true };
-  }
-
-  if (value === cfg.stealOn) {
-    const victim = activePlayers(state).find((p) => p.id !== playerId && (p.saleCards ?? []).length);
-    if (victim) loseVaultCard(state, victim.id);
-    else log(state, 'card', say(state, 'buyDieNothing', { name: player.name }), { playerId });
-    return { ok: true };
-  }
-
-  log(state, 'card', say(state, 'buyDieNothing', { name: player.name }), { playerId });
-  return { ok: true };
+  return rollBuyDieCards(state, playerId, rng);
 }
 
 /**

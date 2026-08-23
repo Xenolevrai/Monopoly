@@ -180,7 +180,7 @@ export function getEdition(editionId = DEFAULT_EDITION, locale = DEFAULT_LOCALE)
  */
 export function editionOf(state) {
   const base = getEdition(state?.editionId, state?.locale);
-  return applyExtensions(base, state?.extensionIds);
+  return applyExtensions(base, state?.extensionIds, state?.locale);
 }
 
 /** Ce qu'il faut pour dessiner la galerie de sélection, sans charger les plateaux. */

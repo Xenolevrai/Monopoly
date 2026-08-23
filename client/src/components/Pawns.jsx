@@ -85,6 +85,8 @@ export default function Pawns({ state, players, hold = false }) {
         const spread =
           group.length > 1 ? (group.indexOf(player.id) - (group.length - 1) / 2) * (rect.w * 0.52) : 0;
 
+        const isDealMobile = state.dealMobileOwnerId === player.id;
+
         return (
           <span
             key={player.id}
@@ -100,13 +102,43 @@ export default function Pawns({ state, players, hold = false }) {
               marginTop: '-1.8%',
               opacity: player.bankrupt ? 0.3 : 1,
               transition: `left ${STEP_MS}ms ease-in-out, top ${STEP_MS}ms ease-in-out`,
-              borderColor: player.color,
-              boxShadow: `0 0 0 2px ${player.color}, 0 3px 7px rgba(0,0,0,.5)`,
-              zIndex: moving ? 3 : 1,
+              borderColor: isDealMobile ? '#d4af37' : player.color,
+              boxShadow: isDealMobile
+                ? `0 0 0 2.5px #ffd700, 0 0 10px #ffd700, 0 3px 7px rgba(0,0,0,.5)`
+                : `0 0 0 2px ${player.color}, 0 3px 7px rgba(0,0,0,.5)`,
+              zIndex: moving ? 4 : isDealMobile ? 3 : 1,
             }}
-            title={player.name}
+            title={isDealMobile ? `${player.name} (Deal Mobile)` : player.name}
           >
-            <TokenIcon token={player.token} color={player.color} className="h-[76%] w-[76%]" />
+            <TokenIcon
+              token={isDealMobile ? 'deal_mobile' : player.token}
+              color={isDealMobile ? '#b8860b' : player.color}
+              className="h-[76%] w-[76%]"
+            />
+            {isDealMobile && (
+              <span
+                className="absolute -top-2.5 -right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 text-[9px] shadow-sm ring-1 ring-white"
+                title="Deal Mobile : propriétés gratuites & 0 loyer !"
+              >
+                ★
+              </span>
+            )}
+            {player.superJail && (
+              <span
+                className="absolute -top-2.5 -right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-tr from-blue-600 to-indigo-400 text-[9px] text-white shadow-sm ring-1 ring-white"
+                title="Super Prison !"
+              >
+                ⚡
+              </span>
+            )}
+            {!player.superJail && player.inJail && !isDealMobile && (
+              <span
+                className="absolute -top-2.5 -right-2.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-tr from-stone-700 to-zinc-500 text-[9px] text-white shadow-sm ring-1 ring-white"
+                title="En Prison"
+              >
+                ⛓
+              </span>
+            )}
           </span>
         );
       })}

@@ -12,8 +12,9 @@ import assert from 'node:assert/strict';
 
 import { EDITIONS, editionOf } from '../shared/editions.js';
 import { applyExtensions, compatibleExtensions, conflictingPositions, EXTENSIONS } from '../shared/extensions.js';
-import { moveTo, resolveLanding } from '../server/engine/movement.js';
+import { moveTo, resolveLanding, sendToJail } from '../server/engine/movement.js';
 import { startTurn, rollBuyDie } from '../server/engine/turn.js';
+import { rentFor } from '../server/engine/queries.js';
 import { scriptedRng } from '../server/engine/rng.js';
 import { createGame, addPlayer, startGame, dispatch } from '../server/engine/index.js';
 
@@ -51,8 +52,11 @@ test('activer les trois ensemble est détecté en conflit (Chance/Caisse et Parc
   assert.ok(conflicts.length > 0);
 });
 
-test('Prison et Tout Acheter ne se marchent pas dessus : la combinaison est autorisée', () => {
-  assert.deepEqual(conflictingPositions([EXTENSIONS['go-to-jail'], EXTENSIONS['buy-everything']]), []);
+test('Prison et Tout Acheter se disputent les taxes et les coins', () => {
+  assert.deepEqual(
+    conflictingPositions([EXTENSIONS['go-to-jail'], EXTENSIONS['buy-everything']]).sort((a, b) => a - b),
+    [4, 30, 38],
+  );
 });
 
 test('Parc Gratuit Jackpot et Tout Acheter se disputent le Parc Gratuit', () => {
@@ -127,12 +131,74 @@ function autoPlay(game, maxSteps = 400) {
       case 'draw_card':
         dispatch(game, actorId, { type: 'DRAW_CARD' });
         break;
+      case 'roll_escape_die':
+        dispatch(game, actorId, { type: 'ROLL_ESCAPE_DIE' });
+        break;
+      case 'roll_heist_die':
+        dispatch(game, actorId, { type: 'ROLL_HEIST_DIE' });
+        break;
+      case 'jail_decision':
+        dispatch(game, actorId, { type: 'PAY_BAIL' });
+        break;
+      case 'leave_super_jail': {
+        const payload = state.pending.payload;
+        if (payload?.canGiveCards) {
+          dispatch(game, actorId, { type: 'LEAVE_SUPER_JAIL', choice: 'cards' });
+        } else if (payload?.canPayCash) {
+          dispatch(game, actorId, { type: 'LEAVE_SUPER_JAIL', choice: 'cash' });
+        } else if (payload?.canStay) {
+          dispatch(game, actorId, { type: 'STAY_IN_JAIL' });
+        } else {
+          dispatch(game, actorId, { type: 'LEAVE_SUPER_JAIL', choice: 'cash' });
+        }
+        break;
+      }
+      case 'spin_spinner':
+        dispatch(game, actorId, { type: 'SPIN_SPINNER' });
+        break;
+      case 'choose_rent_or_chip':
+        dispatch(game, actorId, { type: 'CHOOSE_RENT_OR_CHIP', choice: 'chip' });
+        break;
       case 'card_reveal':
         dispatch(game, actorId, { type: 'ACKNOWLEDGE_CARD' });
         break;
       case 'card_choice':
         dispatch(game, actorId, { type: 'CARD_CHOICE', optionIndex: 0 });
         break;
+      case 'buy_sale_card': {
+        const payload = state.pending.payload;
+        const cardId = payload.visibleCards?.[0];
+        const player = playerById(state, actorId);
+        const discardId = payload.mustDiscardFirst ? player?.saleCards?.[0] : null;
+        if (cardId) {
+          dispatch(game, actorId, { type: 'BUY_SALE_CARD', cardId, discardCardId: discardId });
+        } else {
+          dispatch(game, actorId, { type: 'END_TURN' });
+        }
+        break;
+      }
+      case 'force_discard_sale_card': {
+        const payload = state.pending.payload;
+        const victimId = payload.victimIds?.[0];
+        const victim = playerById(state, victimId);
+        const cardId = victim?.saleCards?.[0];
+        if (victimId && cardId) {
+          dispatch(game, actorId, { type: 'FORCE_DISCARD_SALE_CARD', targetPlayerId: victimId, targetCardId: cardId });
+        } else {
+          dispatch(game, actorId, { type: 'END_TURN' });
+        }
+        break;
+      }
+      case 'refresh_sale_vault': {
+        const payload = state.pending.payload;
+        const cardId = payload.visibleCards?.[0];
+        if (cardId) {
+          dispatch(game, actorId, { type: 'REFRESH_SALE_VAULT', cardId });
+        } else {
+          dispatch(game, actorId, { type: 'END_TURN' });
+        }
+        break;
+      }
       case 'end_turn':
         dispatch(game, actorId, { type: 'END_TURN' });
         break;
@@ -159,6 +225,8 @@ test('extension Parc Gratuit Jackpot : une partie entière tourne sans blocage',
   const edition = editionOf(game.state);
   assert.equal(edition.board.filter((s) => s.type === 'chance' || s.type === 'community_chest').length, 0);
   assert.ok(edition.board.some((s) => s.type === 'spin'));
+  // Chaque joueur démarre avec 2 jetons Spin et 2 cartes Bonus
+  assert.ok(game.state.players.every((p) => p.spinChips >= 0 && Array.isArray(p.bonusCards)));
 });
 
 test('extension Parc Gratuit Jackpot : atterrir sur le secteur « Jackpot ! » vide la cagnotte vers la joueuse', () => {
@@ -168,61 +236,192 @@ test('extension Parc Gratuit Jackpot : atterrir sur le secteur « Jackpot ! » v
   startGame(game, 'p0');
   game.state.freeParkingPot = 300;
   const before = playerById(game.state, 'p0').cash;
-  // On force le tirage de la carte « Jackpot ! » plutôt que de dépendre du mélange.
-  game.state.decks.spin = ['spin-jackpot', ...game.state.decks.spin.filter((id) => id !== 'spin-jackpot')];
   moveTo(game.state, 'p0', 7, false); // case Spin (ex-Chance)
   resolveLanding(game.state, 'p0', {});
-  dispatch(game, 'p0', { type: 'DRAW_CARD' });
-  dispatch(game, 'p0', { type: 'ACKNOWLEDGE_CARD' });
+  assert.equal(game.state.pending.kind, 'spin_spinner');
+  dispatch(game, 'p0', { type: 'SPIN_SPINNER', sectorIndex: 3 }); // Sector green-jackpot
   assert.equal(game.state.freeParkingPot, 0);
-  assert.equal(playerById(game.state, 'p0').cash, before + 300 + 200);
+  assert.equal(playerById(game.state, 'p0').cash, before + 300);
 });
 
-test('extension Prison : une partie entière tourne sans blocage, caution à 100 €', () => {
+test('extension Parc Gratuit Jackpot : Deal Mobile offre les propriétés libres et exonère de loyer', () => {
+  const game = createGame('EXTJP3', 'h', { seed: 5, editionId: 'classic-fr', extensionIds: ['free-parking-jackpot'] });
+  addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
+  addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
+  startGame(game, 'p0');
+
+  // Alice prend le Deal Mobile
+  game.state.dealMobileOwnerId = 'p0';
+
+  // Alice atterrit sur une propriété libre (case 1) : elle est acquise gratuitement
+  moveTo(game.state, 'p0', 1, false);
+  resolveLanding(game.state, 'p0', {});
+  assert.equal(game.state.properties[1].ownerId, 'p0');
+
+  // Bruno achète la case 3
+  game.state.properties[3].ownerId = 'p1';
+  const aliceCashBefore = playerById(game.state, 'p0').cash;
+
+  // Alice au volant du Deal Mobile atterrit chez Bruno : 0 loyer
+  moveTo(game.state, 'p0', 3, false);
+  resolveLanding(game.state, 'p0', {});
+  assert.equal(playerById(game.state, 'p0').cash, aliceCashBefore);
+  // Bruno a l'option de prendre 1 jeton Spin à la banque
+  assert.equal(game.state.pending.kind, 'choose_rent_or_chip');
+  dispatch(game, 'p1', { type: 'CHOOSE_RENT_OR_CHIP', choice: 'chip' });
+  assert.equal(playerById(game.state, 'p1').spinChips, 3); // 2 init + 1
+
+  // Si Alice va en prison, elle perd le Deal Mobile
+  sendToJail(game.state, 'p0');
+  assert.equal(game.state.dealMobileOwnerId, null);
+});
+
+test('extension Parc Gratuit Jackpot : les cartes Bonus fonctionnent correctement', () => {
+  const game = createGame('EXTJP4', 'h', { seed: 9, editionId: 'classic-fr', extensionIds: ['free-parking-jackpot'] });
+  addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
+  addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
+  startGame(game, 'p0');
+  game.state.currentPlayerIndex = game.state.players.findIndex((p) => p.id === 'p0');
+  const p0 = playerById(game.state, 'p0');
+  p0.bonusCards = ['fp-jackpot-01'];
+  game.state.freeParkingPot = 500;
+  const cashBefore = p0.cash;
+  dispatch(game, 'p0', { type: 'PLAY_BONUS_CARD', cardId: 'fp-jackpot-01' });
+  assert.equal(p0.cash, cashBefore + 500);
+  assert.equal(game.state.freeParkingPot, 0);
+});
+
+test('extension Prison : configuration initiale des 32 cartes Corruption et 12 Super Corruption', () => {
   const game = createGame('EXTJAIL1', 'h', { seed: 11, editionId: 'classic-fr', extensionIds: ['go-to-jail'] });
   assert.deepEqual(game.state.extensionIds, ['go-to-jail']);
   addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
   addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
   addPlayer(game, { id: 'p2', name: 'Chloé', token: 'bateau' });
   startGame(game, 'p0');
+
   const edition = editionOf(game.state);
-  assert.equal(edition.jail.bail, 100);
-  assert.equal(edition.mechanics.doublesNeverJail, true);
+  assert.equal(edition.mechanics.corruptionCards, true);
+  assert.equal(edition.mechanics.superCorruptionCards, true);
   assert.equal(edition.board.filter((s) => s.type === 'tax').length, 0);
+  assert.equal(edition.board.filter((s) => s.type === 'escape_die').length, 3);
+  assert.equal(edition.board.filter((s) => s.type === 'heist_die').length, 3);
   assert.ok(edition.board.some((s) => s.type === 'super_jail'));
-  autoPlay(game, 500);
-  assert.ok(game.state.turnCount > 20, 'la partie doit avoir avancé sur de nombreux tours');
+
+  // Chaque joueur démarre avec 2 cartes Corruption
+  assert.equal(playerById(game.state, 'p0').corruptionCards.length, 2);
+  assert.equal(playerById(game.state, 'p1').corruptionCards.length, 2);
+  assert.equal(playerById(game.state, 'p2').corruptionCards.length, 2);
+  // Total 32 cartes Corruption (6 distribuées + 26 dans la pile)
+  assert.equal(game.state.decks.corruption.length, 26);
+  // Total 13 cartes Super Corruption dans la pile Super Prison
+  assert.equal(game.state.decks.super_corruption.length, 13);
 });
 
-test('extension Prison : atterrir sur une ex-case taxe envoie en prison', () => {
+test('extension Prison : cases 4 et 38 envoient en Prison et font piocher 1 carte Corruption', () => {
   const game = createGame('EXTJAIL2', 'h', { seed: 1, editionId: 'classic-fr', extensionIds: ['go-to-jail'] });
   addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
   addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
   startGame(game, 'p0');
-  moveTo(game.state, 'p0', 4, false); // ex-Impôt sur le revenu, devenue « Allez en prison »
+
+  const p0 = playerById(game.state, 'p0');
+  const countBefore = p0.corruptionCards.length;
+
+  moveTo(game.state, 'p0', 4, false);
   resolveLanding(game.state, 'p0', {});
-  assert.equal(playerById(game.state, 'p0').inJail, true);
-  assert.equal(playerById(game.state, 'p0').jailTier, 'normal');
+  assert.equal(p0.inJail, true);
+  assert.equal(p0.superJail, false);
+  assert.equal(p0.corruptionCards.length, countBefore + 1);
 });
 
-test('extension Prison : atterrir sur l\'ex-case « Allez en prison » envoie en Super Jail (caution 200 €)', () => {
+test('extension Prison : franchir la case Prison (position 10) fait piocher 1 carte Corruption', () => {
   const game = createGame('EXTJAIL3', 'h', { seed: 2, editionId: 'classic-fr', extensionIds: ['go-to-jail'] });
   addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
   addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
   startGame(game, 'p0');
-  moveTo(game.state, 'p0', 30, false); // ex-« Allez en prison », devenue Super Jail
+
+  const p0 = playerById(game.state, 'p0');
+  p0.position = 8;
+  const countBefore = p0.corruptionCards.length;
+
+  // Avance de 4 cases (franchit la case 10 et atterrit en 12)
+  moveTo(game.state, 'p0', 12, false);
+  assert.equal(p0.corruptionCards.length, countBefore + 1);
+});
+
+test('extension Prison : les dés Évasion et Casse fonctionnent correctement', () => {
+  const game = createGame('EXTJAIL4', 'h', { seed: 4, editionId: 'classic-fr', extensionIds: ['go-to-jail'] });
+  addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
+  addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
+  startGame(game, 'p0');
+
+  // Dé Évasion sur case 7
+  moveTo(game.state, 'p0', 7, false);
   resolveLanding(game.state, 'p0', {});
-  const player = playerById(game.state, 'p0');
-  assert.equal(player.inJail, true);
-  assert.equal(player.jailTier, 'super');
-  assert.equal(player.position, 30);
-  player.cash = 1000;
-  game.state.currentPlayerIndex = game.state.players.findIndex((p) => p.id === 'p0');
+  assert.equal(game.state.pending.kind, 'roll_escape_die');
+  dispatch(game, 'p0', { type: 'ROLL_ESCAPE_DIE' });
+  assert.ok(game.state.escapeDie);
+
+  // Dé Casse sur case 2
+  moveTo(game.state, 'p1', 2, false);
+  resolveLanding(game.state, 'p1', {});
+  assert.equal(game.state.pending.kind, 'roll_heist_die');
+  dispatch(game, 'p1', { type: 'ROLL_HEIST_DIE' });
+  assert.ok(game.state.heistDie);
+});
+
+test('extension Prison : la Super Prison rapporte des Super Corruption et permet de sortir via cartes ou cash', () => {
+  const game = createGame('EXTJAIL5', 'h', { seed: 5, editionId: 'classic-fr', extensionIds: ['go-to-jail'] });
+  addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
+  addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
+  startGame(game, 'p0');
+
+  // Alice envoie Bruno en Super Prison via la carte Balance (Snitch)
+  sendToJail(game.state, 'p1', 'super', 'p0');
+  const p1 = playerById(game.state, 'p1');
+  assert.equal(p1.superJail, true);
+  assert.equal(p1.superJailSenderId, 'p0');
+
+  // Au tour de Bruno : il gagne 1 carte Super Corruption et doit décider de sa sortie
+  game.state.currentPlayerIndex = game.state.players.findIndex((p) => p.id === 'p1');
   startTurn(game.state);
-  assert.equal(game.state.pending.kind, 'card_choice');
-  dispatch(game, 'p0', { type: 'CARD_CHOICE', optionIndex: 0 }); // paie la caution sévère
-  assert.equal(playerById(game.state, 'p0').inJail, false);
-  assert.equal(playerById(game.state, 'p0').cash, 800);
+  assert.equal(game.state.pending.kind, 'leave_super_jail');
+  assert.equal(p1.superCorruptionCards.length, 1);
+  assert.equal(p1.superJailCollectedCards.length, 1);
+
+  // Bruno choisit de donner ses cartes Super Corruption collectées à Alice
+  dispatch(game, 'p1', { type: 'LEAVE_SUPER_JAIL', choice: 'cards' });
+  assert.equal(p1.inJail, false);
+  assert.equal(p1.superJail, false);
+  assert.equal(playerById(game.state, 'p0').superCorruptionCards.length, 1);
+  assert.equal(p1.superCorruptionCards.length, 0);
+  assert.equal(game.state.pending.kind, 'roll');
+});
+
+test('extension Prison : condition de victoire et disqualification des joueurs en prison à la fin', () => {
+  const game = createGame('EXTJAIL6', 'h', { seed: 6, editionId: 'classic-fr', extensionIds: ['go-to-jail'] });
+  addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
+  addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
+  startGame(game, 'p0');
+
+  const p0 = playerById(game.state, 'p0');
+  const p1 = playerById(game.state, 'p1');
+
+  p0.cash = 5000;
+  p1.cash = 1000;
+
+  // Alice est en prison
+  p0.inJail = true;
+  p1.inJail = false;
+
+  // Fin de partie (toutes propriétés capturées)
+  for (let i = 0; i < 40; i++) {
+    if (game.state.properties[i]) game.state.properties[i].ownerId = 'p1';
+  }
+
+  autoPlay(game, 10);
+  // Alice a plus de cash mais est en cellule : elle ne peut pas gagner ! Bruno l'emporte.
+  assert.equal(game.state.phase, 'finished');
+  assert.equal(game.state.winnerId, 'p1');
 });
 
 
@@ -239,13 +438,22 @@ test('extension Tout Acheter : une partie entière tourne sans blocage', () => {
   assert.ok(game.state.turnCount > 10, 'la partie doit avoir avancé sur de nombreux tours');
 });
 
-test('extension Tout Acheter : Départ, Prison et Parc Gratuit portent un titre achetable', () => {
+test('extension Tout Acheter : capital initial officiel à 2 150 €', () => {
+  const game = createGame('EXTBUY1', 'h', { seed: 1, editionId: 'classic-fr', extensionIds: ['buy-everything'] });
+  addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
+  addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
+  startGame(game, 'p0');
+  assert.equal(playerById(game.state, 'p0').cash, 2150);
+  assert.equal(playerById(game.state, 'p1').cash, 2150);
+});
+
+test('extension Tout Acheter : Départ, Prison, Parc Gratuit, Go to Jail et Taxes portent des titres achetables', () => {
   const game = createGame('EXTBUY2', 'h', { seed: 4, editionId: 'classic-fr', extensionIds: ['buy-everything'] });
   addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
   addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
   startGame(game, 'p0');
   const edition = editionOf(game.state);
-  for (const id of [0, 10, 20]) {
+  for (const id of [0, 4, 10, 20, 30, 38]) {
     assert.equal(edition.board[id].type, 'landmark', `case ${id}`);
     assert.ok(game.state.properties[id], `la case ${id} doit avoir un état de propriété`);
   }
@@ -253,7 +461,7 @@ test('extension Tout Acheter : Départ, Prison et Parc Gratuit portent un titre 
   assert.equal(edition.board[20].houseCost, undefined);
 });
 
-test('extension Tout Acheter : arriver sur le Parc Gratuit propose de l\'acheter, et le loyer se paie', () => {
+test('extension Tout Acheter : arriver sur le Parc Gratuit propose de l\'acheter, et le loyer de coin se paie', () => {
   const game = createGame('EXTBUY3', 'h', { seed: 6, editionId: 'classic-fr', extensionIds: ['buy-everything'] });
   addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
   addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
@@ -269,36 +477,42 @@ test('extension Tout Acheter : arriver sur le Parc Gratuit propose de l\'acheter
   const before = playerById(game.state, 'p1').cash;
   moveTo(game.state, 'p1', 20, false);
   resolveLanding(game.state, 'p1', {});
-  // Loyer fixe du titre : 60 €, ouvert en dette négociable comme tout loyer.
-  assert.ok(game.state.debt || playerById(game.state, 'p1').cash === before - 60);
+  // Loyer de coin (1 coin possédé) : 50 €, ouvert en dette négociable comme tout loyer.
+  assert.ok(game.state.debt || playerById(game.state, 'p1').cash === before - 50);
 });
 
-test('extension Tout Acheter : une case achetable dépassée part aux enchères', () => {
-  const game = createGame('EXTBUY4', 'h', { seed: 8, editionId: 'classic-fr', extensionIds: ['buy-everything'] });
+test('extension Tout Acheter : loyer progressif des 4 Coins (50, 100, 200, 400 €)', () => {
+  const game = createGame('EXTBUY_CORNERS', 'h', { seed: 7, editionId: 'classic-fr', extensionIds: ['buy-everything'] });
   addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
   addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
   startGame(game, 'p0');
-  game.state.auctionQueue = [];
-  moveTo(game.state, 'p0', 5, false); // franchit 1, 2, 3, 4 en chemin
-  // Les cases achetables franchies (1 et 3 ; 2 et 4 ne le sont pas) sont en file.
-  assert.deepEqual(game.state.auctionQueue, [1, 3]);
-  // La case d'arrivée, elle, n'est pas « dépassée » : elle se résout normalement.
-  assert.ok(!game.state.auctionQueue.includes(5));
+
+  game.state.properties[0].ownerId = 'p0';
+  assert.equal(rentFor(game.state, 0), 50);
+
+  game.state.properties[10].ownerId = 'p0';
+  assert.equal(rentFor(game.state, 0), 100);
+
+  game.state.properties[20].ownerId = 'p0';
+  assert.equal(rentFor(game.state, 0), 200);
+
+  game.state.properties[30].ownerId = 'p0';
+  assert.equal(rentFor(game.state, 0), 400);
 });
 
-test('extension Tout Acheter : le dé d\'Achat donne une carte du coffre sur une face gagnante', () => {
+test('extension Tout Acheter : le dé d\'Achat permet d\'acheter une carte au Coffre-Fort', () => {
   const game = createGame('EXTBUY5', 'h', { seed: 9, editionId: 'classic-fr', extensionIds: ['buy-everything'] });
   addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
   addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
   startGame(game, 'p0');
-  // Le coffre garde en permanence trois cartes retournées.
   assert.equal(game.state.saleVault.visible.length, 3);
 
   const chosen = game.state.saleVault.visible[0];
   game.state.dice.rolled = true;
-  rollBuyDie(game.state, 'p0', scriptedRng([[6]])); // face gagnante
-  assert.equal(game.state.pending.kind, 'card_choice');
-  dispatch(game, 'p0', { type: 'CARD_CHOICE', optionIndex: 0 });
+  // Face buy_card (index 0)
+  rollBuyDie(game.state, 'p0', scriptedRng([[1]]));
+  assert.equal(game.state.pending.kind, 'buy_sale_card');
+  dispatch(game, 'p0', { type: 'BUY_SALE_CARD', cardId: chosen });
   assert.deepEqual(playerById(game.state, 'p0').saleCards, [chosen]);
   // Le présentoir se recomplète aussitôt.
   assert.equal(game.state.saleVault.visible.length, 3);
@@ -311,17 +525,17 @@ test('extension Tout Acheter : le dé d\'Achat ne se lance qu\'une fois par jet'
   addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
   startGame(game, 'p0');
   game.state.dice.rolled = true;
-  assert.equal(rollBuyDie(game.state, 'p0', scriptedRng([[3]])).ok, true);
-  assert.equal(rollBuyDie(game.state, 'p0', scriptedRng([[3]])).ok, false);
+  assert.equal(rollBuyDie(game.state, 'p0', scriptedRng([[1]])).ok, true);
+  assert.equal(rollBuyDie(game.state, 'p0', scriptedRng([[1]])).ok, false);
 });
 
-test('extension Tout Acheter : une carte jaune rapporte à chaque début de tour', () => {
+test('extension Tout Acheter : une carte permanente de rente rapporte 50 € à chaque début de tour', () => {
   const game = createGame('EXTBUY7', 'h', { seed: 12, editionId: 'classic-fr', extensionIds: ['buy-everything'] });
   addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
   addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
   startGame(game, 'p0');
   const player = playerById(game.state, 'p0');
-  player.saleCards = ['sale-yellow-01']; // 50 € par tour
+  player.saleCards = ['sale-revenue-01']; // 50 € par tour
   const before = player.cash;
   game.state.currentPlayerIndex = game.state.players.findIndex((p) => p.id === 'p0');
   startTurn(game.state);
@@ -334,7 +548,7 @@ test('extension Tout Acheter : une carte verte remplie met fin à la partie sur-
   addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
   startGame(game, 'p0');
   const player = playerById(game.state, 'p0');
-  player.saleCards = ['sale-green-01']; // objectif : 2 500 € en liquide
+  player.saleCards = ['sale-cash-01']; // objectif : 2 500 € en liquide
   player.cash = 2600;
   // Une action quelconque relance advanceFlow, qui teste la condition.
   dispatch(game, game.state.pending.playerIds[0], { type: 'ROLL_DICE' });
@@ -352,22 +566,20 @@ test('extension Tout Acheter : sans la carte verte, la même fortune ne termine 
   assert.notEqual(game.state.phase, 'finished');
 });
 
-test('extensions Prison et Tout Acheter activées ensemble : une partie entière tourne', () => {
+test('extension Tout Acheter : une partie entière tourne sans blocage', () => {
   const game = createGame('EXTMIX1', 'h', {
     seed: 21,
     editionId: 'classic-fr',
-    extensionIds: ['go-to-jail', 'buy-everything'],
+    extensionIds: ['buy-everything'],
   });
-  assert.deepEqual(game.state.extensionIds, ['go-to-jail', 'buy-everything']);
+  assert.deepEqual(game.state.extensionIds, ['buy-everything']);
   addPlayer(game, { id: 'p0', name: 'Alice', token: 'chapeau' });
   addPlayer(game, { id: 'p1', name: 'Bruno', token: 'chat' });
   addPlayer(game, { id: 'p2', name: 'Chloé', token: 'bateau' });
   startGame(game, 'p0');
   const edition = editionOf(game.state);
-  // Les deux deltas cohabitent : la geôle sévère et les titres spéciaux.
-  assert.ok(edition.board.some((s) => s.type === 'super_jail'));
   assert.equal(edition.board[0].type, 'landmark');
-  assert.equal(edition.jail.bail, 100);
+  assert.equal(playerById(game.state, 'p0').cash, 2150);
   autoPlay(game, 600);
   assert.ok(game.state.turnCount > 10);
 });

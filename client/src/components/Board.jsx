@@ -246,22 +246,29 @@ function CardPiles({ state, canDraw, deckToDraw, onDraw }) {
   );
 }
 
+import FreeParkingCenterpiece from './FreeParkingCenterpiece.jsx';
+
 /** Le centre du plateau : titre, tas de cartes, dés, carte retournée. */
-function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, revealed, onAcknowledge }) {
+function Center({ state, me, onSpin, drawnCard, rolling, canDraw, deckToDraw, onDraw, revealed, onAcknowledge }) {
   const current = state.players[state.currentPlayerIndex];
+  const hasFreeParking = state.extensionIds?.includes('free-parking') || Boolean(editionFor(state).mechanics?.spinnerSectors);
+
   return (
     <div
       style={{ gridColumn: `2 / ${gridSize(state)}`, gridRow: `2 / ${gridSize(state)}` }}
       className="relative flex flex-col items-center justify-center gap-4 p-4"
     >
-      {/* La pièce maîtresse de l'édition. Elle s'efface quand une carte est
-          retournée, pour ne pas dépasser derrière. */}
+      {/* La pièce maîtresse de l'édition ou la Roulette du Parc Gratuit */}
       <div className="flex w-full justify-center transition-opacity duration-200" style={{ opacity: drawnCard ? 0 : 1 }}>
-        <Centerpiece
-          skin={editionFor(state).theming?.skin ?? 'table'}
-          title={editionFor(state).theming?.centerTitle ?? 'Monopoly'}
-          subtitle={editionFor(state).theming?.centerSubtitle ?? ''}
-        />
+        {hasFreeParking ? (
+          <FreeParkingCenterpiece state={state} me={me} onSpin={onSpin} />
+        ) : (
+          <Centerpiece
+            skin={editionFor(state).theming?.skin ?? 'table'}
+            title={editionFor(state).theming?.centerTitle ?? 'Monopoly'}
+            subtitle={editionFor(state).theming?.centerSubtitle ?? ''}
+          />
+        )}
       </div>
 
       <div className="absolute top-4 left-1/2 -translate-x-1/2">
@@ -285,11 +292,14 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
           </p>
         )}
         <Dice values={state.dice?.values} rolling={rolling} />
-        {state.settings?.freeParkingPot && state.freeParkingPot > 0 && (
-          <p className="tabular text-[11px] opacity-80" style={{ color: 'var(--color-board-ink)' }}>
-            {state.locale === 'en' ? 'Free Parking pot:' : 'Cagnotte du Parc Gratuit :'}{' '}
-            <span className="font-semibold text-[var(--color-money)]">{money(state, state.freeParkingPot)}</span>
-          </p>
+        {(state.settings?.freeParkingPot || editionFor(state).mechanics?.jackpotPot) && (state.freeParkingPot ?? 0) > 0 && (
+          <div className="flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-400/25 px-3 py-0.5 text-xs font-condensed tracking-wider shadow-sm backdrop-blur-sm">
+            <span>💰</span>
+            <span className="font-semibold text-amber-950">
+              {state.locale === 'en' ? 'Jackpot:' : 'Cagnotte :'}
+            </span>
+            <span className="tabular font-bold text-[var(--color-money)]">{money(state, state.freeParkingPot)}</span>
+          </div>
         )}
       </div>
 
@@ -339,6 +349,8 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
 
 export default function Board({
   state,
+  me,
+  onSpin,
   onSelectSpace,
   drawnCard,
   rolling = false,
@@ -384,6 +396,8 @@ export default function Board({
         ))}
         <Center
           state={state}
+          me={me}
+          onSpin={onSpin}
           drawnCard={drawnCard}
           rolling={rolling}
           canDraw={canDraw}

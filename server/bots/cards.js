@@ -285,6 +285,7 @@ export function shouldRollBuyDie(state) {
 export function saleCardToPlay(state, playerId, profile) {
   const player = playerById(state, playerId);
   for (const cardId of player.saleCards ?? []) {
+    if (player.saleCardsDrawnTurn?.[cardId] === state.turnCount) continue;
     const card = getCard(state, cardId);
     if (!card?.action) continue; // jaune (permanente) ou verte (victoire) : rien à jouer
     if (card.action.type === 'get_out_of_jail_free' && !player.inJail) continue;

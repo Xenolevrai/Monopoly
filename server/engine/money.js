@@ -130,8 +130,8 @@ export function charge(state, playerId, amount, reason, creditorId = null, optio
  * Les achats ne passent jamais par `charge` (ils débitent directement) : une
  * maison ou un terrain ne tombe donc pas dans la cagnotte, comme il se doit.
  */
-function potCollects(state) {
-  return Boolean(state.settings.freeParkingPot);
+export function potCollects(state) {
+  return Boolean(state.settings?.freeParkingPot || rulesOf(state).mechanics?.jackpotPot);
 }
 
 /**
@@ -262,33 +262,42 @@ export function finishGame(state, reason = 'la partie est arrêtée') {
   // loyer courant de chaque lieu exploré : ce sont les lieux qui font le score,
   // pas le patrimoine immobilier.
   const byExploration = edition.winCondition === 'allLocationsExplored';
+  const byJackpot = edition.winCondition === 'allOwnedOrBankruptcy';
+  const disqualifyInJail = Boolean(edition.mechanics?.disqualifyInJailAtEnd);
 
   const standings = state.players
     .map((player) => {
       const owned = propertiesOf(state, player.id);
-      const bonus = byExploration
+      const propPrices = owned.reduce((sum, prop) => sum + (getSpace(state, prop.spaceId).price ?? 0), 0);
+      const bonus = (byExploration || byJackpot)
         ? owned.reduce((sum, prop) => sum + rentFor(state, prop.spaceId, { diceTotal: 7 }), 0)
         : 0;
+      const inJail = Boolean(player.inJail || player.superJail);
       return {
         playerId: player.id,
         name: player.name,
         bankrupt: player.bankrupt,
+        inJail,
         cash: player.cash,
         properties: owned.length,
         buildings: owned.reduce((n, prop) => n + (prop.hotel ? 5 : prop.houses), 0),
         bonus,
         worth: byExploration
           ? player.cash + bonus
-          : player.bankrupt
-            ? 0
-            : netWorth(state, player.id),
+          : byJackpot
+            ? (player.bankrupt ? 0 : player.cash + propPrices + bonus)
+            : player.bankrupt
+              ? 0
+              : netWorth(state, player.id),
       };
     })
-    // Une joueuse éliminée passe en bas du tableau — sauf à l'édition à points,
-    // où personne n'est éliminée et où seul le total compte.
-    .sort((a, b) =>
-      byExploration ? b.worth - a.worth : Number(a.bankrupt) - Number(b.bankrupt) || b.worth - a.worth,
-    );
+    // Une joueuse éliminée ou enfermée passe en bas du tableau
+    .sort((a, b) => {
+      if (byExploration) return b.worth - a.worth;
+      if (Number(a.bankrupt) !== Number(b.bankrupt)) return Number(a.bankrupt) - Number(b.bankrupt);
+      if (disqualifyInJail && Number(a.inJail) !== Number(b.inJail)) return Number(a.inJail) - Number(b.inJail);
+      return b.worth - a.worth;
+    });
 
   state.phase = 'finished';
   state.standings = standings;
@@ -341,10 +350,28 @@ export function returnBuildingsToBank(state, prop) {
  * partie s'arrête net dès que le dernier lieu du plateau a été exploré, et c'est
  * le total de points qui départage.
  *
+ * `allOwnedOrBankruptcy` — Parc Gratuit Jackpot : fin dès que toutes les cases
+ * sont achetées OU dès qu'une joueuse fait faillite.
+ *
  * @returns {boolean} true si la partie est terminée
  */
 export function checkGameOver(state) {
   const edition = rulesOf(state);
+
+  if (edition.winCondition === 'allOwnedOrBankruptcy') {
+    const remaining = ownableSpaces(state).filter((space) => !state.properties[space.id]?.ownerId);
+    const anyBankrupt = state.players.some((p) => p.bankrupt);
+    if (remaining.length === 0 || anyBankrupt) {
+      finishGame(state, remaining.length === 0 ? say(state, 'allCaptured') : say(state, 'standingBankrupt', { name: state.players.find((p) => p.bankrupt)?.name ?? '' }));
+      return true;
+    }
+    const standing = activePlayers(state);
+    if (standing.length <= 1) {
+      finishGame(state, standing[0] ? say(state, 'lastStanding', { name: standing[0].name }) : say(state, 'noneLeft'));
+      return true;
+    }
+    return false;
+  }
 
   // Deux fins possibles, la première atteinte l'emporte : tout le plateau
   // capturé, ou une seule joueuse encore debout. Le classement se fait au

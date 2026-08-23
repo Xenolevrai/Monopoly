@@ -94,6 +94,17 @@ export function rentFor(state, spaceId, opts = {}) {
     return (opts.diceTotal ?? 0) * factor * multiplier;
   }
 
+  if (space.group === 'corners') {
+    const corners = (getGroup(state, 'corners')?.spaces ?? []).filter((id) => state.properties[id]?.ownerId === prop.ownerId).length;
+    const rentArray = space.rent ?? [50, 100, 200, 400];
+    const baseRent = rentArray[Math.max(0, Math.min(corners - 1, rentArray.length - 1))] ?? 50;
+    return baseRent * multiplier;
+  }
+
+  if (space.type === 'landmark') {
+    return (space.rent?.[0] ?? 50) * multiplier;
+  }
+
   // Terrain : loyer indexé par le niveau de construction.
   const level = buildingLevel(prop);
   if (level > 0) return space.rent[level] * multiplier;
@@ -194,6 +205,9 @@ export function canMortgage(state, playerId, spaceId) {
   const prop = state.properties[spaceId];
   if (!prop || prop.ownerId !== playerId) return { ok: false, reason: "Cette propriété n'est pas à vous." };
   if (prop.mortgaged) return { ok: false, reason: 'Déjà hypothéquée.' };
+  if (space.mortgage === 0 || (config(state).mechanics?.noMortgageSpecialDeeds && space.type === 'landmark')) {
+    return { ok: false, reason: "Ce titre de propriété spécial ne peut pas être hypothéqué." };
+  }
 
   const groupSpaces = space.group ? getGroup(state, space.group).spaces : [spaceId];
   const built = groupSpaces.filter((id) => buildingLevel(state.properties[id]) > 0);

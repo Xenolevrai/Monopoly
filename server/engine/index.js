@@ -23,6 +23,16 @@ import {
   checkSaleVictory,
   getCard,
   applyCardAction,
+  spinFreeParking,
+  playBonusCard,
+  rollEscapeDie,
+  rollHeistDie,
+  playCorruptionCard,
+  playSuperCorruptionCard,
+  buySaleCard,
+  forceDiscardSaleCard,
+  refreshSaleVault,
+  playSaleCard,
 } from './cards.js';
 import { declareBankruptcy, checkGameOver, settleDebt, finishGame } from './money.js';
 import { buyProperty, mortgage, unmortgage, buildHouse, sellBuilding } from './property.js';
@@ -41,6 +51,10 @@ import {
   rollBuyDie,
   rerollDice,
   keepRoll,
+  useSpinChip,
+  chooseRentOrChip,
+  leaveSuperJail,
+  stayInJail,
 } from './turn.js';
 
 export * from './queries.js';
@@ -306,15 +320,23 @@ function applyAction(game, state, rng, player, action) {
       return keepRoll(state, playerId);
 
     case 'PAY_BAIL':
-      if (pending.kind !== 'roll' || !isMine) return refuse('Action impossible maintenant.');
+      if ((pending.kind !== 'roll' && pending.kind !== 'jail_decision') || !isMine) return refuse('Action impossible maintenant.');
       return payBail(state, playerId);
 
     case 'USE_JAIL_CARD':
-      if (pending.kind !== 'roll' || !isMine) return refuse('Action impossible maintenant.');
+      if ((pending.kind !== 'roll' && pending.kind !== 'jail_decision') || !isMine) return refuse('Action impossible maintenant.');
       return useJailCard(state, playerId);
 
     case 'END_TURN':
-      if (pending.kind !== 'end_turn' || !isMine) return refuse('Vous ne pouvez pas finir votre tour maintenant.');
+      if (
+        (pending.kind !== 'end_turn' &&
+          pending.kind !== 'buy_sale_card' &&
+          pending.kind !== 'force_discard_sale_card' &&
+          pending.kind !== 'refresh_sale_vault') ||
+        !isMine
+      ) {
+        return refuse('Vous ne pouvez pas finir votre tour maintenant.');
+      }
       return endTurn(state, playerId, rng);
 
     // Jet facultatif proposé par `mechanics.buyDie`, une fois la case résolue.
@@ -322,22 +344,27 @@ function applyAction(game, state, rng, player, action) {
       if (pending.kind !== 'end_turn' || !isMine) return refuse("Ce n'est pas le moment de lancer le dé d'Achat.");
       return rollBuyDie(state, playerId, rng);
 
-    // Carte du coffre à usage unique, jouée quand sa détentrice le décide.
+    // Cartes Vente & Dé d'Achat (Extension Tout Acheter)
+    case 'BUY_SALE_CARD': {
+      if (pending.kind !== 'buy_sale_card' || !isMine) return refuse("Aucun achat de carte Vente en attente.");
+      return buySaleCard(state, playerId, action.cardId, action.discardCardId);
+    }
+
+    case 'FORCE_DISCARD_SALE_CARD': {
+      if (pending.kind !== 'force_discard_sale_card' || !isMine) return refuse("Aucune défausse en attente.");
+      return forceDiscardSaleCard(state, playerId, action.targetPlayerId, action.targetCardId);
+    }
+
+    case 'REFRESH_SALE_VAULT': {
+      if (pending.kind !== 'refresh_sale_vault' || !isMine) return refuse("Aucun renouvellement en attente.");
+      return refreshSaleVault(state, playerId, action.cardId);
+    }
+
     case 'PLAY_SALE_CARD': {
       const held = player.saleCards ?? [];
       if (!held.includes(action.cardId)) return refuse("Vous n'avez pas cette carte.");
-      const card = getCard(state, action.cardId);
-      if (!card?.action) return refuse('Cette carte ne se joue pas.');
       if (!isCurrent || state.debt) return refuse('Action réservée à votre tour.');
-      player.saleCards = held.filter((id) => id !== action.cardId);
-      log(state, 'card', say(state, 'playsSaleCard', { name: player.name, text: card.text }), {
-        playerId,
-        cardId: card.id,
-      });
-      applyCardAction(state, playerId, card.action, {
-        diceTotal: (state.dice.values ?? []).reduce((a, b) => a + b, 0),
-      });
-      return { ok: true };
+      return playSaleCard(state, playerId, action.cardId, action.payload, rng);
     }
 
     // — Achat / enchère —————————————————————————————————————
@@ -365,8 +392,93 @@ function applyAction(game, state, rng, player, action) {
       if (pending.kind !== 'auction_bid' || !isMine) return refuse("Ce n'est pas à vous d'enchérir.");
       return passBid(state, playerId);
 
-    // — Cartes ——————————————————————————————————————————
+    // — Cartes & Roulette ——————————————————————————————
+    case 'SPIN_SPINNER': {
+      if (pending.kind !== 'spin_spinner' || !isMine) return refuse('Aucun tour de roulette en attente.');
+      state.pending = { kind: null, playerIds: [] };
+      const res = spinFreeParking(state, playerId, rng, action);
+      finishResolution(state);
+      return res;
+    }
+
+    case 'USE_SPIN_CHIP': {
+      if (!isCurrent || state.debt) return refuse('Action réservée à votre tour.');
+      return useSpinChip(state, playerId, rng);
+    }
+
+    case 'CHOOSE_RENT_OR_CHIP': {
+      if (pending.kind !== 'choose_rent_or_chip' || !isMine) return refuse('Aucun choix de loyer en attente.');
+      const res = chooseRentOrChip(state, playerId, action.choice);
+      finishResolution(state);
+      return res;
+    }
+
+    case 'PLAY_BONUS_CARD': {
+      const held = player.bonusCards ?? [];
+      if (!held.includes(action.cardId)) return refuse("Vous n'avez pas cette carte Bonus.");
+      const card = getCard(state, action.cardId);
+      if (!card) return refuse('Carte inconnue.');
+      if (card.action?.type !== 'cancel_bonus' && (!isCurrent || state.debt)) {
+        return refuse('Action réservée à votre tour.');
+      }
+      return playBonusCard(state, playerId, action.cardId, action.payload, rng);
+    }
+
+    case 'ROLL_ESCAPE_DIE': {
+      if (pending.kind !== 'roll_escape_die' || !isMine) return refuse('Aucun jet de dé Évasion en attente.');
+      const res = rollEscapeDie(state, playerId, rng);
+      finishResolution(state);
+      return res;
+    }
+
+    case 'ROLL_HEIST_DIE': {
+      if (pending.kind !== 'roll_heist_die' || !isMine) return refuse('Aucun jet de dé Casse en attente.');
+      const res = rollHeistDie(state, playerId, rng);
+      finishResolution(state);
+      return res;
+    }
+
+    case 'LEAVE_SUPER_JAIL': {
+      if (pending.kind !== 'leave_super_jail' || !isMine) return refuse('Aucune sortie de Super Prison en attente.');
+      return leaveSuperJail(state, playerId, action.choice);
+    }
+
+    case 'STAY_IN_JAIL': {
+      if ((pending.kind !== 'jail_decision' && pending.kind !== 'leave_super_jail') || !isMine) {
+        return refuse('Vous ne pouvez pas choisir de rester en prison actuellement.');
+      }
+      return stayInJail(state, playerId);
+    }
+
+    case 'PLAY_CORRUPTION_CARD': {
+      const held = player.corruptionCards ?? [];
+      if (!held.includes(action.cardId)) return refuse("Vous n'avez pas cette carte Corruption.");
+      const card = getCard(state, action.cardId);
+      if (!card) return refuse('Carte inconnue.');
+      if (!card.reaction && (!isCurrent || state.debt)) {
+        return refuse('Action réservée à votre tour.');
+      }
+      return playCorruptionCard(state, playerId, action.cardId, action.payload, rng);
+    }
+
+    case 'PLAY_SUPER_CORRUPTION_CARD': {
+      const held = player.superCorruptionCards ?? [];
+      if (!held.includes(action.cardId)) return refuse("Vous n'avez pas cette carte Super Corruption.");
+      const card = getCard(state, action.cardId);
+      if (!card) return refuse('Carte inconnue.');
+      if (!card.reaction && (!isCurrent || state.debt)) {
+        return refuse('Action réservée à votre tour.');
+      }
+      return playSuperCorruptionCard(state, playerId, action.cardId, action.payload, rng);
+    }
+
     case 'DRAW_CARD': {
+      if (pending.kind === 'spin_spinner' && isMine) {
+        state.pending = { kind: null, playerIds: [] };
+        const res = spinFreeParking(state, playerId, rng, action);
+        finishResolution(state);
+        return res;
+      }
       if (pending.kind !== 'draw_card' || !isMine) return refuse('Aucune carte à piocher.');
       const card = drawCard(state, playerId, pending.payload.deck, {
         diceTotal: pending.payload.diceTotal,

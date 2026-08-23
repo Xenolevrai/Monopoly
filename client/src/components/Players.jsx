@@ -74,10 +74,40 @@ function PlayerCard({ player, state, isLocal, isActingHere, isCurrent, onFocus }
             {faction.label}
           </span>
         )}
+        {state.dealMobileOwnerId === player.id && (
+          <span className="rounded bg-amber-400/30 text-amber-900 border border-amber-500/40 px-1.5 py-0.5 font-bold uppercase tracking-wider text-[9px] shadow-sm">
+            🚗 Deal Mobile
+          </span>
+        )}
+        {(player.spinChips ?? 0) > 0 && (
+          <span className="rounded bg-yellow-400/20 text-yellow-900 border border-yellow-500/30 px-1 py-0.5 font-semibold text-[9px]">
+            🪙 {player.spinChips} Spin
+          </span>
+        )}
+        {player.bonusCards?.length > 0 && (
+          <span className="rounded bg-purple-400/20 text-purple-900 border border-purple-500/30 px-1 py-0.5 font-semibold text-[9px]">
+            🎴 {player.bonusCards.length} Bonus
+          </span>
+        )}
+        {player.corruptionCards?.length > 0 && (
+          <span className="rounded bg-orange-400/20 text-orange-900 border border-orange-500/30 px-1 py-0.5 font-semibold text-[9px]">
+            ⚖️ {player.corruptionCards.length} Corruption
+          </span>
+        )}
+        {player.superCorruptionCards?.length > 0 && (
+          <span className="rounded bg-blue-500/20 text-blue-900 border border-blue-600/30 px-1 py-0.5 font-semibold text-[9px]">
+            ⚡ {player.superCorruptionCards.length} Super Corr
+          </span>
+        )}
         {player.bankrupt && <span className="text-[var(--color-accent)]">{t('eliminated')}</span>}
-        {player.inJail && (
+        {player.superJail && (
+          <span className="rounded bg-blue-500/20 text-blue-900 border border-blue-600/30 px-1 py-0.5 font-semibold text-[9px]">
+            ⚡ {t('inSuperJailFor', player.superJailTurns, 3)}
+          </span>
+        )}
+        {!player.superJail && player.inJail && (
           <span className="text-[var(--color-accent)]">
-            {t('inJailFor', player.jailTurns, editionFor(state).jail.maxTurns)}
+            {t('inJailFor', player.jailTurns, editionFor(state).jail?.maxTurns ?? 3)}
           </span>
         )}
         {!player.connected && !player.bankrupt && (

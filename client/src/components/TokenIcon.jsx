@@ -525,6 +525,36 @@ const SHAPES = {
     </>
   ),
 
+  // Deal Mobile : roadster décapotable doré officiel de l'extension Parc Gratuit Jackpot
+  deal_mobile: (
+    <>
+      {/* Carrosserie roadster profil */}
+      <path d="M10 36c0-2.2 1.8-4 4-4h6l4-8c1.2-2.4 3.6-4 6.4-4h13.2c2.8 0 5.2 1.6 6.4 4l4 8h6c2.2 0 4 1.8 4 4v7c0 1.1-.9 2-2 2h-4.4a7 7 0 01-13.2 0H24.6a7 7 0 01-13.2 0H10a2 2 0 01-2-2v-7z" />
+      {/* Pare-brise et habitacle */}
+      <path d="M24.8 30l3.2-6.4c.6-1.2 1.8-2 3.2-2h9.6c1.4 0 2.6.8 3.2 2l3.2 6.4H24.8z" fill="#fff" opacity=".4" />
+      {/* Roue avant */}
+      <circle cx="18" cy="43" r="5.5" fill="#222" />
+      <circle cx="18" cy="43" r="2.8" fill="#ffd700" opacity=".9" />
+      {/* Roue arrière */}
+      <circle cx="46" cy="43" r="5.5" fill="#222" />
+      <circle cx="46" cy="43" r="2.8" fill="#ffd700" opacity=".9" />
+      {/* Phare avant & calandre */}
+      <circle cx="56" cy="36" r="1.8" fill="#fff" opacity=".9" />
+      <rect x="54" y="38" width="2" height="4" rx="1" fill="#fff" opacity=".5" />
+    </>
+  ),
+  dealmobile: (
+    <>
+      <path d="M10 36c0-2.2 1.8-4 4-4h6l4-8c1.2-2.4 3.6-4 6.4-4h13.2c2.8 0 5.2 1.6 6.4 4l4 8h6c2.2 0 4 1.8 4 4v7c0 1.1-.9 2-2 2h-4.4a7 7 0 01-13.2 0H24.6a7 7 0 01-13.2 0H10a2 2 0 01-2-2v-7z" />
+      <path d="M24.8 30l3.2-6.4c.6-1.2 1.8-2 3.2-2h9.6c1.4 0 2.6.8 3.2 2l3.2 6.4H24.8z" fill="#fff" opacity=".4" />
+      <circle cx="18" cy="43" r="5.5" fill="#222" />
+      <circle cx="18" cy="43" r="2.8" fill="#ffd700" opacity=".9" />
+      <circle cx="46" cy="43" r="5.5" fill="#222" />
+      <circle cx="46" cy="43" r="2.8" fill="#ffd700" opacity=".9" />
+      <circle cx="56" cy="36" r="1.8" fill="#fff" opacity=".9" />
+      <rect x="54" y="38" width="2" height="4" rx="1" fill="#fff" opacity=".5" />
+    </>
+  ),
 };
 
 /**

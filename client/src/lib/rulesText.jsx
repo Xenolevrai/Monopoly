@@ -17,11 +17,60 @@ const FR = {
       grand total l'emporte. Personne n'est éliminée en cours de route.
     </>
   ),
+  goalJackpot: () => (
+    <>
+      La partie s'arrête immédiatement <strong>dès que toutes les cases sont achetées</strong> ou{' '}
+      <strong>dès qu'une joueuse fait faillite</strong>. Le classement est établi par la somme :{' '}
+      argent en liquide + prix imprimé des propriétés + loyer courant de chaque propriété.
+    </>
+  ),
   goalLast: () => (
     <>
       Être la dernière encore solvable. Une joueuse qui ne peut plus payer fait faillite et quitte la
       partie ; celle qui reste gagne. On peut aussi arrêter d'un commun accord : le classement se
       fait alors au patrimoine.
+    </>
+  ),
+  jackpotTitle: 'Parc Gratuit Jackpot',
+  jackpotMain: () => (
+    <>
+      Tout versement à la Banque alimente la <strong>Cagnotte</strong>. Tomber pile sur le Parc
+      Gratuit rapporte l'intégralité de la Cagnotte, 1 carte Bonus, et le <strong>Deal Mobile</strong>{' '}
+      (terrains libres gratuits et dispense de loyers !).
+    </>
+  ),
+  spinnerMain: () => (
+    <>
+      Chaque tour de roulette rapporte <strong>1 carte Bonus</strong>. Les propriétaires peuvent
+      aussi choisir de prendre 1 jeton Spin à la Banque au lieu de réclamer un loyer.
+    </>
+  ),
+  goToJailTitle: 'Extension Prison (Go to Jail)',
+  goToJailMain: () => (
+    <>
+      Les cases Taxes envoient directement en <strong>Prison</strong>. Rester en cellule rapporte 1 carte Corruption
+      par tour. Les dés <strong>Évasion</strong> (sur les cases Chance) et <strong>Casse</strong> (sur les cases Caisse de communauté)
+      permettent de rafler des cartes et du liquide ou d'être envoyé derrière les barreaux.
+    </>
+  ),
+  superJailMain: () => (
+    <>
+      La case 30 devient la <strong>Super Prison</strong>, où l'on ne peut être envoyé que par un adversaire.
+      Elle rapporte de puissantes <strong>cartes Super Corruption</strong> chaque tour. Pour en sortir : payer 300 € ou donner ses cartes collectées au commanditaire.
+      <strong>Attention :</strong> toute joueuse encore en cellule à la fin de partie ne peut pas gagner !
+    </>
+  ),
+  buyEverythingTitle: 'Extension Tout Acheter',
+  buyEverythingMain: () => (
+    <>
+      Tout est à vendre ! Les 4 cases Coins (<strong>Départ, Prison, Parc Gratuit, Allez en prison</strong>) forment
+      le groupe des Coins (loyer de 50 € à 400 € selon le nombre détenu). Les cases Taxes et Spéciales deviennent également achetables.
+    </>
+  ),
+  saleVaultRules: () => (
+    <>
+      Après votre déplacement, lancez le <strong>Dé d'Achat</strong> pour acheter une carte au <strong>Coffre-Fort</strong> (limite de 3 cartes en main),
+      forcer une adversaire à défausser ou renouveler le présentoir. Les cartes <strong>Vertes</strong> déclenchent une <strong>victoire immédiate</strong> !
     </>
   ),
 
@@ -101,11 +150,60 @@ const EN = {
       wins. Nobody is knocked out along the way.
     </>
   ),
+  goalJackpot: () => (
+    <>
+      The game ends immediately <strong>when all spaces are owned</strong> or{' '}
+      <strong>when any player goes bankrupt</strong>. Final ranking is: cash + printed property space
+      prices + current rent of all owned properties.
+    </>
+  ),
   goalLast: () => (
     <>
       Be the last one still solvent. A player who can no longer pay goes bankrupt and leaves the
       game; whoever remains wins. You can also stop by mutual agreement: the ranking then goes by
       total worth.
+    </>
+  ),
+  jackpotTitle: 'Free Parking Jackpot',
+  jackpotMain: () => (
+    <>
+      All payments to the Bank go into the <strong>Jackpot</strong>. Landing on Free Parking by exact
+      count collects the entire Jackpot, 1 Bonus card, and the <strong>Deal Mobile</strong> (free
+      unowned properties & skip paying rent!).
+    </>
+  ),
+  spinnerMain: () => (
+    <>
+      Every spin of the spinner gives <strong>1 Bonus card</strong>. Landlords can also choose to
+      take 1 Spin chip from the Bank instead of charging rent.
+    </>
+  ),
+  goToJailTitle: 'Go to Jail Expansion',
+  goToJailMain: () => (
+    <>
+      Tax spaces send you straight to <strong>Jail</strong>. Staying in your cell earns you 1 Corruption card
+      per turn. The <strong>Escape Die</strong> (on Chance spaces) and <strong>Heist Die</strong> (on Community Chest spaces)
+      let you score cards and cash or get thrown behind bars.
+    </>
+  ),
+  superJailMain: () => (
+    <>
+      Space 30 becomes <strong>Super Jail</strong>, where you can only be sent by another player.
+      It grants powerful <strong>Super Corruption cards</strong> each turn. To get out: pay $300 or give your collected cards to the sender.
+      <strong>Important:</strong> any player still in Jail or Super Jail when the game ends cannot win!
+    </>
+  ),
+  buyEverythingTitle: 'Buy Everything Expansion',
+  buyEverythingMain: () => (
+    <>
+      Everything is for sale! The 4 Corner spaces (<strong>GO, Jail, Free Parking, Go to Jail</strong>) form
+      the Corners group (rents from $50 to $400 depending on count owned). Taxes and Special spaces are also buyable.
+    </>
+  ),
+  saleVaultRules: () => (
+    <>
+      After moving, roll the <strong>Buy Die</strong> to purchase abilities from the <strong>Sale Vault</strong> (hand limit of 3 cards),
+      force an opponent to discard or refresh the vault. <strong>Green</strong> cards trigger an <strong>instant win</strong>!
     </>
   ),
 

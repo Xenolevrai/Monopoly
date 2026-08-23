@@ -6,12 +6,44 @@
  * En mode « même ordinateur », toutes les actions sont jouées au nom de `me`,
  * la joueuse du poste à qui le jeu demande quelque chose.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { boardOf, groupsOf, money, buildingLabels, editionFor } from '../lib/board.js';
 import { useT } from '../lib/i18n.js';
 import { sendAction } from '../lib/socket.js';
 import TokenIcon from './TokenIcon.jsx';
 import { BillStack } from './Money.jsx';
+import CardTargetModal from './CardTargetModal.jsx';
+
+function cardNeedsTarget(card) {
+  const type = card?.action?.type ?? card?.ability?.type;
+  return [
+    'free_property',
+    'take_two',
+    'free_house',
+    'shortcut',
+    'trade_in',
+    'go_green',
+    'bank_fraud',
+    'creative_zoning',
+    'money_laundering',
+    'on_the_lam',
+    'bait_switch',
+    'swindle',
+    'insider_trading',
+    'snitch',
+    'framed',
+    'loan_shark',
+    'auction_hoax',
+    'identity_theft',
+    'good_ol_scam',
+    'blackmail',
+    'greasy_palms',
+    'long_con',
+    'forgery',
+    'teleport',
+    'swap_property',
+  ].includes(type);
+}
 
 function Button({ children, onClick, tone = 'primary', disabled, className = '' }) {
   const tones = {
@@ -48,53 +80,1021 @@ function cardIndexOf(state) {
  * détient. Ne s'affiche que si la partie en a un — le serveur l'annonce en
  * posant `state.saleVault`, le client ne connaît aucune extension par son nom.
  */
-function SaleVault({ state, me, actor }) {
+function SaleVault({ state, me, actor, onPlayCard }) {
   const t = useT(state);
   if (!state.saleVault) return null;
   const cards = cardIndexOf(state);
   const held = me?.saleCards ?? [];
-  const colors = { red: '#8c2b2b', yellow: '#b08d3f', green: '#2f6b45' };
+  const drawnTurns = me?.saleCardsDrawnTurn ?? {};
 
   return (
-    <div className="space-y-2 rounded border border-black/10 bg-black/5 p-2">
-      <p className="font-condensed text-xs uppercase tracking-wide opacity-70">{t('saleVault')}</p>
-      <ul className="space-y-1">
-        {state.saleVault.visible.map((cardId) => (
-          <li key={cardId} className="flex gap-2 text-xs leading-snug">
-            <span
-              aria-hidden="true"
-              className="mt-1 h-2 w-2 shrink-0 rounded-full"
-              style={{ background: colors[cards[cardId]?.color] ?? '#666' }}
-            />
-            <span>{cards[cardId]?.text ?? cardId}</span>
-          </li>
-        ))}
-      </ul>
+    <div className="space-y-3 rounded-lg border-2 border-emerald-600/40 bg-gradient-to-b from-emerald-50/80 to-green-50/50 p-3 shadow-md">
+      {/* Présentoir du Coffre-Fort (3 cartes visibles) */}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1.5 font-condensed text-xs font-bold uppercase tracking-wider text-emerald-950">
+            <span>🗄️</span>
+            <span>{t('saleVault')}</span>
+          </div>
+          <span className="text-[10px] text-emerald-800 font-semibold uppercase">3 cartes en vente</span>
+        </div>
+
+        <div className="grid gap-1.5 sm:grid-cols-3">
+          {(state.saleVault.visible ?? []).map((cardId) => {
+            const card = cards[cardId];
+            const price = card?.price ?? 150;
+            const tagLabel = card?.cardType === 'single_use' ? t('singleUse') : card?.cardType === 'ability' ? t('ability') : t('instantWin');
+            const borderCol = card?.cardType === 'single_use' ? 'border-stone-300 bg-stone-50/90' : card?.cardType === 'ability' ? 'border-amber-300 bg-amber-50/90' : 'border-emerald-400 bg-emerald-50/90';
+            const badgeBg = card?.cardType === 'single_use' ? 'bg-stone-200 text-stone-800' : card?.cardType === 'ability' ? 'bg-amber-200 text-amber-900' : 'bg-emerald-200 text-emerald-900';
+
+            return (
+              <div
+                key={cardId}
+                className={`flex flex-col justify-between rounded-md border p-2 text-xs shadow-sm ${borderCol}`}
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="font-bold text-ink truncate text-[11px]">{card?.title ?? cardId}</span>
+                    <span className="font-extrabold text-emerald-800 shrink-0 text-[10px]">{money(state, price)}</span>
+                  </div>
+                  <span className={`inline-block text-[9px] font-condensed font-bold uppercase px-1 py-0.2 rounded ${badgeBg}`}>
+                    {tagLabel}
+                  </span>
+                  <p className="text-[10px] text-ink-soft leading-tight line-clamp-3">{card?.text}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main de cartes Vente détenues par la joueuse (Max 3) */}
       {held.length > 0 && (
-        <>
-          <p className="font-condensed text-xs uppercase tracking-wide opacity-70">{t('saleCards')}</p>
-          <ul className="space-y-1">
-            {held.map((cardId) => (
-              <li key={cardId} className="flex items-start gap-2 text-xs leading-snug">
-                <span
-                  aria-hidden="true"
-                  className="mt-1 h-2 w-2 shrink-0 rounded-full"
-                  style={{ background: colors[cards[cardId]?.color] ?? '#666' }}
+        <div className="space-y-1.5 border-t border-emerald-200/80 pt-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 font-condensed text-xs font-bold uppercase tracking-wider text-emerald-950">
+              <span>🃏</span>
+              <span>{t('saleCards')} ({held.length}/3)</span>
+            </div>
+          </div>
+
+          <div className="grid gap-1.5">
+            {held.map((cardId) => {
+              const card = cards[cardId];
+              const drawnThisTurn = drawnTurns[cardId] === state.turnCount;
+              const isSingleUse = card?.cardType === 'single_use' || card?.action;
+              const isTurn = state.pending?.playerIds?.includes(me?.id) && state.pending?.kind === 'end_turn';
+              const canPlay = isTurn && isSingleUse && !drawnThisTurn;
+
+              return (
+                <div
+                  key={cardId}
+                  className="flex items-center gap-2.5 rounded-md border border-emerald-300 bg-white p-2 text-xs shadow-sm"
+                >
+                  <span className="text-base">{card?.cardType === 'instant_win' ? '🏆' : card?.cardType === 'ability' ? '⭐' : '⚡'}</span>
+                  <div className="flex-1 space-y-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-bold text-emerald-950">{card?.title ?? cardId}</p>
+                      <span className="text-[9px] font-condensed font-bold uppercase text-ink-soft">
+                        {card?.cardType === 'single_use' ? t('singleUse') : card?.cardType === 'ability' ? t('ability') : t('instantWin')}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-ink-soft leading-tight">{card?.text}</p>
+                    {drawnThisTurn && isSingleUse && (
+                      <p className="text-[10px] text-amber-700 italic">{t('cardWaitNextTurn')}</p>
+                    )}
+                  </div>
+                  {canPlay && (
+                    <Button
+                      tone="primary"
+                      className="!px-2.5 !py-1 !text-xs font-bold !bg-emerald-600 hover:!bg-emerald-700 !text-white shrink-0"
+                      onClick={() => onPlayCard ? onPlayCard(card, 'PLAY_SALE_CARD', cardId) : sendAction({ type: 'PLAY_SALE_CARD', cardId }, actor)}
+                    >
+                      {t('playCard')}
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const SPINNER_SECTORS = [
+  { id: 'red-50', color: '#b91c1c', bg: '#dc2626', labelFr: '-50 €', labelEn: '-$50', subFr: 'au Jackpot', subEn: 'to Jackpot' },
+  { id: 'green-dealmobile', color: '#15803d', bg: '#16a34a', labelFr: 'DEAL MOBILE', labelEn: 'DEAL MOBILE', subFr: 'Voiture dorée', subEn: 'Golden Car' },
+  { id: 'red-100', color: '#b91c1c', bg: '#dc2626', labelFr: '-100 €', labelEn: '-$100', subFr: 'au Jackpot', subEn: 'to Jackpot' },
+  { id: 'green-jackpot', color: '#15803d', bg: '#16a34a', labelFr: 'JACKPOT !', labelEn: 'JACKPOT!', subFr: 'Tout ramasser', subEn: 'Collect All' },
+  { id: 'red-150', color: '#b91c1c', bg: '#dc2626', labelFr: '-150 €', labelEn: '-$150', subFr: 'au Jackpot', subEn: 'to Jackpot' },
+  { id: 'green-house', color: '#15803d', bg: '#16a34a', labelFr: 'MAISON', labelEn: 'FREE HOUSE', subFr: 'Gratuite', subEn: 'Free Build' },
+  { id: 'red-200', color: '#b91c1c', bg: '#dc2626', labelFr: '-200 €', labelEn: '-$200', subFr: 'au Jackpot', subEn: 'to Jackpot' },
+  { id: 'green-property', color: '#15803d', bg: '#16a34a', labelFr: 'ACHAT LIBRE', labelEn: 'BUY ANY 1', subFr: '1 Propriété', subEn: '1 Property' },
+];
+
+function FreeParkingSpinnerComponent({ state, actor }) {
+  const t = useT(state);
+  const isEn = state.locale === 'en';
+  const [spinning, setSpinning] = useState(false);
+  const [rotation, setRotation] = useState(0);
+  const [showResult, setShowResult] = useState(false);
+
+  const lastSpin = state.freeParkingSpinner;
+  const targetIndex = lastSpin?.sectorIndex ?? 0;
+
+  // Quand un résultat arrive ou qu'on clique
+  useEffect(() => {
+    if (lastSpin?.timestamp && !spinning) {
+      // Rotation exacte pour aligner le secteur gagnant sous l'aiguille du haut (270°)
+      const exactAngle = 360 * 5 + (247.5 - targetIndex * 45);
+      setRotation(exactAngle);
+      setShowResult(true);
+    }
+  }, [lastSpin?.timestamp, targetIndex]);
+
+  const handleSpin = () => {
+    if (spinning) return;
+    setSpinning(true);
+    setShowResult(false);
+
+    // Déclenchement visuel d'une rotation rapide avec plusieurs tours complets
+    const extraRounds = 5 + Math.floor(Math.random() * 3);
+    const estimatedAngle = rotation + extraRounds * 360 + Math.floor(Math.random() * 360);
+    setRotation(estimatedAngle);
+
+    sendAction({ type: 'SPIN_SPINNER' }, actor);
+
+    setTimeout(() => {
+      setSpinning(false);
+      setShowResult(true);
+    }, 2900);
+  };
+
+  const wonSector = lastSpin?.sector ?? (targetIndex != null ? SPINNER_SECTORS[targetIndex] : null);
+  const isGreen = wonSector?.bg === '#16a34a';
+
+  return (
+    <div className="flex flex-col items-center gap-3.5 rounded-xl border-2 border-amber-500/60 bg-gradient-to-b from-amber-50 via-amber-100/70 to-yellow-50/90 p-4 shadow-xl backdrop-blur-sm casino-glow">
+      <div className="flex items-center gap-2">
+        <span className="text-base animate-bounce">🎰</span>
+        <span className="font-condensed text-sm font-bold uppercase tracking-widest text-amber-950">
+          {t('freeParkingSpinnerTitle')}
+        </span>
+        <span className="text-base animate-bounce">🎰</span>
+      </div>
+
+      {/* Roulette Casino SVG avec clous et ampoules lumineuses */}
+      <div className="relative h-60 w-60 drop-shadow-2xl">
+        {/* Aiguille supérieure avec clic/battement */}
+        <div className="absolute left-1/2 -top-2.5 z-30 -translate-x-1/2">
+          <div className={spinning ? 'needle-ticking' : ''}>
+            <svg width="26" height="32" viewBox="0 0 24 28">
+              <defs>
+                <linearGradient id="needle-grad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stopColor="#f59e0b" />
+                  <stop offset="50%" stopColor="#ffd700" />
+                  <stop offset="100%" stopColor="#b45309" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M12 27 L3 5 Q12 1 21 5 Z"
+                fill="url(#needle-grad)"
+                stroke="#78350f"
+                strokeWidth="1.8"
+                filter="drop-shadow(0 3px 5px rgba(0,0,0,0.6))"
+              />
+              <circle cx="12" cy="7" r="3.2" fill="#ffffff" stroke="#78350f" strokeWidth="1" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Roue tournante */}
+        <svg
+          viewBox="0 0 200 200"
+          className="h-full w-full"
+          style={{
+            transform: `rotate(${rotation}deg)`,
+            transition: spinning || lastSpin ? 'transform 2.8s cubic-bezier(0.12, 0.92, 0.18, 1)' : 'none',
+          }}
+        >
+          <defs>
+            <radialGradient id="gold-rim" cx="50%" cy="50%" r="50%">
+              <stop offset="70%" stopColor="#d97706" />
+              <stop offset="90%" stopColor="#fbbf24" />
+              <stop offset="100%" stopColor="#78350f" />
+            </radialGradient>
+            <radialGradient id="hub-gold" cx="40%" cy="40%" r="60%">
+              <stop offset="0%" stopColor="#fef08a" />
+              <stop offset="50%" stopColor="#f59e0b" />
+              <stop offset="100%" stopColor="#92400e" />
+            </radialGradient>
+          </defs>
+
+          {/* Bordure extérieure dorée texturée */}
+          <circle cx="100" cy="100" r="99" fill="url(#gold-rim)" stroke="#451a03" strokeWidth="2.5" />
+          <circle cx="100" cy="100" r="93.5" fill="#fef3c7" stroke="#b45309" strokeWidth="1.2" />
+
+          {/* 8 secteurs de 45 degrés */}
+          {SPINNER_SECTORS.map((sector, i) => {
+            const startAngle = (i * 45 * Math.PI) / 180;
+            const endAngle = ((i + 1) * 45 * Math.PI) / 180;
+            const midAngle = ((i + 0.5) * 45 * Math.PI) / 180;
+
+            const x1 = 100 + 91 * Math.cos(startAngle);
+            const y1 = 100 + 91 * Math.sin(startAngle);
+            const x2 = 100 + 91 * Math.cos(endAngle);
+            const y2 = 100 + 91 * Math.sin(endAngle);
+
+            const tx = 100 + 64 * Math.cos(midAngle);
+            const ty = 100 + 64 * Math.sin(midAngle);
+            const textRot = i * 45 + 22.5 + 90;
+
+            return (
+              <g key={sector.id}>
+                <path
+                  d={`M100 100 L${x1} ${y1} A91 91 0 0 1 ${x2} ${y2} Z`}
+                  fill={sector.bg}
+                  stroke="#ffffff"
+                  strokeWidth="1.4"
                 />
-                <span className="flex-1">{cards[cardId]?.text ?? cardId}</span>
-                {cards[cardId]?.action && (
+                <g transform={`translate(${tx} ${ty}) rotate(${textRot})`}>
+                  <text
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fill="#ffffff"
+                    style={{
+                      font: "bold 8.2px 'Oswald', system-ui, sans-serif",
+                      letterSpacing: '0.4px',
+                      textShadow: '0 1px 2px rgba(0,0,0,0.85)',
+                    }}
+                  >
+                    {isEn ? sector.labelEn : sector.labelFr}
+                  </text>
+                  <text
+                    y="7.8"
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fill="#fef08a"
+                    style={{
+                      font: "6px system-ui, sans-serif",
+                      fontWeight: 600,
+                      textShadow: '0 1px 2px rgba(0,0,0,0.9)',
+                    }}
+                  >
+                    {isEn ? sector.subEn : sector.subFr}
+                  </text>
+                </g>
+              </g>
+            );
+          })}
+
+          {/* Ampoules de casino clignotantes sur le pourtour */}
+          {Array.from({ length: 16 }).map((_, idx) => {
+            const a = (idx * 22.5 * Math.PI) / 180;
+            const cx = 100 + 95.5 * Math.cos(a);
+            const cy = 100 + 95.5 * Math.sin(a);
+            return (
+              <circle
+                key={idx}
+                cx={cx}
+                cy={cy}
+                r="2.2"
+                className={idx % 2 === 0 ? 'bulb-even' : 'bulb-odd'}
+                stroke="#78350f"
+                strokeWidth="0.6"
+              />
+            );
+          })}
+
+          {/* Moyeu central doré 3D */}
+          <circle cx="100" cy="100" r="23" fill="#78350f" />
+          <circle cx="100" cy="100" r="21" fill="url(#hub-gold)" stroke="#fff" strokeWidth="1" />
+          <circle cx="100" cy="100" r="13" fill="#b45309" opacity="0.6" />
+          <circle cx="100" cy="100" r="10" fill="#fbbf24" />
+          <text
+            x="100"
+            y="101"
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="#78350f"
+            style={{ font: "bold 10px system-ui, sans-serif" }}
+          >
+            ★
+          </text>
+        </svg>
+      </div>
+
+      {/* Bannière de révélation du résultat avec effet pop */}
+      {showResult && wonSector && !spinning && (
+        <div
+          className={`winner-pop w-full rounded-lg border-2 p-3 text-center shadow-md ${
+            isGreen
+              ? 'border-emerald-500/80 bg-gradient-to-r from-emerald-600 to-green-500 text-white'
+              : 'border-rose-500/80 bg-gradient-to-r from-rose-700 to-red-600 text-white'
+          }`}
+        >
+          <p className="font-condensed text-xs uppercase tracking-widest text-amber-200 font-bold">
+            {isGreen ? '✨ Secteur Vert Gagnant !' : '💥 Secteur Rouge !'}
+          </p>
+          <p className="text-base font-extrabold tracking-wide drop-shadow-sm">
+            {isEn ? wonSector.labelEn : wonSector.labelFr}
+          </p>
+          <p className="text-xs text-amber-100 opacity-95">
+            {isEn ? wonSector.subEn : wonSector.subFr} • 🎴 +1 Carte Bonus piochée !
+          </p>
+        </div>
+      )}
+
+      {/* Bouton de lancement stylé et étincelant */}
+      <button
+        type="button"
+        disabled={spinning}
+        onClick={handleSpin}
+        className="w-full relative overflow-hidden rounded-lg bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 px-4 py-3 font-condensed text-base font-bold uppercase tracking-wider text-white shadow-lg transition-all hover:scale-[1.02] hover:brightness-110 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <span className="relative z-10 flex items-center justify-center gap-2">
+          <span>🎰</span>
+          <span>{spinning ? (isEn ? 'La roulette tourne…' : 'La roulette tourne…') : t('spinSpinner')}</span>
+          <span>🎰</span>
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function ChooseRentOrChipModal({ state, payload, actor }) {
+  const t = useT(state);
+  const tenant = state.players.find((p) => p.id === payload.tenantId);
+  const space = boardOf(state)[payload.spaceId];
+  const rent = payload.rent ?? 0;
+  const isDealMobile = payload.dealMobile;
+
+  return (
+    <div className="space-y-3 rounded-lg border-2 border-amber-500/50 bg-gradient-to-b from-amber-50 to-white p-4 shadow-lg">
+      <p className="font-condensed text-xs uppercase tracking-wider text-amber-900 font-bold">
+        {t('chooseRentOrChip')}
+      </p>
+      <p className="text-sm leading-snug">
+        <strong>{tenant?.name ?? '…'}</strong> s'arrête sur <strong>{space?.name ?? '…'}</strong>.
+      </p>
+      {isDealMobile ? (
+        <p className="rounded bg-amber-100 p-2 text-xs font-semibold text-amber-900">
+          🚗 {tenant?.name} conduit le Deal Mobile : aucun loyer n'est dû ! Vous pouvez prendre 1 jeton Spin à la banque.
+        </p>
+      ) : (
+        <p className="text-xs text-ink-soft">
+          Vous pouvez encaisser le loyer de <strong>{money(state, rent)}</strong> ou préférer prendre 1 jeton Spin à la banque.
+        </p>
+      )}
+
+      <div className="flex flex-col gap-2 pt-1">
+        {!isDealMobile && rent > 0 && (
+          <Button
+            onClick={() => sendAction({ type: 'CHOOSE_RENT_OR_CHIP', choice: 'rent' }, actor)}
+            className="w-full"
+          >
+            {t('takeRent', money(state, rent))}
+          </Button>
+        )}
+        <Button
+          tone="ghost"
+          onClick={() => sendAction({ type: 'CHOOSE_RENT_OR_CHIP', choice: 'chip' }, actor)}
+          className="w-full !border-amber-500/40 !bg-amber-100/70 hover:!bg-amber-200"
+        >
+          🪙 {t('takeChip')}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function FreeParkingBonusSection({ state, me, actor, isTurn, onPlayCard }) {
+  const t = useT(state);
+  const cards = cardIndexOf(state);
+  const spinChips = me?.spinChips ?? 0;
+  const bonusCards = me?.bonusCards ?? [];
+
+  if (spinChips === 0 && bonusCards.length === 0) return null;
+
+  return (
+    <div className="space-y-2 rounded-lg border border-amber-400/40 bg-gradient-to-br from-amber-50/80 to-yellow-50/60 p-2.5 shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="font-condensed text-xs font-bold uppercase tracking-wider text-amber-950">
+          🎁 {t('bonusCards')} & {t('spinChips')}
+        </span>
+        {spinChips > 0 && (
+          <span className="rounded-full bg-amber-400/30 px-2 py-0.5 font-condensed text-xs font-bold text-amber-950">
+            🪙 {spinChips}
+          </span>
+        )}
+      </div>
+
+      {isTurn && spinChips > 0 && (
+        <Button
+          tone="ghost"
+          className="w-full !border-amber-500/50 !bg-amber-200/80 !text-amber-950 font-bold hover:!bg-amber-300"
+          onClick={() => sendAction({ type: 'USE_SPIN_CHIP' }, actor)}
+        >
+          🎰 {t('useSpinChip')}
+        </Button>
+      )}
+
+      {bonusCards.length > 0 && (
+        <div className="space-y-1.5 pt-1">
+          {bonusCards.map((cardId) => {
+            const card = cards[cardId];
+            return (
+              <div
+                key={cardId}
+                className="flex items-start justify-between gap-2 rounded border border-amber-200 bg-white/90 p-2 text-xs shadow-xs"
+              >
+                <div className="flex-1 space-y-0.5">
+                  <p className="font-bold text-amber-950">{card?.title ?? card?.text ?? cardId}</p>
+                  {card?.title && <p className="text-[11px] text-ink-soft leading-tight">{card.text}</p>}
+                </div>
+                {isTurn && (
                   <Button
                     tone="ghost"
-                    className="!px-2 !py-1 !text-xs"
-                    onClick={() => sendAction({ type: 'PLAY_SALE_CARD', cardId }, actor)}
+                    className="!px-2.5 !py-1 !text-xs font-bold !bg-amber-100 hover:!bg-amber-200 shrink-0"
+                    onClick={() => onPlayCard ? onPlayCard(card, 'PLAY_BONUS_CARD', cardId) : sendAction({ type: 'PLAY_BONUS_CARD', cardId }, actor)}
                   >
                     {t('playCard')}
                   </Button>
                 )}
-              </li>
-            ))}
-          </ul>
-        </>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function EscapeDieComponent({ state, actor }) {
+  const t = useT(state);
+  const [rolling, setRolling] = useState(false);
+  const isEn = state.locale === 'en';
+
+  const lastRoll = state.escapeDie;
+  const face = lastRoll?.face;
+
+  const handleRoll = () => {
+    if (rolling) return;
+    setRolling(true);
+    sendAction({ type: 'ROLL_ESCAPE_DIE' }, actor);
+    setTimeout(() => {
+      setRolling(false);
+    }, 1200);
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-emerald-600/50 bg-gradient-to-b from-emerald-50 via-emerald-100/60 to-green-50 p-4 shadow-lg">
+      <div className="flex items-center gap-2">
+        <span className="text-xl">🏃</span>
+        <span className="font-condensed text-sm font-bold uppercase tracking-wider text-emerald-950">
+          {t('escapeDie')}
+        </span>
+        <span className="text-xl">🚓</span>
+      </div>
+
+      <p className="text-center text-xs text-emerald-900/80">
+        {t('escapeDieHint')}
+      </p>
+
+      <div className={`relative flex h-24 w-24 items-center justify-center rounded-2xl border-2 shadow-inner transition-transform duration-500 ${
+        face?.isPolice ? 'border-blue-700 bg-blue-600 text-white' : 'border-emerald-600 bg-emerald-500 text-white'
+      } ${rolling ? 'animate-spin' : ''}`}>
+        {face ? (
+          <div className="flex flex-col items-center justify-center text-center p-1">
+            <span className="text-2xl">{face.isPolice ? '👮‍♂️' : '🎴'}</span>
+            <span className="font-condensed text-sm font-black uppercase tracking-wider mt-0.5 leading-tight">
+              {isEn ? face.labelEn : face.labelFr}
+            </span>
+          </div>
+        ) : (
+          <span className="text-3xl">🎲</span>
+        )}
+      </div>
+
+      <Button
+        tone="primary"
+        className="!w-full !py-2.5 font-bold uppercase tracking-wider !bg-emerald-600 hover:!bg-emerald-700 !text-white shadow-md"
+        disabled={rolling}
+        onClick={handleRoll}
+      >
+        {t('rollEscapeDie')}
+      </Button>
+    </div>
+  );
+}
+
+function HeistDieComponent({ state, actor }) {
+  const t = useT(state);
+  const [rolling, setRolling] = useState(false);
+  const isEn = state.locale === 'en';
+
+  const lastRoll = state.heistDie;
+  const face = lastRoll?.face;
+
+  const handleRoll = () => {
+    if (rolling) return;
+    setRolling(true);
+    sendAction({ type: 'ROLL_HEIST_DIE' }, actor);
+    setTimeout(() => {
+      setRolling(false);
+    }, 1200);
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-indigo-600/50 bg-gradient-to-b from-indigo-50 via-indigo-100/60 to-purple-50 p-4 shadow-lg">
+      <div className="flex items-center gap-2">
+        <span className="text-xl">💰</span>
+        <span className="font-condensed text-sm font-bold uppercase tracking-wider text-indigo-950">
+          {t('heistDie')}
+        </span>
+        <span className="text-xl">🚨</span>
+      </div>
+
+      <p className="text-center text-xs text-indigo-900/80">
+        {t('heistDieHint')}
+      </p>
+
+      <div className={`relative flex h-24 w-24 items-center justify-center rounded-2xl border-2 shadow-inner transition-transform duration-500 ${
+        face?.isPolice ? 'border-red-700 bg-red-600 text-white' : 'border-amber-600 bg-amber-500 text-white'
+      } ${rolling ? 'animate-spin' : ''}`}>
+        {face ? (
+          <div className="flex flex-col items-center justify-center text-center p-1">
+            <span className="text-2xl">{face.isPolice ? '👮‍♂️' : '💵'}</span>
+            <span className="font-condensed text-sm font-black uppercase tracking-wider mt-0.5 leading-tight">
+              {isEn ? face.labelEn : face.labelFr}
+            </span>
+          </div>
+        ) : (
+          <span className="text-3xl">🎲</span>
+        )}
+      </div>
+
+      <Button
+        tone="primary"
+        className="!w-full !py-2.5 font-bold uppercase tracking-wider !bg-indigo-600 hover:!bg-indigo-700 !text-white shadow-md"
+        disabled={rolling}
+        onClick={handleRoll}
+      >
+        {t('rollHeistDie')}
+      </Button>
+    </div>
+  );
+}
+
+function BuyDieComponent({ state, actor }) {
+  const t = useT(state);
+  const [rolling, setRolling] = useState(false);
+  const isEn = state.locale === 'en';
+
+  const lastRoll = state.buyDie;
+  const face = lastRoll?.face;
+
+  const handleRoll = () => {
+    if (rolling) return;
+    setRolling(true);
+    sendAction({ type: 'ROLL_BUY_DIE' }, actor);
+    setTimeout(() => {
+      setRolling(false);
+    }, 1200);
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-emerald-600/50 bg-gradient-to-b from-emerald-50 via-green-100/60 to-emerald-50 p-4 shadow-lg">
+      <div className="flex items-center gap-2">
+        <span className="text-xl">🗄️</span>
+        <span className="font-condensed text-sm font-bold uppercase tracking-wider text-emerald-950">
+          {t('buyDie')}
+        </span>
+        <span className="text-xl">🎲</span>
+      </div>
+
+      <p className="text-center text-xs text-emerald-900/80">
+        {t('buyDieHint')}
+      </p>
+
+      <div className={`relative flex h-24 w-24 items-center justify-center rounded-2xl border-2 shadow-inner transition-transform duration-500 ${
+        face?.type === 'buy_card' ? 'border-emerald-700 bg-emerald-600 text-white' :
+        face?.type === 'force_discard' ? 'border-red-700 bg-red-600 text-white' :
+        face?.type === 'refresh_vault' ? 'border-amber-600 bg-amber-500 text-white' :
+        'border-emerald-600 bg-emerald-500 text-white'
+      } ${rolling ? 'animate-spin' : ''}`}>
+        {face ? (
+          <div className="flex flex-col items-center justify-center text-center p-1">
+            <span className="text-2xl">
+              {face.type === 'buy_card' ? '🟢 ⬆️' : face.type === 'force_discard' ? '🔴 ❌' : '🟡 🔄'}
+            </span>
+            <span className="font-condensed text-sm font-black uppercase tracking-wider mt-0.5 leading-tight">
+              {isEn ? face.labelEn : face.labelFr}
+            </span>
+          </div>
+        ) : (
+          <span className="text-3xl">🎲</span>
+        )}
+      </div>
+
+      <Button
+        tone="primary"
+        className="!w-full !py-2.5 font-bold uppercase tracking-wider !bg-emerald-600 hover:!bg-emerald-700 !text-white shadow-md"
+        disabled={rolling}
+        onClick={handleRoll}
+      >
+        {t('rollBuyDie')}
+      </Button>
+    </div>
+  );
+}
+
+function BuySaleCardModal({ state, me, payload, actor }) {
+  const t = useT(state);
+  const cards = cardIndexOf(state);
+  const [discardCardId, setDiscardCardId] = useState(me?.saleCards?.[0] ?? null);
+  const mustDiscard = payload.mustDiscardFirst;
+  const ownsBank = me?.saleCards?.some((cId) => cards[cId]?.ability?.type === 'the_bank');
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border-2 border-emerald-600/50 bg-emerald-50/95 p-3.5 shadow-md">
+      <div className="flex items-center gap-2">
+        <span className="text-lg">🗄️</span>
+        <p className="font-condensed text-sm font-bold uppercase text-emerald-950">
+          {t('saleVault')} — {t('buySaleCard')}
+        </p>
+      </div>
+
+      {mustDiscard && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-2 text-xs">
+          <p className="font-bold text-amber-900 mb-1">{t('chooseDiscardPrompt')}</p>
+          <div className="flex flex-wrap gap-1.5">
+            {(me?.saleCards ?? []).map((cId) => {
+              const c = cards[cId];
+              const selected = discardCardId === cId;
+              return (
+                <button
+                  key={cId}
+                  type="button"
+                  onClick={() => setDiscardCardId(cId)}
+                  className={`px-2 py-1 rounded text-xs border ${
+                    selected ? 'border-red-600 bg-red-100 font-bold text-red-900' : 'border-stone-300 bg-white text-stone-700'
+                  }`}
+                >
+                  {c?.title ?? cId}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="grid gap-2">
+        {(payload.visibleCards ?? []).map((cardId) => {
+          const card = cards[cardId];
+          const price = card?.price ?? 150;
+          const canAfford = ownsBank || (me?.cash ?? 0) >= price;
+          const tagLabel = card?.cardType === 'single_use' ? t('singleUse') : card?.cardType === 'ability' ? t('ability') : t('instantWin');
+          const tagBg = card?.cardType === 'single_use' ? 'bg-stone-200 text-stone-800' : card?.cardType === 'ability' ? 'bg-amber-200 text-amber-900' : 'bg-emerald-200 text-emerald-900';
+
+          return (
+            <div
+              key={cardId}
+              className="flex items-start justify-between gap-2.5 rounded-md border border-emerald-300 bg-white p-2.5 text-xs shadow-sm"
+            >
+              <div className="space-y-1 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-emerald-950 text-sm">{card?.title ?? cardId}</span>
+                  <span className={`text-[10px] font-condensed font-bold uppercase px-1.5 py-0.5 rounded ${tagBg}`}>
+                    {tagLabel}
+                  </span>
+                  <span className="font-bold text-ink-soft ml-auto">{money(state, price)}</span>
+                </div>
+                <p className="text-[11px] text-ink-soft leading-tight">{card?.text}</p>
+              </div>
+              <Button
+                tone="primary"
+                className="!px-3 !py-1.5 !text-xs font-bold !bg-emerald-600 hover:!bg-emerald-700 !text-white shrink-0 self-center"
+                disabled={!canAfford || (mustDiscard && !discardCardId)}
+                onClick={() => sendAction({ type: 'BUY_SALE_CARD', cardId, discardCardId: mustDiscard ? discardCardId : null }, actor)}
+              >
+                {t('buySaleCard')}
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+
+      <Button
+        tone="ghost"
+        className="!w-full !py-1.5 text-xs font-bold !border-emerald-300 hover:!bg-emerald-100 text-emerald-900"
+        onClick={() => sendAction({ type: 'END_TURN' }, actor)}
+      >
+        {t('skipAction')}
+      </Button>
+    </div>
+  );
+}
+
+function ForceDiscardModal({ state, payload, actor }) {
+  const t = useT(state);
+  const cards = cardIndexOf(state);
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border-2 border-red-600/50 bg-red-50/95 p-3.5 shadow-md">
+      <div className="flex items-center gap-2">
+        <span className="text-lg">❌</span>
+        <p className="font-condensed text-sm font-bold uppercase text-red-950">
+          {t('forceDiscard')}
+        </p>
+      </div>
+
+      <p className="text-xs text-red-900">
+        {t('chooseVictimPrompt')}
+      </p>
+
+      <div className="grid gap-2">
+        {(payload.victimIds ?? []).map((vId) => {
+          const victim = state.players.find((p) => p.id === vId);
+          if (!victim) return null;
+
+          return (
+            <div key={vId} className="rounded-md border border-red-200 bg-white p-2 text-xs space-y-1.5">
+              <p className="font-bold text-red-950 flex items-center gap-1.5">
+                <TokenIcon token={victim.token} color={victim.color} className="h-4 w-4" />
+                <span>{victim.name}</span>
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {(victim.saleCards ?? []).map((cardId) => {
+                  const card = cards[cardId];
+                  return (
+                    <Button
+                      key={cardId}
+                      tone="danger"
+                      className="!px-2.5 !py-1 !text-xs font-bold"
+                      onClick={() => sendAction({ type: 'FORCE_DISCARD_SALE_CARD', targetPlayerId: vId, targetCardId: cardId }, actor)}
+                    >
+                      Défausser « {card?.title ?? cardId} »
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <Button
+        tone="ghost"
+        className="!w-full !py-1.5 text-xs font-bold !border-red-300 hover:!bg-red-100 text-red-900"
+        onClick={() => sendAction({ type: 'END_TURN' }, actor)}
+      >
+        {t('skipAction')}
+      </Button>
+    </div>
+  );
+}
+
+function RefreshVaultModal({ state, payload, actor }) {
+  const t = useT(state);
+  const cards = cardIndexOf(state);
+
+  return (
+    <div className="flex flex-col gap-3 rounded-lg border-2 border-amber-600/50 bg-amber-50/95 p-3.5 shadow-md">
+      <div className="flex items-center gap-2">
+        <span className="text-lg">🔄</span>
+        <p className="font-condensed text-sm font-bold uppercase text-amber-950">
+          {t('refreshVault')}
+        </p>
+      </div>
+
+      <p className="text-xs text-amber-900">
+        {t('chooseCardToReplace')}
+      </p>
+
+      <div className="grid gap-2">
+        {(payload.visibleCards ?? []).map((cardId) => {
+          const card = cards[cardId];
+          return (
+            <div
+              key={cardId}
+              className="flex items-center justify-between gap-2 rounded-md border border-amber-300 bg-white p-2.5 text-xs shadow-sm"
+            >
+              <div className="space-y-0.5 flex-1">
+                <p className="font-bold text-amber-950">{card?.title ?? cardId}</p>
+                <p className="text-[11px] text-ink-soft">{card?.text}</p>
+              </div>
+              <Button
+                tone="primary"
+                className="!px-3 !py-1.5 !text-xs font-bold !bg-amber-600 hover:!bg-amber-700 !text-white shrink-0"
+                onClick={() => sendAction({ type: 'REFRESH_SALE_VAULT', cardId }, actor)}
+              >
+                Remplacer
+              </Button>
+            </div>
+          );
+        })}
+      </div>
+
+      <Button
+        tone="ghost"
+        className="!w-full !py-1.5 text-xs font-bold !border-amber-300 hover:!bg-amber-100 text-amber-900"
+        onClick={() => sendAction({ type: 'END_TURN' }, actor)}
+      >
+        {t('skipAction')}
+      </Button>
+    </div>
+  );
+}
+
+function JailDecisionModal({ state, payload, actor }) {
+  const t = useT(state);
+  const bailAmount = money(state, payload.bail);
+
+  return (
+    <div className="flex flex-col gap-2.5 rounded-lg border-2 border-stone-600/40 bg-stone-50 p-3.5 shadow-md">
+      <div className="flex items-center gap-2">
+        <span className="text-lg">⛓️</span>
+        <p className="font-condensed text-sm font-bold uppercase text-stone-900">
+          {t('jailDecision')} — {t('inJailFor', payload.jailTurns, 3)}
+        </p>
+      </div>
+
+      <p className="text-xs text-stone-700">
+        Vous avez passé {payload.jailTurns} tour(s) en prison et pioché 1 carte Corruption. Que souhaitez-vous faire ?
+      </p>
+
+      <div className="flex flex-col gap-2 pt-1">
+        <Button
+          tone="primary"
+          className="!w-full !py-2 font-bold !bg-emerald-600 hover:!bg-emerald-700 !text-white"
+          disabled={!payload.canPayBail}
+          onClick={() => sendAction({ type: 'PAY_BAIL' }, actor)}
+        >
+          {t('payNormalJailBail', bailAmount)}
+        </Button>
+
+        {payload.canStay && (
+          <Button
+            tone="ghost"
+            className="!w-full !py-2 font-bold !border-stone-400 hover:!bg-stone-200"
+            onClick={() => sendAction({ type: 'STAY_IN_JAIL' }, actor)}
+          >
+            {t('stayInNormalJail')}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LeaveSuperJailModal({ state, payload, actor }) {
+  const t = useT(state);
+  const bailCash = money(state, config(state).mechanics?.superJailBailCash ?? 300);
+
+  return (
+    <div className="flex flex-col gap-2.5 rounded-lg border-2 border-blue-700/50 bg-blue-50 p-3.5 shadow-md">
+      <div className="flex items-center gap-2">
+        <span className="text-lg">⚡</span>
+        <p className="font-condensed text-sm font-bold uppercase text-blue-950">
+          {t('superJailDecision')} — {t('inSuperJailFor', payload.superJailTurns, 3)}
+        </p>
+      </div>
+
+      <p className="text-xs text-blue-900">
+        Envoyé(e) en Super Prison par <strong>{payload.senderName}</strong>. Tour {payload.superJailTurns}/3.
+      </p>
+
+      <div className="flex flex-col gap-2 pt-1">
+        {payload.canGiveCards && (
+          <Button
+            tone="primary"
+            className="!w-full !py-2 font-bold !bg-indigo-600 hover:!bg-indigo-700 !text-white"
+            onClick={() => sendAction({ type: 'LEAVE_SUPER_JAIL', choice: 'cards' }, actor)}
+          >
+            {t('giveSuperCards', payload.collectedCardsCount, payload.senderName)}
+          </Button>
+        )}
+
+        <Button
+          tone="primary"
+          className="!w-full !py-2 font-bold !bg-blue-600 hover:!bg-blue-700 !text-white"
+          disabled={!payload.canPayCash}
+          onClick={() => sendAction({ type: 'LEAVE_SUPER_JAIL', choice: 'cash' }, actor)}
+        >
+          {t('paySuperJailBail', bailCash, payload.senderName)}
+        </Button>
+
+        {payload.canStay && (
+          <Button
+            tone="ghost"
+            className="!w-full !py-2 font-bold !border-blue-400 hover:!bg-blue-200"
+            onClick={() => sendAction({ type: 'STAY_IN_JAIL' }, actor)}
+          >
+            {t('stayInSuperJail')}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CorruptionSection({ state, me, actor, isTurn, onPlayCard }) {
+  const t = useT(state);
+  const corruption = me?.corruptionCards ?? [];
+  const superCorruption = me?.superCorruptionCards ?? [];
+  const drawnTurns = me?.cardsDrawnTurn ?? {};
+
+  if (!corruption.length && !superCorruption.length) return null;
+
+  return (
+    <div className="space-y-3 rounded-lg border-2 border-orange-500/40 bg-gradient-to-b from-orange-50/90 to-amber-50/60 p-3 shadow-md">
+      {corruption.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 font-condensed text-xs font-bold uppercase tracking-wider text-orange-950">
+              <span>⚖️</span>
+              <span>{t('corruptionCards')} ({corruption.length})</span>
+            </div>
+          </div>
+          <div className="grid gap-1.5">
+            {corruption.map((cardId) => {
+              const card = getCard(state, cardId);
+              const drawnThisTurn = drawnTurns[cardId] === state.turnCount;
+              const canPlay = isTurn && (!drawnThisTurn || card?.reaction);
+
+              return (
+                <div
+                  key={cardId}
+                  className="flex items-center gap-2.5 rounded-md border border-orange-200 bg-white/90 p-2 text-xs shadow-sm"
+                >
+                  <span className="text-base">⚖️</span>
+                  <div className="flex-1 space-y-0.5">
+                    <p className="font-bold text-orange-950">{card?.title ?? card?.text ?? cardId}</p>
+                    {card?.title && <p className="text-[11px] text-ink-soft leading-tight">{card.text}</p>}
+                    {drawnThisTurn && !card?.reaction && (
+                      <p className="text-[10px] text-amber-700 italic">{t('cardWaitNextTurn')}</p>
+                    )}
+                  </div>
+                  {canPlay && (
+                    <Button
+                      tone="ghost"
+                      className="!px-2.5 !py-1 !text-xs font-bold !bg-orange-100 hover:!bg-orange-200 shrink-0"
+                      onClick={() => onPlayCard ? onPlayCard(card, 'PLAY_CORRUPTION_CARD', cardId) : sendAction({ type: 'PLAY_CORRUPTION_CARD', cardId }, actor)}
+                    >
+                      {t('playCard')}
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {superCorruption.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 font-condensed text-xs font-bold uppercase tracking-wider text-blue-950">
+              <span>⚡</span>
+              <span>{t('superCorruptionCards')} ({superCorruption.length})</span>
+            </div>
+          </div>
+          <div className="grid gap-1.5">
+            {superCorruption.map((cardId) => {
+              const card = getCard(state, cardId);
+              const drawnThisTurn = drawnTurns[cardId] === state.turnCount;
+              const canPlay = isTurn && (!drawnThisTurn || card?.reaction);
+
+              return (
+                <div
+                  key={cardId}
+                  className="flex items-center gap-2.5 rounded-md border border-blue-300 bg-blue-50/90 p-2 text-xs shadow-sm"
+                >
+                  <span className="text-base">⚡</span>
+                  <div className="flex-1 space-y-0.5">
+                    <p className="font-bold text-blue-950">{card?.title ?? card?.text ?? cardId}</p>
+                    {card?.title && <p className="text-[11px] text-ink-soft leading-tight">{card.text}</p>}
+                    {drawnThisTurn && !card?.reaction && (
+                      <p className="text-[10px] text-blue-700 italic">{t('cardWaitNextTurn')}</p>
+                    )}
+                  </div>
+                  {canPlay && (
+                    <Button
+                      tone="primary"
+                      className="!px-2.5 !py-1 !text-xs font-bold !bg-blue-600 hover:!bg-blue-700 !text-white shrink-0"
+                      onClick={() => onPlayCard ? onPlayCard(card, 'PLAY_SUPER_CORRUPTION_CARD', cardId) : sendAction({ type: 'PLAY_SUPER_CORRUPTION_CARD', cardId }, actor)}
+                    >
+                      {t('playCard')}
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       )}
     </div>
   );
@@ -551,6 +1551,8 @@ export function Manage({ state, me }) {
 
 export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement }) {
   const t = useT(state);
+  const [targetingCard, setTargetingCard] = useState(null);
+
   if (!me) return null;
   const { pending } = state;
   const actor = me.id;
@@ -561,6 +1563,14 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
   const pendingOffers = state.trades.filter(
     (t) => t.status === 'pending' && localIds.includes(t.toPlayerId),
   ).length;
+
+  const handlePlayCard = (card, actionType, cardId) => {
+    if (cardNeedsTarget(card)) {
+      setTargetingCard({ card, actionType, cardId });
+    } else {
+      sendAction({ type: actionType, cardId }, actor);
+    }
+  };
 
   if (state.phase === 'finished') {
     const winner = state.players.find((p) => p.id === state.winnerId);
@@ -658,6 +1668,33 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
           <Button onClick={() => sendAction({ type: 'ACKNOWLEDGE_CARD' }, actor)}>{t('applyCard')}</Button>
         </div>
       )}
+      {mineTurn && pending.kind === 'roll_escape_die' && (
+        <EscapeDieComponent state={state} actor={actor} />
+      )}
+      {mineTurn && pending.kind === 'roll_heist_die' && (
+        <HeistDieComponent state={state} actor={actor} />
+      )}
+      {mineTurn && pending.kind === 'jail_decision' && (
+        <JailDecisionModal state={state} payload={pending.payload} actor={actor} />
+      )}
+      {mineTurn && pending.kind === 'leave_super_jail' && (
+        <LeaveSuperJailModal state={state} payload={pending.payload} actor={actor} />
+      )}
+      {mineTurn && pending.kind === 'spin_spinner' && (
+        <FreeParkingSpinnerComponent state={state} actor={actor} />
+      )}
+      {mineTurn && pending.kind === 'choose_rent_or_chip' && (
+        <ChooseRentOrChipModal state={state} payload={pending.payload} actor={actor} />
+      )}
+      {mineTurn && pending.kind === 'buy_sale_card' && (
+        <BuySaleCardModal state={state} me={me} payload={pending.payload} actor={actor} />
+      )}
+      {mineTurn && pending.kind === 'force_discard_sale_card' && (
+        <ForceDiscardModal state={state} payload={pending.payload} actor={actor} />
+      )}
+      {mineTurn && pending.kind === 'refresh_sale_vault' && (
+        <RefreshVaultModal state={state} payload={pending.payload} actor={actor} />
+      )}
       {mineTurn && pending.kind === 'buy_or_auction' && (
         <BuyOrAuction state={state} me={me} payload={pending.payload} actor={actor} />
       )}
@@ -690,7 +1727,9 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
         </div>
       )}
 
-      <SaleVault state={state} me={me} actor={actor} />
+      <CorruptionSection state={state} me={me} actor={actor} isTurn={mineTurn && pending.kind === 'end_turn'} onPlayCard={handlePlayCard} />
+      <FreeParkingBonusSection state={state} me={me} actor={actor} isTurn={mineTurn && pending.kind === 'end_turn'} onPlayCard={handlePlayCard} />
+      <SaleVault state={state} me={me} actor={actor} onPlayCard={handlePlayCard} />
 
       {(!mineTurn || pending.kind !== 'end_turn') && state.phase === 'playing' && pending.kind !== 'pay_debt' && (
         <Button tone="ghost" onClick={onOpenTrade}>
@@ -698,6 +1737,18 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
         </Button>
       )}
 
+      {targetingCard && (
+        <CardTargetModal
+          card={targetingCard.card}
+          state={state}
+          me={me}
+          onConfirm={(payload) => {
+            sendAction({ type: targetingCard.actionType, cardId: targetingCard.cardId, payload }, actor);
+            setTargetingCard(null);
+          }}
+          onCancel={() => setTargetingCard(null)}
+        />
+      )}
     </div>
   );
 }

@@ -12,9 +12,10 @@
  * le bruit de jugement et la bourde franche.
  */
 import {
-  playerById, propertiesOf, buildingLevel, canBuild, canSellBuilding, canMortgage,
+  playerById, activePlayers, propertiesOf, buildingLevel, canBuild, canSellBuilding, canMortgage,
   maxRaisable, unmortgageCost, config,
 } from '../engine/queries.js';
+import { getCard } from '../engine/cards.js';
 import { profileOf } from './profiles.js';
 import { spaceWorth, spendable, cashFloor, buildRanking } from './evaluate.js';
 import { findTradeOffer, findSettlementOffer, judgeTrade } from './negotiate.js';
@@ -63,6 +64,74 @@ export function decideAction(state, playerId, rng, difficulty) {
     case 'draw_card':
       return { type: 'DRAW_CARD' };
 
+    case 'roll_escape_die':
+      return { type: 'ROLL_ESCAPE_DIE' };
+
+    case 'roll_heist_die':
+      return { type: 'ROLL_HEIST_DIE' };
+
+    case 'jail_decision': {
+      const p = pending.payload;
+      if (p.canPayBail && (p.forced || p.jailTurns >= 2 || player.cash >= p.bail * 2)) {
+        return { type: 'PAY_BAIL' };
+      }
+      if (p.canStay) return { type: 'STAY_IN_JAIL' };
+      if (p.canPayBail) return { type: 'PAY_BAIL' };
+      return { type: 'STAY_IN_JAIL' };
+    }
+
+    case 'leave_super_jail': {
+      const p = pending.payload;
+      if (p.canGiveCards) {
+        return { type: 'LEAVE_SUPER_JAIL', choice: 'cards' };
+      }
+      if (p.canPayCash && (p.forced || player.cash >= 600)) {
+        return { type: 'LEAVE_SUPER_JAIL', choice: 'cash' };
+      }
+      if (p.canStay) {
+        return { type: 'STAY_IN_JAIL' };
+      }
+      return { type: 'LEAVE_SUPER_JAIL', choice: p.canPayCash ? 'cash' : 'cards' };
+    }
+
+    case 'buy_sale_card': {
+      const cards = pending.payload.visibleCards ?? [];
+      const affordable = cards.filter((cId) => (getCard(state, cId)?.price ?? 150) <= player.cash);
+      if (affordable.length > 0) {
+        const choice = affordable[0];
+        const discardCardId = pending.payload.mustDiscardFirst ? player.saleCards[0] : null;
+        return { type: 'BUY_SALE_CARD', cardId: choice, discardCardId };
+      }
+      return { type: 'END_TURN' };
+    }
+
+    case 'force_discard_sale_card': {
+      const victimId = pending.payload.victimIds?.[0];
+      const victim = playerById(state, victimId);
+      const targetCardId = victim?.saleCards?.[0];
+      if (victimId && targetCardId) {
+        return { type: 'FORCE_DISCARD_SALE_CARD', targetPlayerId: victimId, targetCardId };
+      }
+      return { type: 'END_TURN' };
+    }
+
+    case 'refresh_sale_vault': {
+      const choice = pending.payload.visibleCards?.[0];
+      if (choice) {
+        return { type: 'REFRESH_SALE_VAULT', cardId: choice };
+      }
+      return { type: 'END_TURN' };
+    }
+
+    case 'spin_spinner':
+      return { type: 'SPIN_SPINNER' };
+
+    case 'choose_rent_or_chip':
+      if (pending.payload.dealMobile || (pending.payload.rent ?? 0) <= 50) {
+        return { type: 'CHOOSE_RENT_OR_CHIP', choice: 'chip' };
+      }
+      return { type: 'CHOOSE_RENT_OR_CHIP', choice: 'rent' };
+
     case 'card_reveal':
       return { type: 'ACKNOWLEDGE_CARD' };
 
@@ -105,7 +174,7 @@ function decideRoll(state, player, profile) {
 
   // La carte d'abord : elle ne coûte rien, autant s'en servir plutôt que payer.
   if (player.getOutOfJailCards > 0 && wantOut) return { type: 'USE_JAIL_CARD' };
-  if (wantOut && player.cash - bail > cashFloor(state, player.id, profile)) return { type: 'PAY_BAIL' };
+  if (wantOut && player.cash >= bail && player.cash - bail > cashFloor(state, player.id, profile)) return { type: 'PAY_BAIL' };
   return { type: 'ROLL_DICE' };
 }
 
@@ -233,6 +302,44 @@ function decideEndTurn(state, player, profile, rng) {
   // Une carte rouge du coffre ne sert à rien tant qu'elle dort en main.
   const playable = saleCardToPlay(state, player.id, profile);
   if (playable) return { type: 'PLAY_SALE_CARD', cardId: playable };
+
+  // Cartes Bonus Parc Gratuit jouables immédiatement
+  for (const cardId of player.bonusCards ?? []) {
+    const card = getCard(state, cardId);
+    if (!card) continue;
+    if (['deal_mobile', 'collect_jackpot', 'free_house', 'free_property', 'spin_it', 'take_two', 'shortcut'].includes(card.action?.type)) {
+      return { type: 'PLAY_BONUS_CARD', cardId };
+    }
+  }
+
+  // Cartes Corruption jouables
+  for (const cardId of player.corruptionCards ?? []) {
+    if (player.cardsDrawnTurn?.[cardId] === state.turnCount) continue;
+    const card = getCard(state, cardId);
+    if (!card || card.reaction) continue;
+    if (['trespass', 'pickpocket', 'creative_zoning', 'money_laundering', 'bribe', 'snitch'].includes(card.action?.type)) {
+      const opponents = activePlayers(state).filter((p) => p.id !== player.id);
+      const payload = { targetPlayerId: opponents[0]?.id };
+      return { type: 'PLAY_CORRUPTION_CARD', cardId, payload };
+    }
+  }
+
+  // Cartes Super Corruption jouables
+  for (const cardId of player.superCorruptionCards ?? []) {
+    if (player.cardsDrawnTurn?.[cardId] === state.turnCount) continue;
+    const card = getCard(state, cardId);
+    if (!card || card.reaction) continue;
+    if (['auction_hoax', 'caper', 'blackmail', 'shoplift', 'long_con', 'cook_the_books', 'forgery', 'robbery'].includes(card.action?.type)) {
+      const opponents = activePlayers(state).filter((p) => p.id !== player.id);
+      const payload = { targetPlayerId: opponents[0]?.id };
+      return { type: 'PLAY_SUPER_CORRUPTION_CARD', cardId, payload };
+    }
+  }
+
+  // Utiliser un jeton Spin si disponible
+  if ((player.spinChips ?? 0) > 0 && !blunders(profile, rng)) {
+    return { type: 'USE_SPIN_CHIP' };
+  }
 
   // Bâtir, tant que ça reste dans le budget et que ça rapporte.
   if (budget > 0) {
