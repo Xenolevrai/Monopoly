@@ -13,6 +13,7 @@ import { sendAction } from '../lib/socket.js';
 import TokenIcon from './TokenIcon.jsx';
 import { BillStack } from './Money.jsx';
 import CardTargetModal from './CardTargetModal.jsx';
+import MiniGameLog from './MiniGameLog.jsx';
 
 function cardNeedsTarget(card) {
   const type = card?.action?.type ?? card?.ability?.type;
@@ -1549,7 +1550,7 @@ export function Manage({ state, me }) {
   );
 }
 
-export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement }) {
+export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement, onOpenFullLog }) {
   const t = useT(state);
   const [targetingCard, setTargetingCard] = useState(null);
 
@@ -1560,9 +1561,11 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
   const waitingFor = state.players.find((p) => p.id === pending.playerIds?.[0]);
   const hotSeat = mine.length > 1;
   const localIds = mine.map((p) => p.id);
-  const pendingOffers = state.trades.filter(
+  const incomingTrades = state.trades.filter(
     (t) => t.status === 'pending' && localIds.includes(t.toPlayerId),
-  ).length;
+  );
+  const pendingOffers = incomingTrades.length;
+  const firstProposerId = incomingTrades[0]?.fromPlayerId;
 
   const handlePlayCard = (card, actionType, cardId) => {
     if (cardNeedsTarget(card)) {
@@ -1621,11 +1624,17 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
       {pendingOffers > 0 && (
         <button
           type="button"
-          onClick={onOpenTrade}
-          className="flex w-full items-center gap-2 rounded border border-[var(--color-accent)]/50 bg-[var(--color-accent)]/10 px-2 py-1.5 text-left"
+          onClick={() => onOpenTrade(firstProposerId)}
+          className="flex w-full items-center justify-between gap-2 rounded-lg border-2 border-amber-500 bg-amber-50 px-3 py-2 text-left shadow-sm hover:bg-amber-100 transition-colors cursor-pointer"
         >
-          <span className="font-condensed text-sm uppercase text-[var(--color-accent)]">
-            {pendingOffers} offre{pendingOffers > 1 ? 's' : ''} en attente de votre réponse
+          <div className="flex items-center gap-2">
+            <span className="text-base animate-bounce">📬</span>
+            <span className="font-condensed text-xs font-bold uppercase text-amber-950">
+              {pendingOffers} offre{pendingOffers > 1 ? 's' : ''} d'échange reçue{pendingOffers > 1 ? 's' : ''}
+            </span>
+          </div>
+          <span className="rounded bg-amber-500 px-2 py-0.5 font-condensed text-[10px] font-bold uppercase text-white">
+            Voir & Négocier →
           </span>
         </button>
       )}
@@ -1721,7 +1730,7 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
               {t('buyDie')}
             </Button>
           )}
-          <Button tone="ghost" onClick={onOpenTrade}>
+          <Button tone="ghost" onClick={() => onOpenTrade()}>
             {t('trade')}
           </Button>
         </div>
@@ -1732,10 +1741,12 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
       <SaleVault state={state} me={me} actor={actor} onPlayCard={handlePlayCard} />
 
       {(!mineTurn || pending.kind !== 'end_turn') && state.phase === 'playing' && pending.kind !== 'pay_debt' && (
-        <Button tone="ghost" onClick={onOpenTrade}>
+        <Button tone="ghost" onClick={() => onOpenTrade()}>
           {t('negotiate')}{pendingOffers > 0 ? ` (${pendingOffers})` : ''}
         </Button>
       )}
+
+      <MiniGameLog state={state} onOpenFullLog={onOpenFullLog} />
 
       {targetingCard && (
         <CardTargetModal

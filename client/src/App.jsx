@@ -16,6 +16,7 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import GameOver from './components/GameOver.jsx';
 import BroadcastOverlay from './components/BroadcastOverlay.jsx';
 import { PropertyCard } from './components/Actions.jsx';
+import { LiveEventToast } from './components/MiniGameLog.jsx';
 import { money } from './lib/board.js';
 import { editionFor } from './lib/board.js';
 import { useT } from './lib/i18n.js';
@@ -86,7 +87,7 @@ const MOBILE_TAB_OF = { actions: 'jeu', assets: 'profil', players: 'profil', fee
  * redimensionnement qui franchit le seuil ordinateur, un cas assez rare pour
  * qu'on l'accepte plutôt que de dupliquer toute la mise en page en JavaScript.
  */
-function buildSections({ state, me, mine, t, setTradeOpen, setSettleOpen, focusOn }) {
+function buildSections({ state, me, mine, t, onOpenTrade, setSettleOpen, focusOn, onOpenFullLog }) {
   return {
     actions: {
       title: t('sectionActions'),
@@ -96,8 +97,9 @@ function buildSections({ state, me, mine, t, setTradeOpen, setSettleOpen, focusO
             state={state}
             me={me}
             mine={mine}
-            onOpenTrade={() => setTradeOpen(true)}
+            onOpenTrade={onOpenTrade}
             onOpenSettlement={() => setSettleOpen(true)}
+            onOpenFullLog={onOpenFullLog}
           />
         </ErrorBoundary>
       ),
@@ -164,12 +166,18 @@ export default function App() {
   useEditionTheme(state);
   const t = useT(state);
   const [tradeOpen, setTradeOpen] = useState(false);
+  const [tradeTarget, setTradeTarget] = useState(null);
   const [settleOpen, setSettleOpen] = useState(false);
   const [inspected, setInspected] = useState(null);
   const [tab, setTab] = useState('jeu');
   const leftDock = useRef(null);
   const rightDock = useRef(null);
   const [recapClosed, setRecapClosed] = useState(false);
+
+  const handleOpenTrade = (targetPlayerId = null) => {
+    setTradeTarget(targetPlayerId);
+    setTradeOpen(true);
+  };
 
   // Les quatre sections qu'on peut replier et faire glisser d'un côté à
   // l'autre du plateau. `usePanelLayout` est appelé une fois ici, et les deux
@@ -229,7 +237,16 @@ export default function App() {
   // Construit une seule fois le contenu des sections, puis le distribue selon
   // l'agencement choisi : gauche, droite, ou — sur téléphone — un seul
   // ensemble filtré par onglet, dans l'ordre où les colonnes ont été fondues.
-  const content = buildSections({ state, me, mine, t, setTradeOpen, setSettleOpen, focusOn });
+  const content = buildSections({
+    state,
+    me,
+    mine,
+    t,
+    onOpenTrade: handleOpenTrade,
+    setSettleOpen,
+    focusOn,
+    onOpenFullLog: () => setTab('journal'),
+  });
   const toSection = (id) => ({ id, ...content[id] });
   const leftSections = layout.columns.left.map(toSection);
   const rightSections = layout.columns.right.map(toSection);
@@ -343,8 +360,10 @@ export default function App() {
             me={me}
             mine={mine}
             settleMode={settleOpen}
+            initialTargetId={tradeTarget}
             onClose={() => {
               setTradeOpen(false);
+              setTradeTarget(null);
               setSettleOpen(false);
             }}
           />
@@ -368,6 +387,7 @@ export default function App() {
         </div>
       )}
 
+      <LiveEventToast state={state} />
       <BroadcastOverlay state={state} me={me} />
     </div>
   );

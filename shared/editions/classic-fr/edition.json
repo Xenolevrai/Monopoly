@@ -73,102 +73,102 @@
     {
       "id": "chapeau",
       "label": "Chapeau",
-      "color": "#C6303A"
+      "color": "#dc2626"
     },
     {
       "id": "voiture",
       "label": "Voiture",
-      "color": "#B01F2E"
+      "color": "#2563eb"
     },
     {
       "id": "chat",
       "label": "Chat",
-      "color": "#2A5CAA"
+      "color": "#d97706"
     },
     {
       "id": "chien",
       "label": "Chien",
-      "color": "#5B4636"
+      "color": "#059669"
     },
     {
       "id": "bateau",
       "label": "Bateau",
-      "color": "#2E9E63"
+      "color": "#0891b2"
     },
     {
       "id": "avion",
       "label": "Avion",
-      "color": "#1E7FB8"
+      "color": "#9333ea"
     },
     {
       "id": "tresor",
       "label": "Trésor",
-      "color": "#B8862B"
+      "color": "#eab308"
     },
     {
       "id": "brouette",
       "label": "Brouette",
-      "color": "#E8862B"
+      "color": "#ea580c"
     },
     {
       "id": "de",
       "label": "Dé à coudre",
-      "color": "#D45A93"
+      "color": "#ec4899"
     },
     {
       "id": "lanterne",
       "label": "Lanterne",
-      "color": "#7B4FA8"
+      "color": "#8b5cf6"
     },
     {
       "id": "chaussure",
       "label": "Chaussure",
-      "color": "#7A4A22"
+      "color": "#78350f"
     },
     {
       "id": "fer",
       "label": "Fer à repasser",
-      "color": "#6C7A89"
+      "color": "#475569"
     },
     {
       "id": "canon",
       "label": "Canon",
-      "color": "#4A5A44"
+      "color": "#15803d"
     },
     {
       "id": "cavalier",
       "label": "Cavalier",
-      "color": "#8C5A2B"
+      "color": "#b45309"
     },
     {
       "id": "sac",
       "label": "Sac d'argent",
-      "color": "#3E8E5A"
+      "color": "#16a34a"
     },
     {
       "id": "bourse",
       "label": "Bourse",
-      "color": "#9B3B6A"
+      "color": "#be185d"
     },
     {
       "id": "bascule",
       "label": "Cheval à bascule",
-      "color": "#C46A3A"
+      "color": "#c2410c"
     },
     {
       "id": "dinosaure",
       "label": "Tyrannosaure",
-      "color": "#3E7D5C"
+      "color": "#10b981"
     },
     {
       "id": "canard",
       "label": "Canard",
-      "color": "#E0A81E"
+      "color": "#facc15"
     },
     {
       "id": "pingouin",
       "label": "Manchot",
-      "color": "#2C3E55"
+      "color": "#1e293b"
     }
   ],
   "theming": {
