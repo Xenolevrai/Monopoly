@@ -32,9 +32,6 @@ export function buyProperty(state, playerId, spaceId, price = null) {
   if (player.cash < cost) return { ok: false, error: 'Fonds insuffisants.' };
 
   player.cash -= cost;
-  if (state.settings?.freeParkingPot || rulesOf(state).mechanics?.jackpotPot) {
-    state.freeParkingPot += cost;
-  }
   prop.ownerId = playerId;
   log(state, 'buy', say(state, rulesOf(state).mechanics.explorationMode ? 'explores' : 'buys', { name: player.name, space: space.name, amount: amountText(state, cost) }), {
     playerId,
@@ -85,9 +82,6 @@ export function unmortgage(state, playerId, spaceId) {
   if (player.cash < cost) return { ok: false, error: 'Fonds insuffisants.' };
 
   player.cash -= cost;
-  if (state.settings?.freeParkingPot || rulesOf(state).mechanics?.jackpotPot) {
-    state.freeParkingPot += cost;
-  }
   prop.mortgaged = false;
   log(state, 'unmortgage', say(state, 'unmortgages', { name: player.name, space: space.name, amount: amountText(state, cost) }), {
     playerId,
@@ -106,9 +100,6 @@ export function buildHouse(state, playerId, spaceId) {
   const prop = state.properties[spaceId];
   const player = playerById(state, playerId);
   player.cash -= check.cost;
-  if (state.settings?.freeParkingPot || rulesOf(state).mechanics?.jackpotPot) {
-    state.freeParkingPot += check.cost;
-  }
 
   if (check.isHotel) {
     prop.houses = 0;
