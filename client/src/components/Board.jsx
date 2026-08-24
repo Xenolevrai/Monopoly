@@ -246,29 +246,23 @@ function CardPiles({ state, canDraw, deckToDraw, onDraw }) {
   );
 }
 
-import FreeParkingCenterpiece from './FreeParkingCenterpiece.jsx';
-
 /** Le centre du plateau : titre, tas de cartes, dés, carte retournée. */
-function Center({ state, me, onSpin, drawnCard, rolling, canDraw, deckToDraw, onDraw, revealed, onAcknowledge }) {
+function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, revealed, onAcknowledge }) {
   const current = state.players[state.currentPlayerIndex];
-  const hasFreeParking = state.extensionIds?.includes('free-parking') || Boolean(editionFor(state).mechanics?.spinnerSectors);
 
   return (
     <div
       style={{ gridColumn: `2 / ${gridSize(state)}`, gridRow: `2 / ${gridSize(state)}` }}
       className="relative flex flex-col items-center justify-center gap-4 p-4"
     >
-      {/* La pièce maîtresse de l'édition ou la Roulette du Parc Gratuit */}
+      {/* La pièce maîtresse de l'édition. Elle s'efface quand une carte est
+          retournée, pour ne pas dépasser derrière. */}
       <div className="flex w-full justify-center transition-opacity duration-200" style={{ opacity: drawnCard ? 0 : 1 }}>
-        {hasFreeParking ? (
-          <FreeParkingCenterpiece state={state} me={me} onSpin={onSpin} />
-        ) : (
-          <Centerpiece
-            skin={editionFor(state).theming?.skin ?? 'table'}
-            title={editionFor(state).theming?.centerTitle ?? 'Monopoly'}
-            subtitle={editionFor(state).theming?.centerSubtitle ?? ''}
-          />
-        )}
+        <Centerpiece
+          skin={editionFor(state).theming?.skin ?? 'table'}
+          title={editionFor(state).theming?.centerTitle ?? 'Monopoly'}
+          subtitle={editionFor(state).theming?.centerSubtitle ?? ''}
+        />
       </div>
 
       <div className="absolute top-4 left-1/2 -translate-x-1/2">
@@ -349,8 +343,6 @@ function Center({ state, me, onSpin, drawnCard, rolling, canDraw, deckToDraw, on
 
 export default function Board({
   state,
-  me,
-  onSpin,
   onSelectSpace,
   drawnCard,
   rolling = false,
@@ -396,8 +388,6 @@ export default function Board({
         ))}
         <Center
           state={state}
-          me={me}
-          onSpin={onSpin}
           drawnCard={drawnCard}
           rolling={rolling}
           canDraw={canDraw}

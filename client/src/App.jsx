@@ -294,8 +294,6 @@ export default function App() {
           <ErrorBoundary zone="Le plateau">
             <Board
               state={state}
-              me={me}
-              onSpin={() => sendAction({ type: 'SPIN_SPINNER' }, me?.id)}
               drawnCard={drawnCard}
               onSelectSpace={setInspected}
               rolling={rolling}

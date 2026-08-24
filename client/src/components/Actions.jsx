@@ -953,7 +953,7 @@ function JailDecisionModal({ state, payload, actor }) {
 
 function LeaveSuperJailModal({ state, payload, actor }) {
   const t = useT(state);
-  const bailCash = money(state, config(state).mechanics?.superJailBailCash ?? 300);
+  const bailCash = money(state, editionFor(state).mechanics?.superJailBailCash ?? 300);
 
   return (
     <div className="flex flex-col gap-2.5 rounded-lg border-2 border-blue-700/50 bg-blue-50 p-3.5 shadow-md">
@@ -1004,6 +1004,7 @@ function LeaveSuperJailModal({ state, payload, actor }) {
 
 function CorruptionSection({ state, me, actor, isTurn, onPlayCard }) {
   const t = useT(state);
+  const cards = cardIndexOf(state);
   const corruption = me?.corruptionCards ?? [];
   const superCorruption = me?.superCorruptionCards ?? [];
   const drawnTurns = me?.cardsDrawnTurn ?? {};
@@ -1022,7 +1023,7 @@ function CorruptionSection({ state, me, actor, isTurn, onPlayCard }) {
           </div>
           <div className="grid gap-1.5">
             {corruption.map((cardId) => {
-              const card = getCard(state, cardId);
+              const card = cards[cardId];
               const drawnThisTurn = drawnTurns[cardId] === state.turnCount;
               const canPlay = isTurn && (!drawnThisTurn || card?.reaction);
 
@@ -1065,7 +1066,7 @@ function CorruptionSection({ state, me, actor, isTurn, onPlayCard }) {
           </div>
           <div className="grid gap-1.5">
             {superCorruption.map((cardId) => {
-              const card = getCard(state, cardId);
+              const card = cards[cardId];
               const drawnThisTurn = drawnTurns[cardId] === state.turnCount;
               const canPlay = isTurn && (!drawnThisTurn || card?.reaction);
 

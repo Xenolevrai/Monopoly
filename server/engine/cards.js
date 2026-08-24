@@ -10,7 +10,7 @@ import { FREE_PARKING_SPINNER_SECTORS, ESCAPE_DIE_FACES, HEIST_DIE_FACES, BUY_DI
 import { log, say, amountText } from './log.js';
 import { playerById, buildingsOf, activePlayers, propertiesOf, ownsFullGroup, config } from './queries.js';
 import { credit, charge, finishGame, potCollects } from './money.js';
-import { advance, moveTo, sendToJail, resolveLanding } from './movement.js';
+import { advance, moveTo, sendToJail, resolveLanding, nextSpaceOfType } from './movement.js';
 import { dropHazard, clearHazards, nearestVulnerable, advanceHazardPawn } from './hazard.js';
 import { rollDice } from './rng.js';
 

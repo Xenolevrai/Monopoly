@@ -227,15 +227,11 @@ const FR = {
   payNormalJailBail: (amount) => `Payer ${amount} à la Banque pour sortir`,
   corruptionCards: 'Cartes Corruption',
   superCorruptionCards: 'Cartes Super Corruption',
-  playCard: 'Activer la carte',
   cardWaitNextTurn: 'Disponible au prochain tour',
 
   // — Extension Tout Acheter (Buy Everything) ——————————
-  buyDie: 'Dé d’Achat',
   rollBuyDie: 'Lancer le dé d’Achat',
   buyDieHint: 'Lancez le dé d’Achat : achetez une carte au Coffre-Fort, forcez une défausse ou renouvelez le coffre !',
-  saleVault: 'Coffre-Fort des Ventes',
-  saleCards: 'Cartes Vente',
   buySaleCard: 'Acheter cette carte',
   forceDiscard: 'Forcer la défausse',
   refreshVault: 'Renouveler le Coffre-Fort',
@@ -459,15 +455,11 @@ const EN = {
   payNormalJailBail: (amount) => `Pay ${amount} to the Bank to get out`,
   corruptionCards: 'Corruption Cards',
   superCorruptionCards: 'Super Corruption Cards',
-  playCard: 'Play card',
   cardWaitNextTurn: 'Available on your next turn',
 
   // — Buy Everything Expansion ————————————————————————
-  buyDie: 'Buy Die',
   rollBuyDie: 'Roll Buy Die',
   buyDieHint: 'Roll the Buy Die: buy a card from the Sale Vault, force a discard, or refresh the vault!',
-  saleVault: 'Sale Vault',
-  saleCards: 'Sale Cards',
   buySaleCard: 'Buy this card',
   forceDiscard: 'Force Discard',
   refreshVault: 'Refresh Sale Vault',

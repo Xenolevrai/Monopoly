@@ -22,7 +22,6 @@ import {
   resumeCollection,
   checkSaleVictory,
   getCard,
-  applyCardAction,
   spinFreeParking,
   playBonusCard,
   rollEscapeDie,

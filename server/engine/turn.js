@@ -4,7 +4,7 @@ import { log, say, amountText } from './log.js';
 import { playerById, currentPlayer, activePlayers, config } from './queries.js';
 import { checkGameOver, charge, potCollects, credit } from './money.js';
 import { advance, resolveLanding, sendToJail } from './movement.js';
-import { returnJailCard, getCard, applyCardAction, loseVaultCard, spinFreeParking, drawCorruptionCard, drawSuperCorruptionCard, checkSaleVictory, rollBuyDie as rollBuyDieCards } from './cards.js';
+import { returnJailCard, getCard, applyCardAction, spinFreeParking, drawCorruptionCard, drawSuperCorruptionCard, checkSaleVictory, rollBuyDie as rollBuyDieCards } from './cards.js';
 import { playHazardTurn } from './hazard.js';
 import { factionOf } from './movement.js';
 import { startQueuedAuction } from './auction.js';
