@@ -55,7 +55,7 @@ export function LiveEventToast({ state }) {
 
         const timer = setTimeout(() => {
           setToast(null);
-        }, 4000);
+        }, 3000);
         return () => clearTimeout(timer);
       }
     }
@@ -66,14 +66,25 @@ export function LiveEventToast({ state }) {
   const icon = EVENT_ICONS[toast.entry.type] ?? '📢';
   const toneClass = TONE_CLASSES[toast.entry.type] ?? 'border-stone-400 bg-white text-stone-900';
 
+  const handleClose = () => {
+    setToast(null);
+  };
+
   return (
-    <div className="fade-in pointer-events-none fixed top-16 left-1/2 z-50 -translate-x-1/2 px-3 w-full max-w-md">
-      <div className={`flex items-center gap-2.5 rounded-xl border-2 px-3.5 py-2 text-xs font-semibold shadow-xl backdrop-blur-sm ${toneClass}`}>
+    <div className="fade-in pointer-events-auto fixed top-16 left-1/2 z-50 -translate-x-1/2 px-3 w-full max-w-md">
+      <div className={`flex items-center gap-2.5 rounded-xl border-2 px-3.5 py-2 text-xs font-semibold shadow-xl backdrop-blur-sm ${toneClass} group hover:shadow-2xl transition-shadow`}>
         <span className="text-lg shrink-0">{icon}</span>
         {toast.player && (
           <TokenIcon token={toast.player.token} color={toast.player.color} className="h-4 w-4 shrink-0" />
         )}
         <p className="flex-1 truncate text-xs leading-snug">{toast.entry.text}</p>
+        <button
+          onClick={handleClose}
+          className="shrink-0 ml-auto pl-2 font-bold text-current hover:opacity-70 transition-opacity"
+          aria-label="Close notification"
+        >
+          ✕
+        </button>
       </div>
     </div>
   );
