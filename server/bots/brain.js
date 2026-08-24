@@ -16,6 +16,7 @@ import {
   maxRaisable, unmortgageCost, config,
 } from '../engine/queries.js';
 import { getCard } from '../engine/cards.js';
+import { busDestinations } from '../engine/speeddie.js';
 import { profileOf } from './profiles.js';
 import { spaceWorth, spendable, cashFloor, buildRanking } from './evaluate.js';
 import { findTradeOffer, findSettlementOffer, judgeTrade } from './negotiate.js';
@@ -143,6 +144,42 @@ export function decideAction(state, playerId, rng, difficulty) {
       const count = pending.payload.options.length;
       if (blunders(profile, rng)) return { type: 'CARD_CHOICE', optionIndex: rng.int(count) };
       return { type: 'CARD_CHOICE', optionIndex: bestOption(state, playerId, pending.payload, profile) };
+    }
+
+    // Une case à désigner. Le moteur dit lesquelles sont recevables et ce qu'il
+    // en fera (`then`) : s'y rendre — triple identique, descente d'un ticket de
+    // bus — ou la mettre aux enchères. Deux barèmes opposés, donc.
+    case 'choose_space': {
+      const ids = pending.payload.spaceIds ?? [];
+      if (!ids.length) return null;
+      if (blunders(profile, rng)) return { type: 'CHOOSE_SPACE', spaceId: ids[rng.int(ids.length)] };
+      const score = (id) =>
+        pending.payload.then === 'auction'
+          ? spaceWorth(state, id, playerId, profile) // celle qu'on veut le plus remporter
+          : landingValue(state, playerId, id, profile);
+      let best = ids[0];
+      let bestValue = -Infinity;
+      for (const id of ids) {
+        const value = blur(score(id), profile, rng);
+        if (value > bestValue) {
+          bestValue = value;
+          best = id;
+        }
+      }
+      return { type: 'CHOOSE_SPACE', spaceId: best };
+    }
+
+    // Face Bus : descendre où l'on veut sur ce côté du plateau, ou empocher un
+    // ticket pour plus tard. On prend le car si la meilleure case atteignable
+    // vaut mieux que rien ; sinon on garde le ticket en réserve.
+    case 'bus_choice': {
+      const { canUse, canTake } = pending.payload;
+      if (canUse) {
+        const reachable = busDestinations(state, player.position);
+        const best = Math.max(...reachable.map((id) => landingValue(state, playerId, id, profile)));
+        if (best > 0 || !canTake) return { type: 'BUS_CHOICE', choice: 'use' };
+      }
+      return { type: 'BUS_CHOICE', choice: canTake ? 'take' : 'use' };
     }
 
     case 'pay_debt':

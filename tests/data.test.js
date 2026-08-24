@@ -128,7 +128,8 @@ test('l\'état initial couvre les 28 propriétés et le stock de la banque', () 
   const state = createGameState('PARIS7', 'p1');
   assert.equal(Object.keys(state.properties).length, 28);
   assert.ok(Object.values(state.properties).every((p) => p.ownerId === null && !p.mortgaged));
-  assert.deepEqual(state.bank, { houses: 32, hotels: 12 });
+  // Le classique n'a pas de gratte-ciel : le stock existe, il reste à zéro.
+  assert.deepEqual(state.bank, { houses: 32, hotels: 12, skyscrapers: 0 });
   assert.equal(state.phase, 'lobby');
   assert.equal(state.settings.freeParkingPot, false);
 });

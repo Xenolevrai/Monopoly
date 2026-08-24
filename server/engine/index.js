@@ -54,6 +54,9 @@ import {
   chooseRentOrChip,
   leaveSuperJail,
   stayInJail,
+  chooseSpace,
+  chooseBus,
+  playBusTicket,
 } from './turn.js';
 
 export * from './queries.js';
@@ -317,6 +320,23 @@ function applyAction(game, state, rng, player, action) {
     case 'KEEP_ROLL':
       if (pending.kind !== 'reroll' || !isMine) return refuse('Aucun jet à garder.');
       return keepRoll(state, playerId);
+
+    // — Dé rapide & tickets de bus ————————————————————————————
+    // Une case choisie : triple identique, descente d'un ticket, ou propriété
+    // mise en vente par la case Enchères. `then` (dans le payload) tranche.
+    case 'CHOOSE_SPACE':
+      if (pending.kind !== 'choose_space' || !isMine) return refuse('Aucune case à choisir.');
+      return chooseSpace(state, playerId, action.spaceId, rng);
+
+    case 'BUS_CHOICE':
+      if (pending.kind !== 'bus_choice' || !isMine) return refuse('Aucun choix de bus en attente.');
+      return chooseBus(state, playerId, action.choice, action.ticketId);
+
+    // Un ticket joué à la place du lancer de dés, au tout début du tour.
+    case 'USE_BUS_TICKET':
+      if (pending.kind !== 'roll' || !isMine) return refuse("Ce n'est pas le moment de prendre le car.");
+      if (player.inJail) return refuse('Vous êtes en prison.');
+      return playBusTicket(state, playerId, action.ticketId);
 
     case 'PAY_BAIL':
       if ((pending.kind !== 'roll' && pending.kind !== 'jail_decision') || !isMine) return refuse('Action impossible maintenant.');

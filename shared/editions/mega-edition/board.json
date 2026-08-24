@@ -1,0 +1,840 @@
+[
+  {
+    "id": 0,
+    "name": "Départ",
+    "shortName": "Départ",
+    "type": "go",
+    "side": "bottom",
+    "corner": true
+  },
+  {
+    "id": 1,
+    "name": "Boulevard de Belleville",
+    "shortName": "Belleville",
+    "type": "property",
+    "group": "brown",
+    "price": 60,
+    "rent": [
+      4,
+      20,
+      60,
+      180,
+      320,
+      450
+    ],
+    "houseCost": 50,
+    "mortgage": 30,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 2,
+    "name": "Caisse de Communauté",
+    "shortName": "Caisse de Com.",
+    "type": "community_chest",
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 3,
+    "name": "Rue Lecourbe",
+    "shortName": "Lecourbe",
+    "type": "property",
+    "group": "brown",
+    "price": 60,
+    "rent": [
+      4,
+      20,
+      60,
+      180,
+      320,
+      450
+    ],
+    "houseCost": 50,
+    "mortgage": 30,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 4,
+    "name": "Boulevard de Ménilmontant",
+    "shortName": "Ménilmontant",
+    "type": "property",
+    "group": "brown",
+    "price": 60,
+    "rent": [
+      4,
+      20,
+      60,
+      180,
+      320,
+      450
+    ],
+    "houseCost": 50,
+    "mortgage": 30,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 5,
+    "name": "Impôt sur le revenu",
+    "shortName": "Impôts",
+    "type": "tax",
+    "amount": 200,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 6,
+    "name": "Gare Montparnasse",
+    "shortName": "Montparnasse",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 200,
+    "rent": [
+      25,
+      50,
+      100,
+      200
+    ],
+    "mortgage": 100,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 7,
+    "name": "Rue de la Convention",
+    "shortName": "Convention",
+    "type": "property",
+    "group": "lightblue",
+    "price": 100,
+    "rent": [
+      6,
+      30,
+      90,
+      270,
+      400,
+      550
+    ],
+    "houseCost": 50,
+    "mortgage": 50,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 8,
+    "name": "Rue de Vaugirard",
+    "shortName": "Vaugirard",
+    "type": "property",
+    "group": "lightblue",
+    "price": 100,
+    "rent": [
+      6,
+      30,
+      90,
+      270,
+      400,
+      550
+    ],
+    "houseCost": 50,
+    "mortgage": 50,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 9,
+    "name": "Chance",
+    "shortName": "Chance",
+    "type": "chance",
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 10,
+    "name": "Compagnie de Distribution du Gaz",
+    "shortName": "Gaz",
+    "type": "utility",
+    "group": "utility",
+    "price": 150,
+    "rentMultipliers": [
+      4,
+      10,
+      20
+    ],
+    "mortgage": 75,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 11,
+    "name": "Rue de Courcelles",
+    "shortName": "Courcelles",
+    "type": "property",
+    "group": "lightblue",
+    "price": 100,
+    "rent": [
+      6,
+      30,
+      90,
+      270,
+      400,
+      550
+    ],
+    "houseCost": 50,
+    "mortgage": 50,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 12,
+    "name": "Avenue de la République",
+    "shortName": "République",
+    "type": "property",
+    "group": "lightblue",
+    "price": 120,
+    "rent": [
+      8,
+      40,
+      100,
+      300,
+      450,
+      600
+    ],
+    "houseCost": 50,
+    "mortgage": 60,
+    "side": "bottom",
+    "corner": false
+  },
+  {
+    "id": 13,
+    "name": "Prison / Simple visite",
+    "shortName": "Prison",
+    "type": "jail",
+    "side": "left",
+    "corner": true
+  },
+  {
+    "id": 14,
+    "name": "Vente aux Enchères",
+    "shortName": "Enchères",
+    "type": "auction_space",
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 15,
+    "name": "Boulevard Voltaire",
+    "shortName": "Voltaire",
+    "type": "property",
+    "group": "pink",
+    "price": 140,
+    "rent": [
+      10,
+      50,
+      150,
+      450,
+      625,
+      750
+    ],
+    "houseCost": 100,
+    "mortgage": 70,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 16,
+    "name": "Boulevard de la Villette",
+    "shortName": "La Villette",
+    "type": "property",
+    "group": "pink",
+    "price": 140,
+    "rent": [
+      10,
+      50,
+      150,
+      450,
+      625,
+      750
+    ],
+    "houseCost": 100,
+    "mortgage": 70,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 17,
+    "name": "Compagnie de Distribution d'Électricité",
+    "shortName": "Électricité",
+    "type": "utility",
+    "group": "utility",
+    "price": 150,
+    "rentMultipliers": [
+      4,
+      10,
+      20
+    ],
+    "mortgage": 75,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 18,
+    "name": "Avenue de Neuilly",
+    "shortName": "Neuilly",
+    "type": "property",
+    "group": "pink",
+    "price": 140,
+    "rent": [
+      10,
+      50,
+      150,
+      450,
+      625,
+      750
+    ],
+    "houseCost": 100,
+    "mortgage": 70,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 19,
+    "name": "Rue de Paradis",
+    "shortName": "Paradis",
+    "type": "property",
+    "group": "pink",
+    "price": 160,
+    "rent": [
+      12,
+      60,
+      180,
+      500,
+      700,
+      900
+    ],
+    "houseCost": 100,
+    "mortgage": 80,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 20,
+    "name": "Gare de Lyon",
+    "shortName": "Gare de Lyon",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 200,
+    "rent": [
+      25,
+      50,
+      100,
+      200
+    ],
+    "mortgage": 100,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 21,
+    "name": "Avenue Mozart",
+    "shortName": "Mozart",
+    "type": "property",
+    "group": "orange",
+    "price": 180,
+    "rent": [
+      14,
+      70,
+      200,
+      550,
+      750,
+      950
+    ],
+    "houseCost": 100,
+    "mortgage": 90,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 22,
+    "name": "Caisse de Communauté",
+    "shortName": "Caisse de Com.",
+    "type": "community_chest",
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 23,
+    "name": "Boulevard Saint-Michel",
+    "shortName": "Saint-Michel",
+    "type": "property",
+    "group": "orange",
+    "price": 180,
+    "rent": [
+      14,
+      70,
+      200,
+      550,
+      750,
+      950
+    ],
+    "houseCost": 100,
+    "mortgage": 90,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 24,
+    "name": "Place Pigalle",
+    "shortName": "Pigalle",
+    "type": "property",
+    "group": "orange",
+    "price": 200,
+    "rent": [
+      16,
+      80,
+      220,
+      600,
+      800,
+      1000
+    ],
+    "houseCost": 100,
+    "mortgage": 100,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 25,
+    "name": "Boulevard Saint-Germain",
+    "shortName": "Saint-Germain",
+    "type": "property",
+    "group": "orange",
+    "price": 200,
+    "rent": [
+      16,
+      80,
+      220,
+      600,
+      800,
+      1000
+    ],
+    "houseCost": 100,
+    "mortgage": 100,
+    "side": "left",
+    "corner": false
+  },
+  {
+    "id": 26,
+    "name": "Parc Gratuit",
+    "shortName": "Parc Gratuit",
+    "type": "free_parking",
+    "side": "top",
+    "corner": true
+  },
+  {
+    "id": 27,
+    "name": "Avenue Matignon",
+    "shortName": "Matignon",
+    "type": "property",
+    "group": "red",
+    "price": 220,
+    "rent": [
+      18,
+      90,
+      250,
+      700,
+      875,
+      1050
+    ],
+    "houseCost": 150,
+    "mortgage": 110,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 28,
+    "name": "Chance",
+    "shortName": "Chance",
+    "type": "chance",
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 29,
+    "name": "Boulevard Malesherbes",
+    "shortName": "Malesherbes",
+    "type": "property",
+    "group": "red",
+    "price": 220,
+    "rent": [
+      18,
+      90,
+      250,
+      700,
+      875,
+      1050
+    ],
+    "houseCost": 150,
+    "mortgage": 110,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 30,
+    "name": "Avenue Henri-Martin",
+    "shortName": "Henri-Martin",
+    "type": "property",
+    "group": "red",
+    "price": 240,
+    "rent": [
+      20,
+      100,
+      300,
+      750,
+      925,
+      1100
+    ],
+    "houseCost": 150,
+    "mortgage": 120,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 31,
+    "name": "Boulevard Haussmann",
+    "shortName": "Haussmann",
+    "type": "property",
+    "group": "red",
+    "price": 240,
+    "rent": [
+      20,
+      100,
+      300,
+      750,
+      925,
+      1100
+    ],
+    "houseCost": 150,
+    "mortgage": 120,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 32,
+    "name": "Ticket de Bus",
+    "shortName": "Ticket de Bus",
+    "type": "bus_ticket",
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 33,
+    "name": "Gare du Nord",
+    "shortName": "Gare du Nord",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 200,
+    "rent": [
+      25,
+      50,
+      100,
+      200
+    ],
+    "mortgage": 100,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 34,
+    "name": "Faubourg Saint-Honoré",
+    "shortName": "Saint-Honoré",
+    "type": "property",
+    "group": "yellow",
+    "price": 260,
+    "rent": [
+      22,
+      110,
+      330,
+      800,
+      975,
+      1150
+    ],
+    "houseCost": 150,
+    "mortgage": 130,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 35,
+    "name": "Place de la Bourse",
+    "shortName": "La Bourse",
+    "type": "property",
+    "group": "yellow",
+    "price": 260,
+    "rent": [
+      22,
+      110,
+      330,
+      800,
+      975,
+      1150
+    ],
+    "houseCost": 150,
+    "mortgage": 130,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 36,
+    "name": "Compagnie de Distribution des Eaux",
+    "shortName": "Eaux",
+    "type": "utility",
+    "group": "utility",
+    "price": 150,
+    "rentMultipliers": [
+      4,
+      10,
+      20
+    ],
+    "mortgage": 75,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 37,
+    "name": "Rue La Fayette",
+    "shortName": "La Fayette",
+    "type": "property",
+    "group": "yellow",
+    "price": 280,
+    "rent": [
+      24,
+      120,
+      360,
+      850,
+      1025,
+      1200
+    ],
+    "houseCost": 150,
+    "mortgage": 140,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 38,
+    "name": "Rue de Rivoli",
+    "shortName": "Rivoli",
+    "type": "property",
+    "group": "yellow",
+    "price": 280,
+    "rent": [
+      24,
+      120,
+      360,
+      850,
+      1025,
+      1200
+    ],
+    "houseCost": 150,
+    "mortgage": 140,
+    "side": "top",
+    "corner": false
+  },
+  {
+    "id": 39,
+    "name": "Allez en prison",
+    "shortName": "Allez en prison",
+    "type": "go_to_jail",
+    "side": "right",
+    "corner": true
+  },
+  {
+    "id": 40,
+    "name": "Avenue de Breteuil",
+    "shortName": "Breteuil",
+    "type": "property",
+    "group": "green",
+    "price": 300,
+    "rent": [
+      26,
+      130,
+      390,
+      900,
+      1100,
+      1275
+    ],
+    "houseCost": 200,
+    "mortgage": 150,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 41,
+    "name": "Avenue de Suffren",
+    "shortName": "Suffren",
+    "type": "property",
+    "group": "green",
+    "price": 300,
+    "rent": [
+      26,
+      130,
+      390,
+      900,
+      1100,
+      1275
+    ],
+    "houseCost": 200,
+    "mortgage": 150,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 42,
+    "name": "Avenue Foch",
+    "shortName": "Foch",
+    "type": "property",
+    "group": "green",
+    "price": 300,
+    "rent": [
+      26,
+      130,
+      390,
+      900,
+      1100,
+      1275
+    ],
+    "houseCost": 200,
+    "mortgage": 150,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 43,
+    "name": "Caisse de Communauté",
+    "shortName": "Caisse de Com.",
+    "type": "community_chest",
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 44,
+    "name": "Boulevard des Capucines",
+    "shortName": "Capucines",
+    "type": "property",
+    "group": "green",
+    "price": 320,
+    "rent": [
+      28,
+      150,
+      450,
+      1000,
+      1200,
+      1400
+    ],
+    "houseCost": 200,
+    "mortgage": 160,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 45,
+    "name": "Gare Saint-Lazare",
+    "shortName": "Saint-Lazare",
+    "type": "railroad",
+    "group": "railroad",
+    "price": 200,
+    "rent": [
+      25,
+      50,
+      100,
+      200
+    ],
+    "mortgage": 100,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 46,
+    "name": "Chance",
+    "shortName": "Chance",
+    "type": "chance",
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 47,
+    "name": "Cadeau d'Anniversaire",
+    "shortName": "Anniversaire",
+    "type": "birthday_gift",
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 48,
+    "name": "Avenue Montaigne",
+    "shortName": "Montaigne",
+    "type": "property",
+    "group": "darkblue",
+    "price": 350,
+    "rent": [
+      35,
+      175,
+      500,
+      1100,
+      1300,
+      1500
+    ],
+    "houseCost": 200,
+    "mortgage": 175,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 49,
+    "name": "Avenue des Champs-Élysées",
+    "shortName": "Champs-Élysées",
+    "type": "property",
+    "group": "darkblue",
+    "price": 350,
+    "rent": [
+      35,
+      175,
+      500,
+      1100,
+      1300,
+      1500
+    ],
+    "houseCost": 200,
+    "mortgage": 175,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 50,
+    "name": "Taxe de luxe",
+    "shortName": "Taxe de luxe",
+    "type": "tax",
+    "amount": 100,
+    "side": "right",
+    "corner": false
+  },
+  {
+    "id": 51,
+    "name": "Rue de la Paix",
+    "shortName": "Rue de la Paix",
+    "type": "property",
+    "group": "darkblue",
+    "price": 400,
+    "rent": [
+      50,
+      200,
+      600,
+      1400,
+      1700,
+      2000
+    ],
+    "houseCost": 200,
+    "mortgage": 200,
+    "side": "right",
+    "corner": false
+  }
+]

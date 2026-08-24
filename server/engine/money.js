@@ -332,10 +332,17 @@ export function finishGame(state, reason = 'la partie est arrêtée') {
 
 /** Rend les maisons/hôtels d'une propriété au stock de la banque. */
 export function returnBuildingsToBank(state, prop) {
+  if (prop.skyscraper) {
+    state.bank.skyscrapers = (state.bank.skyscrapers ?? 0) + 1;
+    prop.skyscraper = false;
+  }
   if (prop.hotel) {
     state.bank.hotels += 1;
     prop.hotel = false;
   }
+  // Un dépôt ne se reprend pas au stock : il n'y en a qu'un par gare, et la
+  // gare change simplement de mains.
+  prop.depot = false;
   state.bank.houses += prop.houses;
   prop.houses = 0;
 }

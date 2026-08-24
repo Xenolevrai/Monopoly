@@ -11,6 +11,7 @@ import { playerById, rentFor, config } from './queries.js';
 import { credit, charge } from './money.js';
 import { resolveHazardOnLanding } from './hazard.js';
 import { drawBonusCard, drawCorruptionCard, broadcastAction } from './cards.js';
+import { takeBusTicket, resolveAuctionSpace, resolveBirthdayGift } from './speeddie.js';
 
 /**
  * Les cases achetables encore libres franchies sans s'y arrêter.
@@ -238,6 +239,21 @@ export function resolveLanding(state, playerId, ctx = {}) {
         payload: { spaceId: space.id, diceTotal: ctx.diceTotal ?? 0 },
       };
       return;
+
+    // Trois cases apportées par les plateaux à ticket de bus. Génériques comme
+    // le reste : ce sont des types de case, pas des numéros, et une édition qui
+    // ne les pose pas ne les rencontre jamais.
+    case 'auction_space':
+      return resolveAuctionSpace(state, playerId);
+
+    case 'bus_ticket':
+      // Plus de ticket dans la pioche : la case ne fait rien, comme un second
+      // Parc Gratuit. C'est exactement ce que dit la règle.
+      takeBusTicket(state, playerId);
+      return;
+
+    case 'birthday_gift':
+      return resolveBirthdayGift(state, playerId);
 
     case 'go':
     case 'jail':

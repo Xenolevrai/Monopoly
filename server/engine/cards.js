@@ -13,6 +13,7 @@ import { credit, charge, finishGame, potCollects } from './money.js';
 import { advance, moveTo, sendToJail, resolveLanding, nextSpaceOfType } from './movement.js';
 import { dropHazard, clearHazards, nearestVulnerable, advanceHazardPawn } from './hazard.js';
 import { rollDice } from './rng.js';
+import { takeBusTicket } from './speeddie.js';
 
 /**
  * Les paquets ne sont plus figés à Chance/Caisse de communauté : une extension
@@ -62,6 +63,9 @@ export function buildDecks(state, rng) {
     state.decks[deck] = rng.shuffle((decks[deck] ?? []).map((c) => c.id));
   }
   refillVault(state);
+  // La pioche de tickets de bus se brasse comme les autres : sans ça, les
+  // tickets qui périment tous les autres sortiraient toujours en premier.
+  if (state.busTickets?.length) state.busTickets = rng.shuffle(state.busTickets);
 
   const startBonus = config(state).mechanics?.startBonusCards;
   const bonusDeck = config(state).mechanics?.bonusCardsDeck ?? 'free_parking_bonus';
@@ -271,6 +275,12 @@ export function applyCardAction(state, playerId, action, ctx = {}) {
 
     case 'pay':
       charge(state, playerId, action.amount, say(state, 'reasonCard'));
+      return;
+
+    // Un ticket de bus offert par une carte ou par une case. Sans pioche de
+    // tickets dans cette boîte, l'effet se contente de ne rien faire.
+    case 'take_bus_ticket':
+      takeBusTicket(state, playerId);
       return;
 
     case 'move_to': {

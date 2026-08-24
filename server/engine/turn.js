@@ -1,13 +1,23 @@
-import { getSpace } from '../../shared/index.js';
+import { getSpace, boardOf } from '../../shared/index.js';
 import { rollDice } from './rng.js';
 import { log, say, amountText } from './log.js';
 import { playerById, currentPlayer, activePlayers, config } from './queries.js';
 import { checkGameOver, charge, potCollects, credit } from './money.js';
-import { advance, resolveLanding, sendToJail } from './movement.js';
+import { advance, moveTo, resolveLanding, sendToJail } from './movement.js';
 import { returnJailCard, getCard, applyCardAction, spinFreeParking, drawCorruptionCard, drawSuperCorruptionCard, checkSaleVictory, rollBuyDie as rollBuyDieCards } from './cards.js';
 import { playHazardTurn } from './hazard.js';
+import {
+  speedDieConfig,
+  rollSpeedDie,
+  runPostMove,
+  busTicketConfig,
+  busDestinations,
+  takeBusTicket,
+  useBusTicket,
+  heldTicket,
+} from './speeddie.js';
 import { factionOf } from './movement.js';
-import { startQueuedAuction } from './auction.js';
+import { startAuction, startQueuedAuction } from './auction.js';
 
 /**
  * La caution et le paquet de cartes qui s'appliquent à une joueuse en prison,
@@ -44,6 +54,11 @@ export function startTurn(state) {
   if (!player) return;
   state.dice = { values: null, doublesCount: 0, rolled: false, extraRoll: false, rollId: state.dice?.rollId ?? 0 };
   state.buyDie = null;
+  state.speedDie = null;
+  // Un déplacement différé n'a de sens que dans le tour qui l'a ouvert : une
+  // faillite ou une fin de partie au milieu du chemin ne doit pas le laisser
+  // traîner jusqu'au tour suivant.
+  state.postMove = null;
   applyRecurringCards(state, player);
   checkSaleVictory(state);
   if (state.phase === 'finished') return;
@@ -115,6 +130,10 @@ export function startTurn(state) {
   const peekId = peekDeck ? state.decks?.[peekDeck]?.[0] : null;
   const peek = peekId ? getCard(state, peekId)?.text ?? null : null;
 
+  // Un ticket de bus se joue **à la place** du lancer : le moteur l'annonce ici,
+  // le client se contente d'afficher le bouton quand la clé est présente.
+  const tickets = !player.inJail && busTicketConfig(state) ? (player.busTickets ?? []) : [];
+
   state.pending = {
     kind: 'roll',
     playerIds: [player.id],
@@ -127,9 +146,10 @@ export function startTurn(state) {
           bail: jail.bail,
           ...(peek ? { peek } : {}),
         }
-      : peek
-        ? { peek }
-        : {},
+      : {
+          ...(peek ? { peek } : {}),
+          ...(tickets.length ? { busTickets: tickets, busDestinations: busDestinations(state, player.position) } : {}),
+        },
   };
   log(state, 'turn', say(state, 'turnOf', { name: player.name }), { playerId: player.id, turn: state.turnCount });
 }
@@ -157,7 +177,76 @@ function throwDice(state, player, rng) {
  * en cellule, le jet sert à tenter les doubles, pas à se déplacer.
  */
 function offersReroll(state, player) {
+  // Jamais avec un troisième dé en jeu : relancer voudrait dire relancer aussi
+  // celui-là, et aucune boîte ne réunit les deux règles. On préfère l'exclure
+  // franchement plutôt que de laisser passer un jet à moitié rejoué.
+  if (speedDieConfig(state)) return false;
   return Boolean(factionOf(state, player)?.rerollDice) && !player.inJail && !state.dice.rerollUsed;
+}
+
+/**
+ * Le déplacement d'un jet, une fois le troisième dé lu.
+ *
+ * Les compagnies se paient sur **les deux dés blancs seulement** : c'est le
+ * `diceTotal` transmis à la résolution, tandis que le pion, lui, avance de la
+ * somme des trois.
+ */
+function resolveRolledMove(state, playerId, { total, speed }) {
+  const player = playerById(state, playerId);
+
+  if (!speed) {
+    advance(state, playerId, total);
+    resolveLanding(state, playerId, { diceTotal: total });
+    return finishResolution(state);
+  }
+
+  if (speed.kind === 'number') {
+    const steps = total + speed.face;
+    log(state, 'roll', say(state, 'speedDieNumber', { name: player.name, face: speed.face, total: steps }), {
+      playerId,
+      face: speed.face,
+      total: steps,
+    });
+    advance(state, playerId, steps);
+    resolveLanding(state, playerId, { diceTotal: total });
+    return finishResolution(state);
+  }
+
+  if (speed.kind === 'mr_monopoly') {
+    log(state, 'roll', say(state, 'speedDieMrMonopoly', { name: player.name }), { playerId });
+    // Le second déplacement n'a lieu qu'une fois cette case entièrement réglée :
+    // on le met de côté, `finishResolution` le jouera au bon moment.
+    state.postMove = { playerId, type: 'mr_monopoly' };
+    advance(state, playerId, total);
+    resolveLanding(state, playerId, { diceTotal: total });
+    return finishResolution(state);
+  }
+
+  // Face Bus.
+  log(state, 'roll', say(state, 'speedDieBus', { name: player.name }), { playerId });
+  const held = player.busTickets ?? [];
+  const poolLeft = (state.busTickets ?? []).length;
+  if (held.length === 0 && poolLeft === 0) {
+    // Ni ticket en main, ni ticket à prendre : on avance des deux dés blancs,
+    // puis on continue jusqu'à la prochaine case à carte.
+    state.postMove = { playerId, type: 'nearest_deck' };
+    advance(state, playerId, total);
+    resolveLanding(state, playerId, { diceTotal: total });
+    return finishResolution(state);
+  }
+
+  state.pending = {
+    kind: 'bus_choice',
+    playerIds: [playerId],
+    payload: {
+      canUse: held.length > 0,
+      canTake: poolLeft > 0,
+      tickets: held,
+      poolLeft,
+      total,
+    },
+  };
+  return { ok: true };
 }
 
 /** Lancer de dés — gère aussi les tentatives de sortie de prison. */
@@ -190,6 +279,28 @@ export function roll(state, playerId, rng) {
     return finishResolution(state);
   }
 
+  // Le troisième dé, quand l'édition en déclare un. Jamais en prison : la sortie
+  // par les doubles ne se joue qu'avec les deux dés blancs.
+  const speed = rollSpeedDie(state, rng);
+
+  // Triple identique — les deux dés blancs et le dé rapide sur la même valeur.
+  // La joueuse se pose alors où elle veut sur le plateau, et ne rejoue pas :
+  // testé avant les doubles, qui donneraient sinon un tour de plus.
+  if (speed?.kind === 'number' && isDouble && speed.face === values[0]) {
+    state.dice.extraRoll = false;
+    state.dice.doublesCount = 0;
+    log(state, 'roll', say(state, 'speedDieTriple', { name: player.name, value: speed.face }), {
+      playerId,
+      value: speed.face,
+    });
+    state.pending = {
+      kind: 'choose_space',
+      playerIds: [playerId],
+      payload: { reason: 'triple', then: 'move', spaceIds: boardOf(state).map((s) => s.id) },
+    };
+    return { ok: true };
+  }
+
   const doublesToJail = config(state).dice.doublesToJail;
   const doublesNeverJail = config(state).mechanics?.doublesNeverJail;
   if (isDouble) {
@@ -214,9 +325,88 @@ export function roll(state, playerId, rng) {
     return { ok: true, pendingReroll: true };
   }
 
-  advance(state, playerId, total);
-  resolveLanding(state, playerId, { diceTotal: total });
+  return resolveRolledMove(state, playerId, { total, speed });
+}
+
+/**
+ * La joueuse pose son pion sur la case qu'elle a choisie — triple identique,
+ * ou descente d'un ticket de bus. `then` dit ce qu'on fait de ce choix : s'y
+ * rendre, ou mettre la case aux enchères.
+ */
+export function chooseSpace(state, playerId, spaceId, rng = null) {
+  const pending = state.pending;
+  const payload = pending.payload ?? {};
+  if (!(payload.spaceIds ?? []).includes(spaceId)) return { ok: false, error: 'Cette case n’est pas proposée.' };
+
+  if (payload.then === 'auction') {
+    state.pending = { kind: null, playerIds: [] };
+    return startAuction(state, spaceId, playerId);
+  }
+
+  if (payload.then === 'bus_ticket') {
+    const result = useBusTicket(state, playerId, payload.ticketId, spaceId, rng);
+    return result.ok ? finishResolution(state) : result;
+  }
+
+  state.pending = { kind: null, playerIds: [] };
+  moveTo(state, playerId, spaceId, true);
+  resolveLanding(state, playerId, { diceTotal: (state.dice.values ?? []).reduce((a, b) => a + b, 0) });
   return finishResolution(state);
+}
+
+/** Face Bus : utiliser un ticket, ou en prendre un et avancer normalement. */
+export function chooseBus(state, playerId, choice, ticketId = null) {
+  const player = playerById(state, playerId);
+  const { total } = state.pending.payload ?? {};
+
+  if (choice === 'use') {
+    const ticket = heldTicket(player, ticketId);
+    if (!ticket) return { ok: false, error: "Vous n'avez pas de ticket de bus." };
+    state.pending = {
+      kind: 'choose_space',
+      playerIds: [playerId],
+      payload: {
+        reason: 'bus_ticket',
+        then: 'bus_ticket',
+        ticketId: ticket.id,
+        expires: ticket.expires,
+        spaceIds: busDestinations(state, player.position),
+      },
+    };
+    return { ok: true };
+  }
+
+  if (choice === 'take') {
+    if (!takeBusTicket(state, playerId)) return { ok: false, error: 'Il ne reste plus de ticket.' };
+    state.pending = { kind: null, playerIds: [] };
+    advance(state, playerId, total ?? 0);
+    resolveLanding(state, playerId, { diceTotal: total ?? 0 });
+    return finishResolution(state);
+  }
+
+  return { ok: false, error: 'Choix inconnu.' };
+}
+
+/** Un ticket de bus joué à la place du lancer de dés, au début du tour. */
+export function playBusTicket(state, playerId, ticketId) {
+  const player = playerById(state, playerId);
+  const ticket = heldTicket(player, ticketId);
+  if (!ticket) return { ok: false, error: "Vous n'avez pas de ticket de bus." };
+  // Aucun dé n'est lancé : pas de tour supplémentaire à espérer.
+  state.dice.extraRoll = false;
+  state.dice.doublesCount = 0;
+  state.pending = {
+    kind: 'choose_space',
+    playerIds: [playerId],
+    payload: {
+      reason: 'bus_ticket',
+      then: 'bus_ticket',
+      ticketId: ticket.id,
+      expires: ticket.expires,
+      spaceIds: busDestinations(state, player.position),
+    },
+  };
+  return { ok: true };
 }
 
 /** La joueuse choisit de relancer son jet de dés (pouvoir de camp). */
@@ -419,6 +609,11 @@ export function rollBuyDie(state, playerId, rng) {
 export function finishResolution(state) {
   if (state.phase === 'finished') return { ok: true };
   if (state.pending.kind) return { ok: true }; // achat, dette, enchère, choix de carte…
+  if (state.debt) return { ok: true };
+  // Le déplacement mis de côté par le dé rapide se joue ici, et nulle part
+  // ailleurs : c'est le seul point du flux où la case précédente est réglée et
+  // où plus aucune décision n'est en attente.
+  if (runPostMove(state)) return { ok: true };
   const player = currentPlayer(state);
   const buyDie = config(state).mechanics?.buyDie;
   state.pending = {

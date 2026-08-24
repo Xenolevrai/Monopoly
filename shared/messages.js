@@ -194,6 +194,27 @@ const FR = {
   tradeImpossible: ({ error }) => `L'échange n'est plus réalisable : ${error}`,
   debtCleared: ({ from, to }) => `L'arrangement est accepté : ${to} efface la dette de ${from}.`,
   nothing: () => 'rien',
+
+  // — Mega Edition : dépôts, dé rapide, tickets de bus, cases spéciales ——
+  buildsDepot: ({ name, space, amount }) => `${name} construit un dépôt sur ${space} (${amount}).`,
+  sellsDepot: ({ name, space, amount }) => `${name} revend le dépôt de ${space} pour ${amount}.`,
+  speedDieNumber: ({ name, face, total }) => `Dé rapide : ${face} — ${name} avance de ${total} au total.`,
+  speedDieMrMonopoly: ({ name }) => `Dé rapide : Mr Monopoly — ${name} rejouera après avoir résolu sa case.`,
+  speedDieBus: ({ name }) => `Dé rapide : Bus — ${name} prend le car.`,
+  speedDieTriple: ({ name, value }) => `Triple ${value} ! ${name} choisit sa case n'importe où sur le plateau.`,
+  mrMonopolyMoves: ({ name, space }) => `Mr Monopoly emmène ${name} jusqu'à ${space}.`,
+  mrMonopolyIdle: ({ name }) => `Mr Monopoly ne trouve rien à faire visiter à ${name}.`,
+  busTicketTaken: ({ name }) => `${name} prend un ticket de bus.`,
+  busTicketEmpty: () => 'Il ne reste plus de ticket de bus.',
+  busTicketUsed: ({ name, space }) => `${name} descend du car à ${space}.`,
+  busTicketsExpired: ({ count }) => `Ce ticket périme tous les autres : ${count} ticket(s) partent à la poubelle.`,
+  busFallback: ({ name, space }) => `Sans ticket, ${name} continue jusqu'à ${space}.`,
+  auctionSpacePick: ({ name }) => `${name} met une propriété de la banque aux enchères.`,
+  auctionSpaceEmpty: ({ name, space }) =>
+    `Plus rien à vendre : ${name} file jusqu'à ${space}, le loyer le plus cher devant elle.`,
+  birthdayGiftCash: ({ name, amount }) => `${name} déballe son cadeau : ${amount}.`,
+  birthdayTakeCash: ({ amount }) => `Prendre ${amount}`,
+  birthdayTakeTicket: () => 'Prendre un ticket de bus',
 };
 
 const EN = {
@@ -369,6 +390,27 @@ const EN = {
   tradeImpossible: ({ error }) => `The trade is no longer possible: ${error}`,
   debtCleared: ({ from, to }) => `The deal is accepted: ${to} clears ${from}'s debt.`,
   nothing: () => 'nothing',
+
+  // — Mega Edition: depots, Speed Die, Bus Tickets, new spaces ——————
+  buildsDepot: ({ name, space, amount }) => `${name} builds a train depot on ${space} (${amount}).`,
+  sellsDepot: ({ name, space, amount }) => `${name} sells the depot on ${space} for ${amount}.`,
+  speedDieNumber: ({ name, face, total }) => `Speed Die: ${face} — ${name} moves ${total} in all.`,
+  speedDieMrMonopoly: ({ name }) => `Speed Die: Mr Monopoly — ${name} will move again once this space is settled.`,
+  speedDieBus: ({ name }) => `Speed Die: Bus — ${name} catches the coach.`,
+  speedDieTriple: ({ name, value }) => `Triple ${value}! ${name} may move to any space on the board.`,
+  mrMonopolyMoves: ({ name, space }) => `Mr Monopoly walks ${name} on to ${space}.`,
+  mrMonopolyIdle: ({ name }) => `Mr Monopoly has nothing left to show ${name}.`,
+  busTicketTaken: ({ name }) => `${name} takes a Bus Ticket.`,
+  busTicketEmpty: () => 'There are no Bus Tickets left.',
+  busTicketUsed: ({ name, space }) => `${name} gets off the coach at ${space}.`,
+  busTicketsExpired: ({ count }) => `This ticket expires all the others: ${count} ticket(s) are discarded.`,
+  busFallback: ({ name, space }) => `With no ticket, ${name} carries on to ${space}.`,
+  auctionSpacePick: ({ name }) => `${name} puts one of the bank's properties up for auction.`,
+  auctionSpaceEmpty: ({ name, space }) =>
+    `Nothing left to sell: ${name} moves on to ${space}, the steepest rent ahead.`,
+  birthdayGiftCash: ({ name, amount }) => `${name} unwraps their present: ${amount}.`,
+  birthdayTakeCash: ({ amount }) => `Take ${amount}`,
+  birthdayTakeTicket: () => 'Take a Bus Ticket',
 };
 
 const PACKS = { fr: FR, en: EN };

@@ -131,6 +131,21 @@ function compatibleExtensionIds(edition, extensionIds) {
 }
 
 /**
+ * La pioche de tickets de bus d'une édition qui en déclare, dans l'ordre
+ * d'origine — `buildDecks` la brasse au lancement de la partie.
+ *
+ * Un ticket marqué `expires` fait expirer tous les autres quand on le joue :
+ * c'est la seule différence entre deux tickets, et elle se lit sur le ticket.
+ */
+function buildBusTickets(edition) {
+  const config = edition.mechanics?.busTickets;
+  if (!config) return [];
+  const total = config.total ?? 0;
+  const expiring = config.expiring ?? 0;
+  return Array.from({ length: total }, (_, i) => ({ id: `bus-${i + 1}`, expires: i < expiring }));
+}
+
+/**
  * Construit l'état initial d'une partie (phase lobby, sans joueuses).
  * @param {string} code
  * @param {string} hostId
@@ -151,6 +166,11 @@ export function createGameState(code, hostId, editionId = DEFAULT_EDITION, local
       ownerId: null,
       houses: 0,
       hotel: false,
+      // Sixième palier de construction et aménagement de gare. Toujours
+      // présents, toujours faux sans l'édition qui les active : l'état reste
+      // homogène d'une boîte à l'autre.
+      skyscraper: false,
+      depot: false,
       mortgaged: false,
     };
   }
@@ -169,7 +189,15 @@ export function createGameState(code, hostId, editionId = DEFAULT_EDITION, local
     turnCount: 0,
     dice: { values: null, doublesCount: 0, rolled: false, extraRoll: false, rollId: 0 },
     properties,
-    bank: { houses: edition.bank.houses, hotels: edition.bank.hotels },
+    bank: {
+      houses: edition.bank.houses,
+      hotels: edition.bank.hotels,
+      skyscrapers: edition.bank.skyscrapers ?? 0,
+    },
+    // Pioche de tickets de bus, quand l'édition en déclare (`mechanics.busTickets`).
+    // Chaque ticket dit lui-même s'il fait expirer les autres : l'état se relit
+    // seul, sans revenir à la configuration.
+    busTickets: buildBusTickets(merged),
     // Un objet par paquet déclaré par l'édition fusionnée (extensions comprises),
     // pas seulement chance/community_chest : une extension peut retirer ces deux-là
     // et en ajouter d'autres (spin, corruption…).
@@ -194,6 +222,10 @@ export function createGameState(code, hostId, editionId = DEFAULT_EDITION, local
     escapeDie: null,
     heistDie: null,
     undoable: null,
+    // Le troisième dé de la Mega Edition, et le déplacement qu'il laisse à
+    // faire une fois la première case résolue (Mr Monopoly, repli du Bus).
+    speedDie: null,
+    postMove: null,
     pending: { kind: null, playerIds: [] },
     auction: null,
     auctionQueue: [],
@@ -243,6 +275,9 @@ export function createPlayer({ id, name, token, color, order, edition, faction =
     // tableau, même sans extension qui en distribue — l'état reste homogène.
     saleCards: [],
     saleCardsDrawnTurn: {},
+    // Tickets de bus détenus (`mechanics.busTickets`). Toujours un tableau,
+    // même dans les boîtes qui n'en distribuent pas.
+    busTickets: [],
     // Jetons Spin (extension Parc Gratuit Jackpot)
     spinChips: config.mechanics?.startSpinChips ?? 0,
     // Cartes Bonus (extension Parc Gratuit Jackpot)

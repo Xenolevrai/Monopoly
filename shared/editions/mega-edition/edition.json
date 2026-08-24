@@ -1,0 +1,235 @@
+{
+  "id": "mega-edition",
+  "name": "Monopoly Mega Edition",
+  "theme": "Le plateau parisien agrandi",
+  "tagline": "Cinquante-deux cases, trois dés, jusqu'à huit joueuses.",
+  "summary": "Neuf titres de plus, un dé rapide, des tickets de bus, des gratte-ciels et des dépôts.",
+  "playerCount": {
+    "min": 2,
+    "max": 8
+  },
+  "board": {
+    "size": 52
+  },
+  "currency": {
+    "type": "money",
+    "label": "€",
+    "startingAmount": 2500,
+    "goBonus": 200,
+    "singleDenomination": false,
+    "denominations": [
+      1000,
+      500,
+      100,
+      50,
+      20,
+      10,
+      5
+    ]
+  },
+  "jail": {
+    "space": 13,
+    "bail": 50,
+    "maxTurns": 3
+  },
+  "dice": {
+    "count": 2,
+    "sides": 6,
+    "doublesToJail": 0
+  },
+  "bank": {
+    "houses": 40,
+    "hotels": 16,
+    "skyscrapers": 12
+  },
+  "mortgage": {
+    "enabled": true,
+    "interestRate": 0.1
+  },
+  "turnMode": "sequential",
+  "winCondition": "lastPlayerStanding",
+  "mechanics": {
+    "houses": true,
+    "hotels": true,
+    "skyscrapers": true,
+    "trainDepots": {
+      "cost": 100,
+      "rentFactor": 2
+    },
+    "majorityBuildRule": true,
+    "speedDie": {
+      "faces": [
+        1,
+        2,
+        3,
+        "mr_monopoly",
+        "bus",
+        "bus"
+      ]
+    },
+    "busTickets": {
+      "total": 15,
+      "expiring": 4
+    },
+    "birthdayGift": 100,
+    "mortgage": true,
+    "bankruptcyEliminates": true,
+    "trading": true,
+    "auctions": true,
+    "negotiableRent": true,
+    "cheatCards": false,
+    "towerMode": false,
+    "explorationMode": false,
+    "draftMode": false,
+    "battleSpaces": false
+  },
+  "houseRules": {
+    "freeParkingPot": false,
+    "auctionOnDecline": true,
+    "collectGoOnGoToLyon": true,
+    "evenBuildRule": true,
+    "auctionBankruptcyAssets": true,
+    "doubleGoLanding": false
+  },
+  "tokens": [
+    {
+      "id": "chapeau",
+      "label": "Chapeau",
+      "color": "#dc2626"
+    },
+    {
+      "id": "voiture",
+      "label": "Voiture",
+      "color": "#2563eb"
+    },
+    {
+      "id": "chat",
+      "label": "Chat",
+      "color": "#d97706"
+    },
+    {
+      "id": "chien",
+      "label": "Chien",
+      "color": "#059669"
+    },
+    {
+      "id": "bateau",
+      "label": "Bateau",
+      "color": "#0891b2"
+    },
+    {
+      "id": "avion",
+      "label": "Avion",
+      "color": "#9333ea"
+    },
+    {
+      "id": "tresor",
+      "label": "Trésor",
+      "color": "#eab308"
+    },
+    {
+      "id": "brouette",
+      "label": "Brouette",
+      "color": "#ea580c"
+    },
+    {
+      "id": "de",
+      "label": "Dé à coudre",
+      "color": "#ec4899"
+    },
+    {
+      "id": "lanterne",
+      "label": "Lanterne",
+      "color": "#8b5cf6"
+    },
+    {
+      "id": "chaussure",
+      "label": "Chaussure",
+      "color": "#78350f"
+    },
+    {
+      "id": "fer",
+      "label": "Fer à repasser",
+      "color": "#475569"
+    },
+    {
+      "id": "canon",
+      "label": "Canon",
+      "color": "#15803d"
+    },
+    {
+      "id": "cavalier",
+      "label": "Cavalier",
+      "color": "#b45309"
+    },
+    {
+      "id": "sac",
+      "label": "Sac d'argent",
+      "color": "#16a34a"
+    },
+    {
+      "id": "bourse",
+      "label": "Bourse",
+      "color": "#be185d"
+    },
+    {
+      "id": "bascule",
+      "label": "Cheval à bascule",
+      "color": "#c2410c"
+    },
+    {
+      "id": "dinosaure",
+      "label": "Tyrannosaure",
+      "color": "#10b981"
+    },
+    {
+      "id": "canard",
+      "label": "Canard",
+      "color": "#facc15"
+    },
+    {
+      "id": "pingouin",
+      "label": "Manchot",
+      "color": "#1e293b"
+    }
+  ],
+  "theming": {
+    "palette": {
+      "table": "#1f2933",
+      "tableDark": "#151c23",
+      "board": "#dfe7ec",
+      "boardEdge": "#c6d2da",
+      "space": "#f8f6f0",
+      "spaceAlt": "#efece4",
+      "ink": "#14181c",
+      "inkSoft": "#4b5560",
+      "panel": "#f5f3ed",
+      "panelEdge": "#d4cec1",
+      "accent": "#a41f2a",
+      "accentDeep": "#7f1620",
+      "money": "#1f7a4d",
+      "house": "#1f9d55",
+      "hotel": "#c62828",
+      "gold": "#b08733",
+      "boardInk": "#14181c",
+      "spaceInk": "#14181c",
+      "spaceInkSoft": "#4b5560"
+    },
+    "centerTitle": "Monopoly",
+    "centerSubtitle": "Mega Edition",
+    "decks": {
+      "chance": {
+        "label": "Chance",
+        "color": "#a41f2a",
+        "glyph": "?"
+      },
+      "community_chest": {
+        "label": "Caisse de Communauté",
+        "color": "#2f5c8f",
+        "glyph": "▤"
+      }
+    },
+    "display": "serif",
+    "skin": "table"
+  }
+}

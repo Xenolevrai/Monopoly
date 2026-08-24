@@ -24,6 +24,8 @@ const KNOWN_ACTIONS = new Set([
   // Pion hostile autonome et pouvoirs qui vont avec (`mechanics.hazardPawn`).
   'place_hazard', 'clear_hazard', 'move_hazard', 'grant_rent_waiver',
   'nearest_unowned', 'steal_from_richest', 'rival_move_relative', 'free_building',
+  // Plateaux à ticket de bus (`mechanics.busTickets`).
+  'take_bus_ticket',
 ]);
 
 test('chaque édition déclare une identité et des bornes de joueuses cohérentes', () => {
@@ -277,6 +279,16 @@ function decide(state, kind, actor, rng) {
     // Relance offerte par un pouvoir de camp : on garde une fois sur deux.
     case 'reroll':
       return rng.next() > 0.5 ? { type: 'REROLL_DICE' } : { type: 'KEEP_ROLL' };
+    // Dé rapide : une case parmi celles que le moteur propose (triple, ticket
+    // de bus, ou propriété à mettre aux enchères).
+    case 'choose_space': {
+      const choices = state.pending.payload.spaceIds;
+      return { type: 'CHOOSE_SPACE', spaceId: choices[Math.floor(rng.next() * choices.length)] };
+    }
+    case 'bus_choice':
+      return state.pending.payload.canUse
+        ? { type: 'BUS_CHOICE', choice: 'use' }
+        : { type: 'BUS_CHOICE', choice: 'take' };
     default:
       // Surtout pas de repli silencieux : un `pending` que ce pilote ne connaît
       // pas ferait tourner la boucle à vide et le test passerait sans rien

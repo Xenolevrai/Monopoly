@@ -1,0 +1,299 @@
+{
+  "name": "Monopoly Mega Edition",
+  "theme": "The Paris board, made bigger",
+  "tagline": "Fifty-two spaces, three dice, up to eight players.",
+  "summary": "Nine more title deeds, a Speed Die, Bus Tickets, skyscrapers and train depots.",
+  "centerTitle": "Monopoly",
+  "centerSubtitle": "Mega Edition",
+  "groups": {
+    "brown": "Brown",
+    "lightblue": "Light blue",
+    "pink": "Pink",
+    "orange": "Orange",
+    "red": "Red",
+    "yellow": "Yellow",
+    "green": "Green",
+    "darkblue": "Dark blue",
+    "railroad": "Stations",
+    "utility": "Utilities"
+  },
+  "decks": {
+    "chance": "Chance",
+    "community_chest": "Community Chest"
+  },
+  "buildingLabels": {
+    "house": "House",
+    "houses": "Houses",
+    "hotel": "Hotel",
+    "hotels": "Hotels"
+  },
+  "tokens": {
+    "chapeau": "Top hat",
+    "voiture": "Racecar",
+    "chat": "Cat",
+    "chien": "Scottie dog",
+    "bateau": "Battleship",
+    "avion": "Aeroplane",
+    "tresor": "Treasure chest",
+    "brouette": "Wheelbarrow",
+    "de": "Thimble",
+    "lanterne": "Lantern",
+    "chaussure": "Boot",
+    "fer": "Iron",
+    "canon": "Cannon",
+    "cavalier": "Horse and rider",
+    "sac": "Money bag",
+    "bourse": "Purse",
+    "bascule": "Rocking horse",
+    "dinosaure": "T. rex",
+    "canard": "Rubber duck",
+    "pingouin": "Penguin"
+  },
+  "spaces": {
+    "0": {
+      "name": "GO",
+      "shortName": "GO"
+    },
+    "1": {
+      "name": "Belleville Boulevard",
+      "shortName": "Belleville"
+    },
+    "2": {
+      "name": "Community Chest",
+      "shortName": "Comm. Chest"
+    },
+    "3": {
+      "name": "Lecourbe Street",
+      "shortName": "Lecourbe"
+    },
+    "4": {
+      "name": "Ménilmontant Boulevard",
+      "shortName": "Ménilmontant"
+    },
+    "5": {
+      "name": "Income Tax",
+      "shortName": "Income Tax"
+    },
+    "6": {
+      "name": "Montparnasse Station",
+      "shortName": "Montparnasse"
+    },
+    "7": {
+      "name": "Convention Street",
+      "shortName": "Convention"
+    },
+    "8": {
+      "name": "Vaugirard Street",
+      "shortName": "Vaugirard"
+    },
+    "9": {
+      "name": "Chance",
+      "shortName": "Chance"
+    },
+    "10": {
+      "name": "Gas Company",
+      "shortName": "Gas Co."
+    },
+    "11": {
+      "name": "Courcelles Street",
+      "shortName": "Courcelles"
+    },
+    "12": {
+      "name": "Republic Avenue",
+      "shortName": "Republic"
+    },
+    "13": {
+      "name": "Jail / Just Visiting",
+      "shortName": "Jail"
+    },
+    "14": {
+      "name": "Auction",
+      "shortName": "Auction"
+    },
+    "15": {
+      "name": "Voltaire Boulevard",
+      "shortName": "Voltaire"
+    },
+    "16": {
+      "name": "La Villette Boulevard",
+      "shortName": "La Villette"
+    },
+    "17": {
+      "name": "Electric Company",
+      "shortName": "Electric Co."
+    },
+    "18": {
+      "name": "Neuilly Avenue",
+      "shortName": "Neuilly"
+    },
+    "19": {
+      "name": "Paradis Street",
+      "shortName": "Paradis"
+    },
+    "20": {
+      "name": "Lyon Station",
+      "shortName": "Lyon Station"
+    },
+    "21": {
+      "name": "Mozart Avenue",
+      "shortName": "Mozart"
+    },
+    "22": {
+      "name": "Community Chest",
+      "shortName": "Comm. Chest"
+    },
+    "23": {
+      "name": "Saint-Michel Boulevard",
+      "shortName": "Saint-Michel"
+    },
+    "24": {
+      "name": "Pigalle Square",
+      "shortName": "Pigalle"
+    },
+    "25": {
+      "name": "Saint-Germain Boulevard",
+      "shortName": "Saint-Germain"
+    },
+    "26": {
+      "name": "Free Parking",
+      "shortName": "Free Parking"
+    },
+    "27": {
+      "name": "Matignon Avenue",
+      "shortName": "Matignon"
+    },
+    "28": {
+      "name": "Chance",
+      "shortName": "Chance"
+    },
+    "29": {
+      "name": "Malesherbes Boulevard",
+      "shortName": "Malesherbes"
+    },
+    "30": {
+      "name": "Henri-Martin Avenue",
+      "shortName": "Henri-Martin"
+    },
+    "31": {
+      "name": "Haussmann Boulevard",
+      "shortName": "Haussmann"
+    },
+    "32": {
+      "name": "Bus Ticket",
+      "shortName": "Bus Ticket"
+    },
+    "33": {
+      "name": "North Station",
+      "shortName": "North Station"
+    },
+    "34": {
+      "name": "Saint-Honoré Quarter",
+      "shortName": "Saint-Honoré"
+    },
+    "35": {
+      "name": "Stock Exchange Square",
+      "shortName": "Stock Exchange"
+    },
+    "36": {
+      "name": "Water Works",
+      "shortName": "Water Works"
+    },
+    "37": {
+      "name": "La Fayette Street",
+      "shortName": "La Fayette"
+    },
+    "38": {
+      "name": "Rivoli Street",
+      "shortName": "Rivoli"
+    },
+    "39": {
+      "name": "Go To Jail",
+      "shortName": "Go To Jail"
+    },
+    "40": {
+      "name": "Breteuil Avenue",
+      "shortName": "Breteuil"
+    },
+    "41": {
+      "name": "Suffren Avenue",
+      "shortName": "Suffren"
+    },
+    "42": {
+      "name": "Foch Avenue",
+      "shortName": "Foch"
+    },
+    "43": {
+      "name": "Community Chest",
+      "shortName": "Comm. Chest"
+    },
+    "44": {
+      "name": "Capucines Boulevard",
+      "shortName": "Capucines"
+    },
+    "45": {
+      "name": "Saint-Lazare Station",
+      "shortName": "Saint-Lazare"
+    },
+    "46": {
+      "name": "Chance",
+      "shortName": "Chance"
+    },
+    "47": {
+      "name": "Birthday Gift",
+      "shortName": "Birthday"
+    },
+    "48": {
+      "name": "Montaigne Avenue",
+      "shortName": "Montaigne"
+    },
+    "49": {
+      "name": "Champs-Élysées Avenue",
+      "shortName": "Champs-Élysées"
+    },
+    "50": {
+      "name": "Luxury Tax",
+      "shortName": "Luxury Tax"
+    },
+    "51": {
+      "name": "Peace Street",
+      "shortName": "Peace Street"
+    }
+  },
+  "cards": {
+    "chance-01": "Go back 3 spaces.",
+    "chance-02": "Advance to La Villette Boulevard. If you pass GO, collect 200 €.",
+    "chance-03": "The bank pays you a dividend of 50 €.",
+    "chance-04": "Pay school fees of 150 €.",
+    "chance-05": "Advance to Henri-Martin Avenue. If you pass GO, collect 200 €.",
+    "chance-06": "Make general repairs: pay 25 € per house and 100 € per hotel you own.",
+    "chance-07": "Street repairs: pay 40 € per house and 115 € per hotel you own.",
+    "chance-08": "Advance to Lyon Station. Buy it, or pay the owner twice the rent due.",
+    "chance-09": "Speeding fine: pay 15 €.",
+    "chance-10": "You have won a contest: collect 100 €.",
+    "chance-11": "Drunk in charge fine: pay 20 €.",
+    "chance-12": "Advance to GO. Collect 200 €.",
+    "chance-13": "Get out of jail free. This card may be kept until used or sold.",
+    "chance-14": "Advance directly to Peace Street.",
+    "chance-15": "Your building loan matures: collect 150 €.",
+    "chance-16": "Go directly to jail. Do not pass GO, do not collect 200 €.",
+    "chance-17": "Advance to the nearest station and pay the owner twice the rent due.",
+    "chance-18": "Advance to the nearest station and pay the owner twice the rent due.",
+    "chance-19": "Advance to the nearest utility. Throw the dice and pay ten times the amount thrown.",
+    "cc-01": "Doctor’s fee: pay 10 €.",
+    "cc-02": "Bank error in your favour: collect 200 €.",
+    "cc-03": "Interest on your loan: collect 25 €.",
+    "cc-04": "Pay a 10 € fine or draw a Chance card instead.",
+    "cc-05": "Income tax refund: collect 20 €.",
+    "cc-06": "Hospital fees: pay 50 €.",
+    "cc-07": "You win second prize in a beauty contest: collect 10 €.",
+    "cc-08": "You inherit 100 €.",
+    "cc-09": "From the sale of stock you get 50 €.",
+    "cc-10": "Go directly to jail. Do not pass GO, do not collect 200 €.",
+    "cc-11": "Annual income: collect 100 €.",
+    "cc-12": "It is your birthday: collect 10 € from every other player.",
+    "cc-13": "Go back to Belleville Boulevard.",
+    "cc-14": "Get out of jail free. This card may be kept until used or sold.",
+    "cc-15": "Advance to GO. Collect 200 €.",
+    "cc-16": "Life insurance premium: pay 50 €."
+  }
+}

@@ -151,6 +151,11 @@ test('une partie complète en anglais ne laisse pas une phrase de français au j
         : kind === 'card_choice' ? { type: 'CARD_CHOICE', optionIndex: 0 }
         // Relance offerte par un pouvoir de camp : on garde le jet.
         : kind === 'reroll' ? { type: 'KEEP_ROLL' }
+        // Dé rapide : on prend la première case proposée, le premier choix de bus.
+        : kind === 'choose_space'
+          ? { type: 'CHOOSE_SPACE', spaceId: game.state.pending.payload.spaceIds[0] }
+        : kind === 'bus_choice'
+          ? { type: 'BUS_CHOICE', choice: game.state.pending.payload.canTake ? 'take' : 'use' }
         : kind === 'pay_debt'
           ? (player.cash >= game.state.debt.amount
               ? { type: 'PAY_DEBT' }

@@ -14,8 +14,10 @@ import { credit, refreshDebtPending } from './money.js';
 /** Les libellés de construction de l'édition : maisons, chaumières, blasons… */
 function labels(state) {
   return (
-    rulesOf(state).buildingLabels ?? {
+    {
       house: 'Maison', houses: 'Maisons', hotel: 'Hôtel', hotels: 'Hôtels',
+      skyscraper: 'Gratte-ciel', skyscrapers: 'Gratte-ciels', depot: 'Dépôt', depots: 'Dépôts',
+      ...(rulesOf(state).buildingLabels ?? {}),
     }
   );
 }
@@ -101,7 +103,25 @@ export function buildHouse(state, playerId, spaceId) {
   const player = playerById(state, playerId);
   player.cash -= check.cost;
 
-  if (check.isHotel) {
+  if (check.isDepot) {
+    prop.depot = true;
+    log(state, 'build', say(state, 'buildsDepot', { name: player.name, space: space.name, amount: amountText(state, check.cost) }), {
+      playerId,
+      spaceId,
+      amount: check.cost,
+    });
+  } else if (check.isSkyscraper) {
+    // Le gratte-ciel prend la place de l'hôtel, qui retourne au stock.
+    prop.hotel = false;
+    prop.skyscraper = true;
+    state.bank.hotels += 1;
+    state.bank.skyscrapers = (state.bank.skyscrapers ?? 0) - 1;
+    log(state, 'build', say(state, 'buildsTop', { name: player.name, label: labels(state).skyscraper.toLowerCase(), space: space.name, amount: amountText(state, check.cost) }), {
+      playerId,
+      spaceId,
+      amount: check.cost,
+    });
+  } else if (check.isHotel) {
     prop.houses = 0;
     prop.hotel = true;
     state.bank.hotels -= 1;
@@ -132,7 +152,31 @@ export function sellBuilding(state, playerId, spaceId) {
   const space = getSpace(state, spaceId);
   const prop = state.properties[spaceId];
 
-  if (check.fromHotel) {
+  if (check.fromDepot) {
+    prop.depot = false;
+    log(state, 'sell', say(state, 'sellsDepot', { name: player(state, playerId), space: space.name, amount: amountText(state, check.refund) }), {
+      playerId,
+      spaceId,
+      amount: check.refund,
+    });
+  } else if (check.fromSkyscraper) {
+    // Le gratte-ciel redescend au palier d'en dessous : l'hôtel qu'il coiffait.
+    // Si la banque n'en a plus, la propriété retombe à quatre maisons.
+    prop.skyscraper = false;
+    state.bank.skyscrapers = (state.bank.skyscrapers ?? 0) + 1;
+    if (state.bank.hotels > 0) {
+      prop.hotel = true;
+      state.bank.hotels -= 1;
+    } else if (state.bank.houses >= 4) {
+      prop.houses = 4;
+      state.bank.houses -= 4;
+    }
+    log(state, 'sell', say(state, 'sellsTop', { name: player(state, playerId), label: labels(state).skyscraper.toLowerCase(), space: space.name, amount: amountText(state, check.refund) }), {
+      playerId,
+      spaceId,
+      amount: check.refund,
+    });
+  } else if (check.fromHotel) {
     prop.hotel = false;
     state.bank.hotels += 1;
     if (check.razeHotel) {

@@ -1,0 +1,313 @@
+{
+  "chance": [
+    {
+      "id": "chance-01",
+      "text": "Reculez de 3 cases.",
+      "action": {
+        "type": "move_relative",
+        "offset": -3
+      }
+    },
+    {
+      "id": "chance-02",
+      "text": "Avancez jusqu'au Boulevard de la Villette. Si vous passez par la case Départ, touchez 200 €.",
+      "action": {
+        "type": "move_to",
+        "target": 16,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "chance-03",
+      "text": "La banque vous verse un dividende de 50 €.",
+      "action": {
+        "type": "collect",
+        "amount": 50
+      }
+    },
+    {
+      "id": "chance-04",
+      "text": "Payez des frais de scolarité de 150 €.",
+      "action": {
+        "type": "pay",
+        "amount": 150
+      }
+    },
+    {
+      "id": "chance-05",
+      "text": "Rendez-vous à l'Avenue Henri-Martin. Si vous passez par la case Départ, touchez 200 €.",
+      "action": {
+        "type": "move_to",
+        "target": 30,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "chance-06",
+      "text": "Réparations locatives : payez 25 € par maison et 100 € par hôtel que vous possédez.",
+      "action": {
+        "type": "pay_per_building",
+        "perHouse": 25,
+        "perHotel": 100
+      }
+    },
+    {
+      "id": "chance-07",
+      "text": "Taxe de voirie : payez 40 € par maison et 115 € par hôtel que vous possédez.",
+      "action": {
+        "type": "pay_per_building",
+        "perHouse": 40,
+        "perHotel": 115
+      }
+    },
+    {
+      "id": "chance-08",
+      "text": "Allez à la Gare de Lyon. Achetez-la, ou payez au propriétaire le double du loyer normal.",
+      "action": {
+        "type": "move_to",
+        "target": 20,
+        "collectGoSalary": true,
+        "rentMultiplier": 2
+      }
+    },
+    {
+      "id": "chance-09",
+      "text": "Amende pour excès de vitesse : payez 15 €.",
+      "action": {
+        "type": "pay",
+        "amount": 15
+      }
+    },
+    {
+      "id": "chance-10",
+      "text": "Vous gagnez un concours : recevez 100 €.",
+      "action": {
+        "type": "collect",
+        "amount": 100
+      }
+    },
+    {
+      "id": "chance-11",
+      "text": "Amende pour ivresse sur la voie publique : payez 20 €.",
+      "action": {
+        "type": "pay",
+        "amount": 20
+      }
+    },
+    {
+      "id": "chance-12",
+      "text": "Avancez jusqu’à la case Départ. Recevez 200 €.",
+      "action": {
+        "type": "move_to",
+        "target": 0,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "chance-13",
+      "text": "Vous êtes libérée de prison. Cette carte peut être conservée jusqu’à ce qu’elle soit utilisée ou vendue.",
+      "action": {
+        "type": "get_out_of_jail_free"
+      },
+      "keepable": true
+    },
+    {
+      "id": "chance-14",
+      "text": "Rendez-vous directement à la Rue de la Paix.",
+      "action": {
+        "type": "move_to",
+        "target": 51,
+        "collectGoSalary": false
+      }
+    },
+    {
+      "id": "chance-15",
+      "text": "Vous touchez un revenu immobilier de 150 €.",
+      "action": {
+        "type": "collect",
+        "amount": 150
+      }
+    },
+    {
+      "id": "chance-16",
+      "text": "Allez directement en prison, sans passer par la case Départ, sans toucher 200 €.",
+      "action": {
+        "type": "go_to_jail"
+      }
+    },
+    {
+      "id": "chance-17",
+      "text": "Avancez jusqu’à la gare la plus proche et payez au propriétaire le double du loyer normal.",
+      "action": {
+        "type": "nearest",
+        "spaceType": "railroad",
+        "rentMultiplier": 2
+      }
+    },
+    {
+      "id": "chance-18",
+      "text": "Avancez jusqu’à la gare la plus proche et payez au propriétaire le double du loyer normal.",
+      "action": {
+        "type": "nearest",
+        "spaceType": "railroad",
+        "rentMultiplier": 2
+      }
+    },
+    {
+      "id": "chance-19",
+      "text": "Avancez jusqu’à la compagnie la plus proche. Lancez les dés et payez dix fois le résultat.",
+      "action": {
+        "type": "nearest",
+        "spaceType": "utility",
+        "utilityFactor": 10,
+        "rerollDice": true
+      }
+    }
+  ],
+  "community_chest": [
+    {
+      "id": "cc-01",
+      "text": "Frais médicaux : payez 10 €.",
+      "action": {
+        "type": "pay",
+        "amount": 10
+      }
+    },
+    {
+      "id": "cc-02",
+      "text": "Erreur de la banque en votre faveur : recevez 200 €.",
+      "action": {
+        "type": "collect",
+        "amount": 200
+      }
+    },
+    {
+      "id": "cc-03",
+      "text": "Intérêts sur un emprunt : recevez 25 €.",
+      "action": {
+        "type": "collect",
+        "amount": 25
+      }
+    },
+    {
+      "id": "cc-04",
+      "text": "Vous pouvez payer une amende de 10 € ou piocher une carte Chance à la place.",
+      "action": {
+        "type": "choice",
+        "options": [
+          {
+            "label": "Payer 10 €",
+            "action": {
+              "type": "pay",
+              "amount": 10
+            }
+          },
+          {
+            "label": "Piocher une carte Chance",
+            "action": {
+              "type": "draw_card",
+              "deck": "chance"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "cc-05",
+      "text": "Remboursement d’impôts : recevez 20 €.",
+      "action": {
+        "type": "collect",
+        "amount": 20
+      }
+    },
+    {
+      "id": "cc-06",
+      "text": "Note du médecin : payez 50 €.",
+      "action": {
+        "type": "pay",
+        "amount": 50
+      }
+    },
+    {
+      "id": "cc-07",
+      "text": "Vous remportez un concours de beauté : recevez 10 €.",
+      "action": {
+        "type": "collect",
+        "amount": 10
+      }
+    },
+    {
+      "id": "cc-08",
+      "text": "Vous touchez un héritage : recevez 100 €.",
+      "action": {
+        "type": "collect",
+        "amount": 100
+      }
+    },
+    {
+      "id": "cc-09",
+      "text": "Vente de vos actions : recevez 50 €.",
+      "action": {
+        "type": "collect",
+        "amount": 50
+      }
+    },
+    {
+      "id": "cc-10",
+      "text": "Allez directement en prison, sans passer par la case Départ, sans toucher 200 €.",
+      "action": {
+        "type": "go_to_jail"
+      }
+    },
+    {
+      "id": "cc-11",
+      "text": "Revenu annuel : recevez 100 €.",
+      "action": {
+        "type": "collect",
+        "amount": 100
+      }
+    },
+    {
+      "id": "cc-12",
+      "text": "C’est votre anniversaire : chaque autre joueuse vous donne 10 €.",
+      "action": {
+        "type": "collect_from_each",
+        "amount": 10
+      }
+    },
+    {
+      "id": "cc-13",
+      "text": "Retournez à la case Boulevard de Belleville.",
+      "action": {
+        "type": "move_to",
+        "target": 1,
+        "collectGoSalary": false
+      }
+    },
+    {
+      "id": "cc-14",
+      "text": "Vous êtes libérée de prison. Cette carte peut être conservée jusqu’à ce qu’elle soit utilisée ou vendue.",
+      "action": {
+        "type": "get_out_of_jail_free"
+      },
+      "keepable": true
+    },
+    {
+      "id": "cc-15",
+      "text": "Avancez jusqu’à la case Départ. Recevez 200 €.",
+      "action": {
+        "type": "move_to",
+        "target": 0,
+        "collectGoSalary": true
+      }
+    },
+    {
+      "id": "cc-16",
+      "text": "Prime d’assurance à payer : 50 €.",
+      "action": {
+        "type": "pay",
+        "amount": 50
+      }
+    }
+  ]
+}
