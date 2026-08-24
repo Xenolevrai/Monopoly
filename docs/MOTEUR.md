@@ -29,6 +29,7 @@ dispatch(game, 'p0', { type: 'END_TURN' });
 | `property.js` | achat, hypothèque, construction, revente |
 | `auction.js` | enchères (refus d'achat, liquidation de faillite) |
 | `cards.js` | piles Chance / Caisse et effets de cartes |
+| `speeddie.js` | troisième dé, tickets de bus, déplacements différés |
 | `trade.js` | échanges entre joueuses |
 | `rng.js` | aléatoire déterministe (graine fixée dans les tests) |
 
@@ -39,7 +40,10 @@ correspond à ce que `state.pending` réclame, et qu'elle vient d'une joueuse
 listée dans `pending.playerIds`.**
 
 `pending.kind` vaut `roll`, `buy_or_auction`, `draw_card`, `card_reveal`,
-`auction_bid`, `card_choice`, `pay_debt`, `end_turn`, ou `null`. Deux exceptions volontaires :
+`auction_bid`, `card_choice`, `pay_debt`, `end_turn`, ou `null` — plus les
+invites qu'apportent certaines boîtes : `reroll`, `spin_spinner`, `jail_decision`,
+`choose_space` (une case à désigner, `then` disant quoi en faire) et
+`bus_choice`. Deux exceptions volontaires :
 
 - **hypothéquer et revendre** sont possibles à tout moment — il faut pouvoir
   réunir des fonds pendant le tour d'une autre (carte « anniversaire ») ;

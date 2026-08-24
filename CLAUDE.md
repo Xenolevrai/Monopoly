@@ -13,7 +13,7 @@ navigateur, pour jouer **en famille et entre amis**. Usage strictement privé :
 pas de vente, pas de diffusion publique. Les données de plateau et de cartes
 sont relevées sur les boîtes physiques du propriétaire du dépôt.
 
-Six éditions sont livrées. L'ajout d'un **reskin** doit se faire **sans toucher
+Sept éditions sont livrées. L'ajout d'un **reskin** doit se faire **sans toucher
 une ligne de moteur** — c'est le contrat central de l'architecture, et
 `spiderman-fr` en est la preuve la plus nette. Une boîte qui apporte de
 véritables mécaniques nouvelles (`poudlard-points`, `spiderman-hasbro-fr`) fait
@@ -28,6 +28,7 @@ bouger le moteur, mais toujours par des **drapeaux génériques** lus dans
 | `spiderman-fr` | Spider-Man Collector (Winning Moves), $ | `web` | dernière en jeu | reskin exact du classique : vilains, traceurs / tours de toile |
 | `spiderman-hasbro-fr` | Spider-Man Hasbro, Bouffon Vert, $ | `web` | tout capturé **ou** dernière en jeu | **règles différentes** : pion hostile autonome, pièges, raccourcis, pouvoirs de héros |
 | `poudlard-points` | Harry Potter Hasbro, points de maison | `night` | tout le plateau exploré | **règles différentes** : pas d'hôtel, pas d'hypothèque, pas d'élimination |
+| `mega-edition` | Monopoly Mega Edition (Winning Moves), € | `table` | dernière en jeu | **plateau de 52 cases, jusqu'à 8 joueuses** : troisième dé, tickets de bus, gratte-ciels, dépôts, règle de majorité |
 
 Chaque édition se joue **en français ou en anglais** ; la langue ne change que
 les mots (noms de cases, textes de cartes, journal), jamais une règle. Cet
@@ -41,7 +42,7 @@ invariant est prouvé par `tests/locales.test.js`.
 npm install
 npm run build     # compile le client — à refaire après chaque pull
 npm start         # http://localhost:3000
-npm run check     # lint + 207 tests
+npm run check     # lint + 247 tests
 ```
 
 Node 22+, ESM partout, workspaces npm (racine + `client`).
@@ -93,6 +94,7 @@ shared/
 server/
   engine/index.js      dispatch + advanceFlow — le cœur
   engine/{movement,property,cards,auction,trade,money,turn,queries,log,rng}.js
+  engine/speeddie.js   troisième dé, tickets de bus, déplacements différés
   rooms.js             registre des parties, codes, sauvegarde disque
   sockets.js           passerelle Socket.io ↔ moteur
   bots/                les joueuses artificielles (voir §5 ter)
@@ -100,7 +102,7 @@ scripts/               train-bots.mjs · tune-bots.mjs — tournois et réglage
 client/src/
   components/          Board, BoardSkin, Centerpiece, SpaceArt, SpaceIcons, Actions, Players…
   lib/                 board.js, i18n.js, theme.js, rulesText.jsx, useGame.js, useCinematic.js
-tests/                 bots · contrast · data · editions · engine · locales · payment-flow · points-edition · server · simulation
+tests/                 bots · contrast · data · editions · engine · locales · mega-edition · payment-flow · points-edition · server · simulation
 docs/                  DATA_MODEL · MOTEUR · SERVEUR · CLIENT · ART_DIRECTION
 ```
 
@@ -378,6 +380,116 @@ difficile 26 %, moyen 20 %, facile 0 %, pour 25 % au hasard.
 
 ---
 
+## 5 quater. Le plateau agrandi (`mega-edition`)
+
+La première boîte dont le plateau ne fait **pas 40 cases**, et la première où
+l'on joue **à huit**. Rien de tout ça n'a demandé de coder « la Mega Edition » :
+la taille du plateau se déduit déjà partout (`gridSize = length / 4 + 1`, soit
+14 × 14 ici), et le nombre de places vient de `playerCount.max`. Le reste passe
+par cinq drapeaux dans `mechanics`.
+
+| drapeau | ce que le moteur en fait |
+|---|---|
+| `majorityBuildRule` | le seuil de construction se calcule sur la **taille réelle du groupe** — deux sur trois, trois sur quatre — au lieu d'exiger le groupe entier |
+| `skyscrapers` | un sixième palier de construction, au-dessus de l'hôtel |
+| `trainDepots` | `{ cost, rentFactor }` — un aménagement de gare autonome |
+| `speedDie` | `{ faces: [...] }` — un troisième dé lancé avec les deux autres |
+| `busTickets` | `{ total, expiring }` — une pioche et un inventaire par joueuse |
+
+Les quatre coins tombent en **0, 13, 26, 39** : la géométrie de `gridPosition`
+les place exactement là, sans rien changer au client.
+
+### La règle de majorité déborde sur trois endroits
+
+Ce n'est pas qu'un seuil : elle change aussi les loyers et la répartition.
+
+- **Construire** : `buildThreshold` (`queries.js`) rend `size` sans le drapeau,
+  `floor(size / 2) + 1` avec. Le classique ne bouge pas d'un pouce.
+- **Répartition égale** : le tour de garde compare désormais les niveaux des
+  **seules cases qu'on possède** dans le groupe. Sans ça, la case restée à une
+  adversaire (niveau 0) interdisait toute construction — la majorité aurait été
+  purement décorative.
+- **Loyer d'un terrain nu** : ×1 par défaut, ×2 dès la majorité (donc aussi
+  avec le groupe entier, comme au classique), ×3 si un gratte-ciel se dresse
+  déjà dans le groupe. Tout tient dans `bareRentFactor`.
+
+Le gratte-ciel, lui, ne se contente **pas** de la majorité : il exige le groupe
+**entier** coiffé d'un hôtel sur chaque case. C'est ce qui l'empêche d'être une
+simple sixième maison.
+
+### Le dé rapide, et le déplacement qu'on ne peut pas jouer tout de suite
+
+`server/engine/speeddie.js`. Quatre faces, quatre résolutions :
+
+- **chiffre** (1, 2, 3) : s'ajoute au déplacement, **jamais** au `diceTotal`
+  transmis à la résolution — les compagnies se paient sur les deux dés blancs
+  seuls, et c'est ce paramètre-là qui porte la règle ;
+- **Mr Monopoly** : on résout d'abord la case atteinte aux deux dés blancs,
+  **puis** on repart vers la prochaine propriété libre (ou, à défaut, le
+  prochain loyer dû) ;
+- **Bus** : utiliser un ticket, en prendre un, ou — sans ticket ni pioche —
+  avancer normalement puis continuer jusqu'à la prochaine case à carte ;
+- **triple identique** (les deux dés blancs et le dé rapide sur la même
+  valeur) : on se pose où l'on veut, et l'on ne rejoue pas.
+
+**Le point délicat, à ne pas défaire** : les deux derniers cas demandent de
+rejouer **après** que la première case est réglée — or celle-ci peut ouvrir un
+achat, une enchère, une dette. On ne peut donc pas enchaîner sur place. Le
+déplacement restant est posé dans `state.postMove`, et `finishResolution` le
+joue au seul moment où plus rien n'attend de décision. Le mettre ailleurs (dans
+`advanceFlow`, par exemple) le ferait sauter : l'invite « fin de tour » posée
+juste avant court-circuiterait le test. `startTurn` remet `postMove` à `null` —
+une faillite au milieu du chemin ne doit pas le laisser traîner au tour suivant.
+
+Le dé rapide n'est lancé **ni en prison** (la sortie par les doubles ne regarde
+que les deux dés blancs) **ni au tirage de l'ordre de jeu**. Il se scripte dans
+les tests comme les deux autres, parce qu'il tire par `rng.int` et non
+`rng.next` : `scriptedRng([[3, 3, 3]])` donne un triple.
+
+### Les tickets de bus
+
+Un ticket se joue **à la place d'un lancer** (`USE_BUS_TICKET` sur l'invite
+`roll`) ou depuis la face Bus. Il dessert les cases **devant soi jusqu'au
+prochain coin inclus**. Chaque ticket dit lui-même s'il périme les autres, si
+bien que l'état se relit sans revenir à la configuration.
+
+Deux invites génériques portent tout ça, et méritent de le rester :
+
+- **`choose_space`** — une liste de cases recevables plus un `then` qui dit
+  quoi en faire (`move`, `auction`, `bus_ticket`). Trois situations très
+  différentes passent par la même invite et le même composant client.
+- **`bus_choice`** — utiliser ou prendre un ticket.
+
+### ⚠️ Ce qui reste une lecture, pas un relevé
+
+Les données de plateau et les grilles de loyers viennent du relevé fourni ; les
+points ci-dessous sont des **inférences**, à confronter à une boîte physique :
+
+1. **Le nom de la case 48** (« Avenue Montaigne ») est provisoire. Prix et
+   loyers, eux, sont donnés.
+2. **La grille de loyers de Boulevard de Ménilmontant** : deux marrons à 60 €
+   ont des grilles différentes au classique, on a retenu celle de Rue Lecourbe.
+3. **Le prix d'un gratte-ciel** : la boîte ne le chiffre pas ici, on prend le
+   coût de maison du groupe — le même qu'un palier ordinaire.
+4. **Les stocks de la banque** (40 maisons, 16 hôtels, 12 gratte-ciels) sont
+   choisis pour un plateau plus grand, pas relevés.
+5. **La portée d'un ticket** : « le même côté du plateau » ne dit pas si l'on
+   peut reculer. On avance, jusqu'au prochain coin inclus.
+6. **Prendre un ticket sur une face Bus** fait ensuite avancer des deux dés
+   blancs. La règle donne ce déplacement au cas de repli ; on l'étend au cas
+   général plutôt que de laisser un tour sans déplacement.
+7. **Les trois cartes « la plus proche »** ont été ajoutées au paquet Chance :
+   la règle décrit leur comportement (gare ×2 cumulable avec le dépôt,
+   compagnie ×10 même à trois compagnies), mais `classic-fr` ne les avait pas.
+8. **Le calque anglais** garde le plateau parisien et le met à la tournure
+   anglaise (« Rue Lecourbe » → « Lecourbe Street »), au lieu de basculer sur
+   Atlantic City comme le fait `classic-fr` — la boîte américaine n'a pas les
+   mêmes rues ajoutées, et les inventer aurait été pire.
+
+Tests : `tests/mega-edition.test.js` (34 cas).
+
+---
+
 ## 6. Le point sensible : réunir de l'argent
 
 Un défaut signalé en jouant a laissé des tests dédiés
@@ -602,6 +714,24 @@ Le basculement se fait par classes Tailwind dans `client/src/App.jsx`
 - **Sur Render, le disque est éphémère par défaut** : sans le disque persistant
   décrit en §2 bis, chaque redéploiement ou redémarrage efface toutes les
   parties sauvegardées, sans la moindre erreur visible.
+- **La répartition égale des constructions ne compte que les cases qu'on
+  possède.** Comparer les niveaux du groupe entier n'était juste que tant qu'il
+  fallait le groupe entier pour bâtir : sous la règle de majorité, la case
+  restée à une adversaire (niveau 0) interdisait toute construction.
+- **Chiffrer une case à carte peut boucler.** Côté bots, `landingValue` évalue
+  une case Chance par la moyenne de son paquet, dont les cartes déplacent, dont
+  les cases d'arrivée sont parfois des cases à carte : « reculez de trois
+  cases » posée trois cases après une Chance se rappelait sans fin. Le compteur
+  `depth` doit voyager **jusqu'à** `landingValue`, pas seulement dans
+  `actionValue` — le défaut dormait déjà sur le plateau classique.
+- **Un bot ne construit que ce qu'il sait chiffrer.** Un palier dont le gain
+  marginal se calcule à zéro (gratte-ciel plafonné au tarif de l'hôtel, dépôt
+  comparé à lui-même) n'est jamais bâti, sans la moindre erreur : il est
+  simplement toujours classé dernier. Après toute nouvelle construction, relire
+  `rentAtLevel` et `buildRanking`.
+- **Le total affiché sous les dés est celui du déplacement**, pas la somme des
+  dés lancés : une face chiffrée du dé rapide s'y ajoute, ses deux autres faces
+  non. C'est la seule lecture qui corresponde à ce que le pion fait.
 
 ---
 
@@ -615,13 +745,22 @@ l'édition Classique (Parc Gratuit Jackpot, Prison, Tout Acheter — voir §5,
 avec leurs cases à cocher et la détection de conflit dans l'écran de
 sélection), les deux éditions Spider-Man (Collector et Hasbro/Bouffon Vert),
 les **quatre niveaux de bots** (voir §5 ter — ils achètent, bâtissent,
-hypothèquent, enchérissent, tranchent les cartes et négocient, sur les six
-boîtes et toutes les extensions), le retour en arrière sur les gestes
-réversibles (§6 bis), la colonne de droite réarrangeable (§7 ter), 207 tests.
+hypothèquent, enchérissent, tranchent les cartes et négocient, sur les sept
+boîtes et toutes les extensions), la **Mega Edition** (§5 quater — plateau de
+52 cases, table de huit, dé rapide, tickets de bus, gratte-ciels, dépôts,
+règle de majorité), le retour en arrière sur les gestes réversibles (§6 bis),
+la colonne de droite réarrangeable (§7 ter), 247 tests.
 
 **Reste à faire**, par ordre de priorité annoncée :
 
-1. **Réconcilier les données Spider-Man avec la photo de la boîte.** Une photo
+1. **Relire la Mega Edition contre la boîte physique.** Le plateau et les
+   grilles de loyers viennent du relevé fourni, mais huit points sont des
+   inférences assumées — nom de la case 48, grille du Boulevard de
+   Ménilmontant, prix d'un gratte-ciel, stocks de la banque, portée d'un
+   ticket de bus, déplacement après « prendre un ticket », ajout des trois
+   cartes « la plus proche », et le parti pris du calque anglais. La liste
+   complète, avec la raison de chaque choix, est en §5 quater.
+2. **Réconcilier les données Spider-Man avec la photo de la boîte.** Une photo
    du plateau Hasbro fournie en cours de route contredit sur plusieurs points le
    relevé écrit qui a servi à construire `spiderman-hasbro-fr` :
    - la boîte montre **deux paquets** (« DAILY BUGLE » et « SPIDER SENSE »),
@@ -638,21 +777,21 @@ réversibles (§6 bis), la colonne de droite réarrangeable (§7 ter), 207 tests
    relevé écrit décrit une autre boîte, soit `spiderman-hasbro-fr` repose sur
    des règles qui ne sont pas celles-là.
 
-2. **Relire `spiderman-hasbro-fr` contre la boîte physique** : deux règles y
+3. **Relire `spiderman-hasbro-fr` contre la boîte physique** : deux règles y
    sont des lectures assumées (voir §5 bis), et les chiffres non donnés par la
    boîte ont été calibrés à la simulation — pénalité de piège, prix d'un
    raccourci, faces du dé du Bouffon. Les cartes Daily Bugle « Surveillance
    piratée » (réordonner trois cartes) et « Chantage photographique » (choisir
    sa cible) sont simplifiées : la première pioche la carte suivante, la seconde
    vise la joueuse la plus riche.
-3. Relire les trois extensions contre les boîtes physiques : les règles de
+4. Relire les trois extensions contre les boîtes physiques : les règles de
    Prison et de Tout Acheter viennent de sources secondaires (voir §5). Points
    les plus incertains : la caution de la Super Jail, les faces exactes du dé
    d'Achat, les effets des cartes Vente, et le rendu de la « Deal Mobile » du
    Jackpot (non implémentée) et de la « Banque » de Tout Acheter (non
    représentée).
-4. Vérifier les textes de cartes du reskin Harry Potter sur la boîte physique.
-5. Éditions Junior, Cheaters, Empire, Speed (les drapeaux `mechanics`
+5. Vérifier les textes de cartes du reskin Harry Potter sur la boîte physique.
+6. Éditions Junior, Cheaters, Empire, Speed (les drapeaux `mechanics`
    existent déjà : `cheatCards`, `towerMode`, `draftMode`, `battleSpaces`).
 
 ---

@@ -4,7 +4,7 @@ Tout est dans `shared/`, importé aussi bien par le serveur que par le client.
 
 ```
 shared/
-  data/board.json    40 cases, prix, loyers, hypothèques  (données pures, éditables)
+  data/board.json    les cases, prix, loyers, hypothèques  (données pures, éditables)
   data/groups.json   8 groupes de couleur + gares + compagnies
   data/cards.json    2 × 16 cartes, avec effet structuré
   data/rules.json    constantes de règles + règles maison + pions
@@ -32,11 +32,24 @@ Une case = un objet plat. Exemple, le n° 19 :
   au lieu d'une cascade de `if`. Le doublement « groupe complet non construit »
   reste une règle du moteur, pas une donnée.
 - Les gares portent `rent: [25, 50, 100, 200]` indexé par *nombre de gares − 1*.
-- Les compagnies portent `rentMultipliers: [4, 10]`, multiplié par le jet de dés.
-- `side` et `corner` ne servent qu'à l'affichage (grille 11×11), le moteur les ignore.
+- Les compagnies portent `rentMultipliers`, multiplié par le jet de dés, et
+  indexé par *nombre de compagnies − 1* : `[4, 10]` à deux compagnies,
+  `[4, 10, 20]` sur un plateau qui en compte trois.
+- `side` et `corner` ne servent qu'à l'affichage, le moteur les ignore. **La
+  grille se déduit de la longueur du plateau** (`length / 4 + 1`) : 11 × 11 pour
+  40 cases, 14 × 14 pour les 52 de la Mega Edition. Rien n'est écrit en dur.
 
 `type` vaut : `go`, `property`, `railroad`, `utility`, `community_chest`, `chance`,
-`tax`, `jail`, `free_parking`, `go_to_jail`.
+`tax`, `jail`, `free_parking`, `go_to_jail` — plus les types qu'une édition ou une
+extension ajoute (`landmark`, `warp`, `spin`, `auction_space`, `bus_ticket`,
+`birthday_gift`…). Un type qui porte le nom d'un paquet de cartes déclenche un
+tirage, sans que le moteur connaisse la liste des paquets.
+
+Une propriété de l'état (`state.properties[id]`) porte `houses`, `hotel`, plus
+deux paliers qui ne servent qu'aux boîtes qui les déclarent : `skyscraper` (un
+cran au-dessus de l'hôtel) et `depot` (un aménagement de gare). Ils sont
+toujours présents et toujours faux ailleurs — l'état reste homogène d'une boîte
+à l'autre.
 
 ## 2. Les cartes : un texte + un effet structuré
 
