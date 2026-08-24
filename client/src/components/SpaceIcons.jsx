@@ -245,6 +245,45 @@ export function Web({ className = '', style }) {
   );
 }
 
+/** Le marteau du commissaire-priseur — la case où l'on met un titre en vente. */
+export function Gavel({ className = '', style }) {
+  return (
+    <svg {...box} className={className} style={style}>
+      <rect x="6" y="38" width="30" height="5" rx="2.5" />
+      <g transform="rotate(-38 24 22)">
+        <rect x="14" y="8" width="20" height="9" rx="2.5" />
+        <rect x="22.5" y="16" width="4" height="20" rx="2" />
+      </g>
+    </svg>
+  );
+}
+
+/** Le car — la case et la pioche de tickets de bus. */
+export function Bus({ className = '', style }) {
+  return (
+    <svg {...box} className={className} style={style}>
+      <path d="M9 12a3 3 0 013-3h24a3 3 0 013 3v22a2 2 0 01-2 2H11a2 2 0 01-2-2z" />
+      <rect x="12.5" y="13" width="9" height="8" rx="1.4" fill="#fff" opacity=".85" />
+      <rect x="26.5" y="13" width="9" height="8" rx="1.4" fill="#fff" opacity=".85" />
+      <rect x="12.5" y="25" width="23" height="3" rx="1.5" fill="#fff" opacity=".5" />
+      <circle cx="15" cy="39" r="4" />
+      <circle cx="33" cy="39" r="4" />
+    </svg>
+  );
+}
+
+/** Le paquet cadeau — la case anniversaire. */
+export function Gift({ className = '', style }) {
+  return (
+    <svg {...box} className={className} style={style}>
+      <rect x="7" y="20" width="34" height="20" rx="2" />
+      <rect x="5" y="14" width="38" height="7" rx="2" />
+      <rect x="21" y="14" width="6" height="26" fill="#fff" opacity=".7" />
+      <path d="M24 14c-4-1-9-2-9-6a4 4 0 018 0c0 4 1 5 1 6zM24 14c4-1 9-2 9-6a4 4 0 00-8 0c0 4-1 5-1 6z" />
+    </svg>
+  );
+}
+
 /** La bibliothèque de pictogrammes adressables depuis une config d'édition. */
 const LIBRARY = {
   locomotive: Locomotive, bulb: Bulb, faucet: Faucet, question: QuestionMark,
@@ -252,6 +291,7 @@ const LIBRARY = {
   car: ParkedCar, officer: Officer,
   crest: Crest, spark: Spark, owl: Owl, castle: Castle,
   jet: Jet, reactor: Reactor, badge: Badge, web: Web,
+  gavel: Gavel, bus: Bus, gift: Gift,
 };
 
 /** Les pictogrammes du Monopoly d'origine, si l'édition n'en impose pas d'autres. */
@@ -273,6 +313,10 @@ const DEFAULT_ICONS = {
   heist: 'chest',
   super_jail: 'bars',
   landmark: 'crest',
+  // Cases des plateaux à ticket de bus (`mechanics.busTickets`).
+  auction_space: 'gavel',
+  bus_ticket: 'bus',
+  birthday_gift: 'gift',
 };
 
 /**

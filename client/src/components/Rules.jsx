@@ -87,13 +87,28 @@ export function RulesContent({ state }) {
       </Section>
 
       <Section title={r.turnTitle}>
-        <Line>{r.turnDice(c)}</Line>
+        {/* Une boîte où les doubles n'envoient jamais en prison ne doit pas lire
+            la phrase inverse : `doublesToJail` à zéro le dit sans ambiguïté. */}
+        <Line>{c.doublesToJail ? r.turnDice(c) : r.turnDiceNoJail(c)}</Line>
         <Line>{r.turnGo(c)}</Line>
       </Section>
 
+      {m.speedDie && (
+        <Section title={r.speedDieTitle}>
+          <Line>{r.speedDieMain(c)}</Line>
+        </Section>
+      )}
+
+      {m.busTickets && (
+        <Section title={r.busTicketsTitle}>
+          <Line>{r.busTicketsMain(c)}</Line>
+          <Line>{r.megaSpacesMain(c)}</Line>
+        </Section>
+      )}
+
       <Section title={r.buyTitle(c)}>
         <Line>{r.buyMain(c)}</Line>
-        <Line>{r.buyRent(c)}</Line>
+        <Line>{m.majorityBuildRule ? r.buyRentMajority(c) : r.buyRent(c)}</Line>
         {/* Le privilège n'existe que si l'édition rattache un fief à un camp :
             le plateau de certaines boîtes n'a pas de salle commune. */}
         {edition.factions?.options.some((f) => f.homeSpace != null) && <Line>{r.buyHome(c)}</Line>}
@@ -107,8 +122,16 @@ export function RulesContent({ state }) {
 
       {m.houses && (
         <Section title={labels.houses}>
-          <Line>{r.buildMain(c)}</Line>
+          <Line>{m.majorityBuildRule ? r.buildMainMajority(c) : r.buildMain(c)}</Line>
           <Line>{m.hotels ? r.buildHotel(c) : r.buildCap(c)}</Line>
+          {m.majorityBuildRule && <Line>{r.majorityMain(c)}</Line>}
+          {m.skyscrapers && <Line>{r.skyscraperMain(c)}</Line>}
+        </Section>
+      )}
+
+      {m.trainDepots && (
+        <Section title={r.depotTitle}>
+          <Line>{r.depotMain(c)}</Line>
         </Section>
       )}
 

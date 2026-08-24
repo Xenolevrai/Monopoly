@@ -106,6 +106,74 @@ const FR = {
   buildHotel: (c) => `Quatre ${c.buildingsLower} sur une case permettent d'y bâtir un ${c.hotelLower}.`,
   buildCap: () => "Il n'y a pas d'échelon au-dessus : quatre par case, c'est le maximum.",
 
+  // — Plateau agrandi : majorité, gratte-ciels, dépôts, dé rapide, bus ——
+  buyRentMajority: (c) => (
+    <>
+      Une case occupée par une autre coûte un {c.rentWord}. En tenir{' '}
+      <strong>la majorité</strong> du groupe de couleur double ce montant sur les cases nues.
+    </>
+  ),
+  buildMainMajority: (c) =>
+    `Dès qu'on tient la majorité d'un groupe de couleur, on pose des ${c.buildingsLower} pour faire monter le montant dû. La construction se répartit également sur les cases qu'on y possède : pas de second ${c.buildingLower} quelque part tant que les autres n'en ont pas un.`,
+  turnDiceNoJail: (c) =>
+    `On lance ${c.diceCount} dés, on avance d'autant de cases, et on résout la case d'arrivée. Un double rejoue, et enchaîner les doubles n'envoie jamais en ${c.jailWord} dans cette boîte.`,
+  majorityTitle: 'La règle de majorité',
+  majorityMain: (c) => (
+    <>
+      Pas besoin du groupe entier pour bâtir : <strong>la majorité suffit</strong> — deux propriétés
+      sur trois, trois sur quatre. Tant que le groupe n'est pas complet, les terrains du groupe
+      encore nus rapportent en revanche le <strong>double</strong> du {c.rentWord} imprimé, et le{' '}
+      <strong>triple</strong> si un gratte-ciel s'y dresse déjà.
+    </>
+  ),
+  skyscraperTitle: 'Les gratte-ciels',
+  skyscraperMain: (c) => (
+    <>
+      Une fois le groupe <strong>entier</strong> possédé et coiffé d'un {c.hotelLower} sur chaque
+      case, un {c.hotelLower} peut céder la place à un <strong>gratte-ciel</strong>. Il ajoute une
+      forte prime au {c.rentWord} : 500 € sur les quatre premiers groupes, 1 000 € sur les quatre
+      derniers.
+    </>
+  ),
+  depotTitle: 'Les dépôts de train',
+  depotMain: (c) => (
+    <>
+      Un <strong>dépôt</strong> se construit sur n'importe laquelle de vos gares, sans avoir à les
+      posséder toutes, et double le {c.rentWord} de cette gare-là. Envoyée par une carte « la gare la
+      plus proche », une adversaire paie encore le double : quatre fois le tarif.
+    </>
+  ),
+  speedDieTitle: 'Le dé rapide',
+  speedDieMain: () => (
+    <>
+      Un <strong>troisième dé</strong> accompagne chaque lancer, hors prison. Un{' '}
+      <strong>chiffre</strong> (1, 2 ou 3) s'ajoute au déplacement — mais jamais au calcul du loyer
+      d'une compagnie, qui ne lit que les deux dés blancs. <strong>Mr Monopoly</strong> fait rejouer
+      une fois la case réglée, jusqu'à la prochaine propriété libre — ou, s'il n'en reste aucune,
+      jusqu'au prochain loyer à payer. Le <strong>Bus</strong> ouvre le choix du car. Enfin, un{' '}
+      <strong>triple identique</strong> — les deux dés blancs et le dé rapide sur la même valeur —
+      pose votre pion où vous voulez, sans rejouer.
+    </>
+  ),
+  busTicketsTitle: 'Les tickets de bus',
+  busTicketsMain: () => (
+    <>
+      Un ticket se joue <strong>à la place d'un lancer</strong> : vous descendez à la case de votre
+      choix, sur le côté du plateau devant vous, jusqu'au prochain coin inclus. On en gagne sur la
+      case Ticket de Bus, en cadeau d'anniversaire, ou sur une face Bus du dé rapide. Attention :{' '}
+      <strong>certains tickets périment tous les autres</strong> en circulation, le vôtre compris.
+    </>
+  ),
+  megaSpacesTitle: 'Les trois cases nouvelles',
+  megaSpacesMain: () => (
+    <>
+      <strong>Vente aux enchères</strong> : choisissez une propriété encore à la banque et mettez-la
+      en vente sur-le-champ ; s'il n'en reste aucune, vous filez jusqu'au loyer le plus cher devant
+      vous. <strong>Ticket de Bus</strong> : vous en prenez un, s'il en reste.{' '}
+      <strong>Cadeau d'anniversaire</strong> : 100 €, ou un ticket de bus, au choix.
+    </>
+  ),
+
   mortgageTitle: 'Hypothèque',
   mortgageMain: (c) =>
     `À court de ${c.unit}, on peut hypothéquer une case libre de constructions : la banque verse sa valeur hypothécaire, et la case ne rapporte plus rien tant qu'elle l'est. On la dégage plus tard en remboursant cette valeur majorée de ${c.interest} %.`,
@@ -236,6 +304,71 @@ const EN = {
     `With a complete colour group, place ${c.buildingsLower} to raise what others owe. Building is spread evenly across the group: no second ${c.buildingLower} anywhere until the others each have one.`,
   buildHotel: (c) => `Four ${c.buildingsLower} on a space let you build a ${c.hotelLower}.`,
   buildCap: () => 'There is nothing above that: four per space is the maximum.',
+
+  buyRentMajority: (c) => (
+    <>
+      A space owned by someone else costs a {c.rentWord}. Holding <strong>a majority</strong> of the
+      colour group doubles that amount on undeveloped spaces.
+    </>
+  ),
+  buildMainMajority: (c) =>
+    `As soon as you hold a majority of a colour group, place ${c.buildingsLower} to raise what others owe. Building is spread evenly across the spaces you own there: no second ${c.buildingLower} anywhere until the others each have one.`,
+  turnDiceNoJail: (c) =>
+    `Roll ${c.diceCount} dice, move that many spaces, and settle the space you land on. A double rolls again, and rolling doubles never sends you to ${c.jailWord} in this box.`,
+  majorityTitle: 'The majority rule',
+  majorityMain: (c) => (
+    <>
+      You do not need the whole group to build: <strong>a majority is enough</strong> — two
+      properties out of three, three out of four. Until the group is complete, however, the unbuilt
+      properties of that group charge <strong>double</strong> the printed {c.rentWord}, and{' '}
+      <strong>triple</strong> once a skyscraper stands in the group.
+    </>
+  ),
+  skyscraperTitle: 'Skyscrapers',
+  skyscraperMain: (c) => (
+    <>
+      Once you own the <strong>whole</strong> group with a {c.hotelLower} on every space, a{' '}
+      {c.hotelLower} may give way to a <strong>skyscraper</strong>. It adds a hefty premium to the{' '}
+      {c.rentWord}: 500 € on the first four groups, 1,000 € on the last four.
+    </>
+  ),
+  depotTitle: 'Train depots',
+  depotMain: (c) => (
+    <>
+      A <strong>depot</strong> can be built on any station you own, without owning them all, and
+      doubles that station's {c.rentWord}. Sent there by a "nearest station" card, an opponent pays
+      double again: four times the tariff.
+    </>
+  ),
+  speedDieTitle: 'The Speed Die',
+  speedDieMain: () => (
+    <>
+      A <strong>third die</strong> joins every roll, except in jail. A <strong>number</strong> (1, 2
+      or 3) adds to the move — but never to a utility's rent, which reads the two white dice only.{' '}
+      <strong>Mr Monopoly</strong> moves you again once the space is settled, on to the next unowned
+      property — or, if none is left, to the next rent you owe. The <strong>Bus</strong> opens the
+      coach choice. And a <strong>triple</strong> — both white dice and the Speed Die on the same
+      value — puts your token anywhere you like, with no extra roll.
+    </>
+  ),
+  busTicketsTitle: 'Bus Tickets',
+  busTicketsMain: () => (
+    <>
+      A ticket is played <strong>instead of a roll</strong>: you get off at any space you choose, on
+      the side of the board ahead of you, up to and including the next corner. You win them on the
+      Bus Ticket space, as a birthday gift, or on a Bus face of the Speed Die. Beware:{' '}
+      <strong>some tickets expire all the others</strong> in play, yours included.
+    </>
+  ),
+  megaSpacesTitle: 'The three new spaces',
+  megaSpacesMain: () => (
+    <>
+      <strong>Auction</strong>: pick a property still held by the bank and put it up for sale on the
+      spot; if none is left, you move on to the steepest rent ahead of you.{' '}
+      <strong>Bus Ticket</strong>: take one, if any are left. <strong>Birthday Gift</strong>: 100 €,
+      or a Bus Ticket — your choice.
+    </>
+  ),
 
   mortgageTitle: 'Mortgage',
   mortgageMain: (c) =>

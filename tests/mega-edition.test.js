@@ -15,6 +15,9 @@ import { EDITIONS, getEdition } from '../shared/editions.js';
 import { createGame, addPlayer, startGame, dispatch } from '../server/engine/index.js';
 import { canBuild, rentFor, buildingLevel, canMortgage, maxRaisable } from '../server/engine/queries.js';
 import { busDestinations } from '../server/engine/speeddie.js';
+import { decideAction } from '../server/bots/brain.js';
+import { actionValue } from '../server/bots/cards.js';
+import { profileOf } from '../server/bots/profiles.js';
 import { scriptedRng, createRng } from '../server/engine/rng.js';
 
 const MEGA = EDITIONS['mega-edition'];
@@ -528,4 +531,64 @@ test('les quatre faces du dé rapide sortent toutes sur une longue partie', () =
     if (game.state.speedDie) seen.add(game.state.speedDie.kind);
   }
   assert.deepEqual([...seen].sort(), ['bus', 'mr_monopoly', 'number']);
+});
+
+// — Les bots ————————————————————————————————————————————————
+
+test('les bots bâtissent les deux paliers propres au plateau agrandi', () => {
+  let skyscrapers = 0;
+  let depots = 0;
+
+  for (const seed of [1, 2, 4, 8]) {
+    const game = createGame(`MB${seed}`, 'h', { seed, editionId: 'mega-edition' });
+    ['expert', 'difficile', 'moyen', 'facile'].forEach((level, i) =>
+      addPlayer(game, { id: `p${i}`, name: `Bot ${i}`, token: null, bot: level }),
+    );
+    startGame(game, 'p0');
+
+    const rng = createRng(seed);
+    for (let step = 0; step < 40000 && game.state.phase === 'playing'; step++) {
+      const actor = game.state.pending.playerIds[0];
+      if (!game.state.pending.kind || !actor) break;
+      const level = game.state.players.find((p) => p.id === actor).bot;
+      const action = decideAction(game.state, actor, rng, level);
+      assert.ok(action, `aucune action pour l'invite « ${game.state.pending.kind} »`);
+      dispatch(game, actor, action);
+    }
+    assert.equal(game.state.phase, 'finished', `graine ${seed} : la partie ne s'est pas terminée`);
+
+    for (const prop of Object.values(game.state.properties)) {
+      if (prop.skyscraper) skyscrapers += 1;
+      if (prop.depot) depots += 1;
+    }
+  }
+
+  // Sans un chiffrage propre de ces deux paliers, le gain marginal se calculait
+  // à zéro et les bots ne les construisaient jamais — mesuré, puis corrigé.
+  assert.ok(skyscrapers > 0, 'aucun gratte-ciel bâti sur quatre parties');
+  assert.ok(depots > 0, 'aucun dépôt bâti sur quatre parties');
+});
+
+test('chiffrer une carte qui recule sur une case à carte ne part pas en boucle', () => {
+  // Le piège : « reculez de 3 cases » posée trois cases après une case Chance
+  // se rappelle elle-même à travers la moyenne du paquet. Sans compteur de
+  // profondeur, la pile déborde — sur le plateau classique comme sur l'agrandi.
+  for (const editionId of ['classic-fr', 'mega-edition']) {
+    const game = createGame('LOOP01', 'h', { seed: 2, editionId });
+    addPlayer(game, { id: 'p0', name: 'A', token: null });
+    addPlayer(game, { id: 'p1', name: 'B', token: null });
+    startGame(game, 'p0');
+
+    const board = game.state.players && EDITIONS[editionId].board;
+    const chance = board.find((s) => s.type === 'chance');
+    game.state.players[0].position = (chance.id + 3) % board.length;
+
+    const value = actionValue(
+      game.state,
+      game.state.players[0].id,
+      { type: 'move_relative', offset: -3 },
+      profileOf('expert'),
+    );
+    assert.equal(Number.isFinite(value), true, `${editionId} : valeur non finie`);
+  }
 });

@@ -130,10 +130,75 @@ export function money(state, amount) {
  * classique, chaumières et châteaux à Poudlard, bases et quartiers généraux
  * chez les Avengers. Le moteur, lui, ne connaît que « maison » et « hôtel ».
  */
-const DEFAULT_BUILDINGS = { house: 'Maison', houses: 'Maisons', hotel: 'Hôtel', hotels: 'Hôtels' };
+const DEFAULT_BUILDINGS = {
+  house: 'Maison', houses: 'Maisons', hotel: 'Hôtel', hotels: 'Hôtels',
+  skyscraper: 'Gratte-ciel', skyscrapers: 'Gratte-ciels', depot: 'Dépôt', depots: 'Dépôts',
+};
 
 export function buildingLabels(state) {
-  return editionFor(state).buildingLabels ?? DEFAULT_BUILDINGS;
+  return { ...DEFAULT_BUILDINGS, ...(editionFor(state).buildingLabels ?? {}) };
+}
+
+/**
+ * Le niveau de construction d'une case : 0-4 maisons, 5 hôtel, 6 gratte-ciel.
+ * Même lecture que le moteur — c'est de l'affichage, pas une règle.
+ */
+export function buildingLevel(prop) {
+  if (prop?.skyscraper) return 6;
+  return prop?.hotel ? 5 : (prop?.houses ?? 0);
+}
+
+/**
+ * Ce que le bouton « construire » doit proposer sur cette case, et pourquoi il
+ * est éventuellement grisé.
+ *
+ * Le moteur reste seul juge : il refuserait une construction illégale de toute
+ * façon. Ce qu'on calcule ici, c'est uniquement l'étiquette et l'état visuel du
+ * bouton — sans quoi il annoncerait « + Maison » sur une gare, ou « + Hôtel »
+ * là où c'est un gratte-ciel qu'on pose.
+ *
+ * @returns {{ label: string, cost: number, blocked: string|null }|null}
+ */
+export function nextBuildStep(state, prop, t) {
+  const edition = editionFor(state);
+  const space = boardOf(state)[prop.spaceId];
+  const labels = buildingLabels(state);
+  const mechanics = edition.mechanics ?? {};
+  if (prop.mortgaged) return null;
+
+  // Le dépôt de gare : un aménagement à part, sans condition de groupe.
+  if (space.type === 'railroad') {
+    if (!mechanics.trainDepots || prop.depot) return null;
+    return { label: labels.depot, cost: mechanics.trainDepots.cost ?? 100, blocked: null };
+  }
+  if (space.type !== 'property') return null;
+
+  const level = buildingLevel(prop);
+  if (level === 6) return null;
+  if (level === 5 && !mechanics.skyscrapers) return null;
+  if (level === 4 && !mechanics.hotels) return null;
+
+  const groupSpaces = space.group ? (groupsOf(state)[space.group]?.spaces ?? []) : [];
+  const mine = groupSpaces.filter((id) => state.properties[id]?.ownerId === prop.ownerId);
+  const need = mechanics.majorityBuildRule
+    ? Math.floor(groupSpaces.length / 2) + 1
+    : groupSpaces.length;
+
+  const label = level === 5 ? labels.skyscraper : level === 4 ? labels.hotel : labels.house;
+  // Le gratte-ciel, lui, réclame le groupe entier coiffé d'hôtels.
+  if (level === 5) {
+    const crowned =
+      mine.length === groupSpaces.length &&
+      groupSpaces.every((id) => buildingLevel(state.properties[id]) >= 5);
+    return { label, cost: space.houseCost, blocked: crowned ? null : t('needCrownedGroup') };
+  }
+  const blocked =
+    mine.length >= need
+      ? null
+      : need < groupSpaces.length
+        ? t('needMajority', need, groupSpaces.length)
+        : t('needFullGroup');
+  return { label, cost: space.houseCost, blocked };
 }
 
 /** Raccourci pour les écrans qui n'ont pas l'état sous la main (euros). */

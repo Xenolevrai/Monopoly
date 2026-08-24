@@ -63,7 +63,14 @@ function rentAtLevel(state, spaceId, level) {
     return rentFor(state, spaceId) || (space.rent?.[0] ?? space.price * 0.1);
   }
   if (level <= 0) return space.rent[0] * 2; // groupe complet, terrain nu
-  return space.rent[Math.min(level, space.rent.length - 1)];
+  // Le gratte-ciel n'a pas de palier imprimé : il ajoute la prime du groupe au
+  // tarif de l'hôtel. Sans ça, le bot le chiffrait comme un hôtel — un gain
+  // marginal de zéro, donc un palier qu'il ne construisait jamais.
+  const top = space.rent.length - 1;
+  if (level > top) {
+    return space.rent[top] + (rulesOf(state).groups[space.group]?.skyscraperBonus ?? 0);
+  }
+  return space.rent[level];
 }
 
 /**
@@ -163,8 +170,38 @@ export function positionScore(state, playerId, profile) {
 
 /** Les constructions qu'on peut poser, de la plus rentable à la moins. */
 export function buildRanking(state, playerId, profile) {
-  return propertiesOf(state, playerId)
-    .filter((prop) => buildingLevel(prop) < (profile.buildTarget ?? 3) + 2)
-    .map((prop) => ({ spaceId: prop.spaceId, gain: yieldOf(state, prop.spaceId, buildingLevel(prop) + 1) - yieldOf(state, prop.spaceId, buildingLevel(prop)) }))
-    .sort((a, b) => b.gain - a.gain);
+  const mechanics = rulesOf(state).mechanics ?? {};
+  // Le plafond suit ce que la boîte propose : un palier de plus là où le
+  // gratte-ciel existe, sinon rien ne change.
+  const cap = (profile.buildTarget ?? 3) + 2 + (mechanics.skyscrapers ? 1 : 0);
+  const odds = landingOdds(state);
+  const entries = [];
+
+  for (const prop of propertiesOf(state, playerId)) {
+    const space = getSpace(state, prop.spaceId);
+    // Le dépôt de gare est un palier à part : il ne suit pas l'échelle des
+    // maisons, il multiplie le loyer de sa gare. On le chiffre donc à part,
+    // sans quoi son gain marginal se calculait à zéro et le bot l'ignorait.
+    if (space.type === 'railroad') {
+      if (!mechanics.trainDepots) continue;
+      const factor = mechanics.trainDepots.rentFactor ?? 2;
+      // Le loyer courant inclut déjà le dépôt s'il est posé : le gain de l'avoir
+      // se lit donc différemment selon qu'on le construit ou qu'on le revend.
+      // On classe la gare dans les deux cas — `canBuild` / `canSellBuilding`
+      // trancheront, et sans cette entrée on ne saurait jamais revendre un dépôt.
+      const rent = rentFor(state, prop.spaceId);
+      entries.push({
+        spaceId: prop.spaceId,
+        gain: odds[prop.spaceId] * rent * (prop.depot ? (factor - 1) / factor : factor - 1),
+      });
+      continue;
+    }
+    const level = buildingLevel(prop);
+    if (level >= cap) continue;
+    entries.push({
+      spaceId: prop.spaceId,
+      gain: yieldOf(state, prop.spaceId, level + 1) - yieldOf(state, prop.spaceId, level),
+    });
+  }
+  return entries.sort((a, b) => b.gain - a.gain);
 }

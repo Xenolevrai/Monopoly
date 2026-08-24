@@ -37,8 +37,14 @@ function boardHeat(state, playerId) {
 /**
  * Ce que vaut le fait d'atterrir sur cette case — en bien comme en mal.
  * C'est la brique qu'utilisent toutes les cartes qui déplacent.
+ *
+ * `depth` doit voyager jusqu'ici : une case à carte se chiffre par la moyenne
+ * de son paquet, dont les cartes déplacent, dont les cases d'arrivée sont
+ * parfois des cases à carte. Sans ce compteur, « reculez de trois cases » posée
+ * trois cases après une case Chance se rappelait elle-même sans fin, et le bot
+ * partait en débordement de pile. Le plateau agrandi rend le cycle courant.
  */
-export function landingValue(state, playerId, spaceId, profile) {
+export function landingValue(state, playerId, spaceId, profile, depth = 0) {
   const space = getSpace(state, spaceId);
   const player = playerById(state, playerId);
   const prop = state.properties[spaceId];
@@ -68,7 +74,7 @@ export function landingValue(state, playerId, spaceId, profile) {
       return state.settings?.freeParkingPot ? (state.freeParkingPot ?? 0) * 0.5 : 0;
     default:
       // Case à carte : la moyenne du paquet correspondant.
-      if (state.decks?.[space.type]) return deckAverage(state, playerId, space.type, profile);
+      if (state.decks?.[space.type]) return deckAverage(state, playerId, space.type, profile, depth);
       return 0;
   }
 }
@@ -133,12 +139,12 @@ export function actionValue(state, playerId, action, profile, depth = 0) {
     case 'move_to': {
       const passesGo = action.collectGoSalary !== false && action.target < player.position;
       const salary = passesGo ? config(state).currency.goBonus : 0;
-      return landingValue(state, playerId, action.target, profile) + salary;
+      return landingValue(state, playerId, action.target, profile, depth) + salary;
     }
 
     case 'move_relative': {
       const target = ((player.position + (action.offset ?? 0)) % size + size) % size;
-      return landingValue(state, playerId, target, profile);
+      return landingValue(state, playerId, target, profile, depth);
     }
 
     case 'nearest':
@@ -148,7 +154,7 @@ export function actionValue(state, playerId, action, profile, depth = 0) {
         const id = (player.position + step) % size;
         if (getSpace(state, id).type !== action.spaceType) continue;
         if (action.type === 'nearest_unowned' && state.properties[id]?.ownerId) continue;
-        const base = landingValue(state, playerId, id, profile);
+        const base = landingValue(state, playerId, id, profile, depth);
         // Le multiplicateur de loyer des cartes « payez le double ».
         return action.rentMultiplier && base < 0 ? base * action.rentMultiplier : base;
       }
@@ -188,7 +194,7 @@ export function actionValue(state, playerId, action, profile, depth = 0) {
       return -(player.saleCards ?? []).length * 60;
 
     case 'warp': {
-      const gain = landingValue(state, playerId, action.target, profile);
+      const gain = landingValue(state, playerId, action.target, profile, depth);
       return gain - (action.cost ?? 0);
     }
 

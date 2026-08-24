@@ -7,7 +7,7 @@
  * la joueuse du poste à qui le jeu demande quelque chose.
  */
 import { useState, useEffect } from 'react';
-import { boardOf, groupsOf, money, buildingLabels, editionFor } from '../lib/board.js';
+import { boardOf, groupsOf, money, buildingLabels, buildingLevel, nextBuildStep, editionFor } from '../lib/board.js';
 import { useT } from '../lib/i18n.js';
 import { sendAction } from '../lib/socket.js';
 import TokenIcon from './TokenIcon.jsx';
@@ -1242,11 +1242,27 @@ function Roll({ state, payload, actor }) {
     </p>
   ) : null;
 
+  // Un ticket de bus se joue à la place du lancer. Le serveur ne pose la clé
+  // que quand c'est réellement possible : le client se contente de l'afficher.
+  const tickets = payload?.busTickets ?? [];
+
   if (!payload?.inJail) {
     return (
       <div className="space-y-2">
         {peek}
-        <Button onClick={() => sendAction({ type: 'ROLL_DICE' }, actor)}>{t('rollDice')}</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => sendAction({ type: 'ROLL_DICE' }, actor)}>{t('rollDice')}</Button>
+          {tickets.map((ticket) => (
+            <Button
+              key={ticket.id}
+              tone="ghost"
+              onClick={() => sendAction({ type: 'USE_BUS_TICKET', ticketId: ticket.id }, actor)}
+            >
+              🚌 {t('useBusTicketInstead')}
+              {ticket.expires ? ' ⚠' : ''}
+            </Button>
+          ))}
+        </div>
       </div>
     );
   }
@@ -1345,6 +1361,124 @@ function Auction({ state, me, actor }) {
           {t('pass')}
         </Button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Choisir une case parmi celles que le serveur propose.
+ *
+ * Trois situations passent par ici — triple identique, descente d'un ticket de
+ * bus, propriété à mettre en vente — et c'est le serveur qui dit laquelle
+ * (`reason`) et ce qu'il en fera (`then`). Le client ne décide rien : il liste
+ * les cases recevables, avec ce qui les distingue (couleur du groupe, prix,
+ * propriétaire), et renvoie celle qu'on désigne.
+ */
+function ChooseSpace({ state, payload, actor }) {
+  const t = useT(state);
+  const board = boardOf(state);
+  const groups = groupsOf(state);
+  const title =
+    payload.reason === 'auction' ? t('chooseSpaceAuction')
+    : payload.reason === 'bus_ticket' ? t('chooseSpaceBus')
+    : t('chooseSpaceTriple');
+
+  return (
+    <div className="space-y-2">
+      <p className="text-sm">{title}</p>
+      {payload.expires && (
+        <p className="text-xs text-[var(--color-accent)]">⚠ {t('busTicketExpires')}</p>
+      )}
+      <div className="scroll-thin grid max-h-64 gap-1 overflow-y-auto pr-1 sm:grid-cols-2">
+        {payload.spaceIds.map((id) => {
+          const space = board[id];
+          const prop = state.properties?.[id];
+          const owner = prop?.ownerId ? state.players.find((p) => p.id === prop.ownerId) : null;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => sendAction({ type: 'CHOOSE_SPACE', spaceId: id }, actor)}
+              className="flex items-center gap-1.5 rounded border border-black/15 bg-white px-2 py-1.5 text-left text-[11px] hover:bg-black/5"
+            >
+              {space.group && (
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-sm border border-black/25"
+                  style={{ backgroundColor: groups[space.group]?.color }}
+                />
+              )}
+              <span className="truncate">{space.shortName}</span>
+              {space.price != null && (
+                <span className="tabular ml-auto shrink-0 text-ink-soft">{money(state, space.price)}</span>
+              )}
+              {owner && (
+                <span
+                  className="ml-1 h-2 w-2 shrink-0 rounded-full border border-black/30"
+                  style={{ backgroundColor: owner.color }}
+                  title={owner.name}
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Face Bus du dé rapide : prendre le car, ou empocher un ticket pour plus tard. */
+function BusChoice({ state, payload, actor }) {
+  const t = useT(state);
+  return (
+    <div className="space-y-2">
+      <p className="text-sm">🚌 {t('busChoiceTitle')}</p>
+      <div className="flex flex-wrap gap-2">
+        {payload.canUse &&
+          payload.tickets.map((ticket) => (
+            <Button
+              key={ticket.id}
+              onClick={() => sendAction({ type: 'BUS_CHOICE', choice: 'use', ticketId: ticket.id }, actor)}
+            >
+              {t('useBusTicket')}
+              {ticket.expires ? ' ⚠' : ''}
+            </Button>
+          ))}
+        {payload.canTake && (
+          <Button tone="ghost" onClick={() => sendAction({ type: 'BUS_CHOICE', choice: 'take' }, actor)}>
+            {t('takeBusTicket')}
+          </Button>
+        )}
+      </div>
+      {payload.canTake && <p className="text-xs text-ink-soft">{t('busPoolLeft', payload.poolLeft)}</p>}
+    </div>
+  );
+}
+
+/**
+ * Les tickets de bus en main. Rien à afficher tant que la partie n'en distribue
+ * pas : le client lit `me.busTickets`, il ne connaît aucune édition par son nom.
+ */
+function BusTicketsSection({ state, me }) {
+  const t = useT(state);
+  const held = me?.busTickets ?? [];
+  if (!held.length) return null;
+
+  return (
+    <div className="space-y-1 rounded-lg border border-[#1f4f8f]/35 bg-[#1f4f8f]/5 p-2">
+      <div className="flex items-center gap-1.5 font-condensed text-[11px] font-bold uppercase tracking-wider">
+        <span>🚌</span>
+        <span>{t('busTickets')} ({held.length})</span>
+      </div>
+      <ul className="space-y-0.5 text-[11px] text-ink-soft">
+        {held.map((ticket) => (
+          <li key={ticket.id}>
+            {t('useBusTicket')}
+            {ticket.expires && (
+              <span className="text-[var(--color-accent)]"> — ⚠ {t('busTicketExpires')}</span>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -1456,18 +1590,18 @@ export function Manage({ state, me }) {
           .sort((a, b) => a.spaceId - b.spaceId)
           .map((prop) => {
             const space = board[prop.spaceId];
-            const level = prop.hotel ? 5 : prop.houses;
+            const level = buildingLevel(prop);
             const btn = 'rounded border border-black/15 bg-white px-1.5 py-1 text-[10px] hover:bg-black/5';
-            // Une construction ne se pose qu'avec le groupe entier ; et le
-            // groupe entier doit être nu pour hypothéquer quoi que ce soit.
+            // Ce que le prochain clic pose et ce qui le bloque : maison, hôtel,
+            // gratte-ciel ou dépôt, selon la case et ce que la boîte autorise.
+            // Le moteur reste seul juge — ceci n'habille que le bouton.
+            const step = nextBuildStep(state, prop, t);
             const groupSpaces = space.group ? groups[space.group].spaces : [];
-            const ownsGroup =
-              groupSpaces.length > 0 &&
-              groupSpaces.every((id) => state.properties[id]?.ownerId === me.id);
-            const groupBuilt = groupSpaces.some(
-              (id) => state.properties[id]?.hotel || state.properties[id]?.houses > 0,
-            );
-            const nextLabel = level === 4 ? labels.hotel : labels.house;
+            // Le groupe entier doit être nu pour hypothéquer quoi que ce soit —
+            // sauf un dépôt, qui ne gèle que sa propre gare.
+            const groupBuilt = space.type === 'railroad'
+              ? Boolean(prop.depot)
+              : groupSpaces.some((id) => buildingLevel(state.properties[id]) > 0);
             // Les infobulles (`title`) ne s'affichent jamais au doigt : le prix doit
             // être écrit en toutes lettres sur le bouton, pas seulement au survol.
             return (
@@ -1486,9 +1620,18 @@ export function Manage({ state, me }) {
                   />
                 )}
                 <span className="truncate">{space.shortName}</span>
-                {level > 0 && (
-                  <span className={prop.hotel ? 'text-[var(--color-hotel)]' : 'text-[var(--color-house)]'}>
-                    {prop.hotel ? '▮' : '▪'.repeat(prop.houses)}
+                {(level > 0 || prop.depot) && (
+                  <span
+                    className={
+                      prop.skyscraper || prop.depot
+                        ? 'text-[#1f4f8f]'
+                        : prop.hotel
+                          ? 'text-[var(--color-hotel)]'
+                          : 'text-[var(--color-house)]'
+                    }
+                    title={prop.skyscraper ? labels.skyscraper : prop.depot ? labels.depot : undefined}
+                  >
+                    {prop.depot ? '▬' : prop.skyscraper ? '▯' : prop.hotel ? '▮' : '▪'.repeat(prop.houses)}
                   </span>
                 )}
                 {prop.mortgaged && (
@@ -1497,25 +1640,28 @@ export function Manage({ state, me }) {
                   </span>
                 )}
                 <span className="ml-auto flex flex-wrap justify-end gap-1">
-                  {space.type === 'property' && !prop.mortgaged && (
+                  {!prop.mortgaged && (
                     <>
                       {/* Les prix sont écrits sur les boutons, pas en infobulle :
                           une infobulle ne s'ouvre jamais au doigt, et l'on ne doit
                           pas avoir à deviner ce qu'un clic va coûter. */}
-                      <button
-                        className={`${btn} tabular disabled:opacity-35`}
-                        disabled={!ownsGroup}
-                        title={ownsGroup ? undefined : t('needFullGroup')}
-                        onClick={() => sendAction({ type: 'BUILD_HOUSE', spaceId: prop.spaceId }, me.id)}
-                      >
-                        + {nextLabel} {money(state, space.houseCost)}
-                      </button>
-                      {level > 0 && (
+                      {step && (
+                        <button
+                          className={`${btn} tabular disabled:opacity-35`}
+                          disabled={Boolean(step.blocked)}
+                          title={step.blocked ?? undefined}
+                          onClick={() => sendAction({ type: 'BUILD_HOUSE', spaceId: prop.spaceId }, me.id)}
+                        >
+                          + {step.label} {money(state, step.cost)}
+                        </button>
+                      )}
+                      {(level > 0 || prop.depot) && (
                         <button
                           className={`${btn} tabular`}
                           onClick={() => sendAction({ type: 'SELL_BUILDING', spaceId: prop.spaceId }, me.id)}
                         >
-                          − {t('sellBuilding')} {money(state, space.houseCost / 2)}
+                          − {t('sellBuilding')}{' '}
+                          {money(state, prop.depot ? (step?.cost ?? 100) / 2 : space.houseCost / 2)}
                         </button>
                       )}
                     </>
@@ -1710,6 +1856,12 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
       )}
       {mineTurn && pending.kind === 'auction_bid' && <Auction state={state} me={me} actor={actor} />}
       {mineTurn && pending.kind === 'card_choice' && <CardChoice payload={pending.payload} actor={actor} />}
+      {mineTurn && pending.kind === 'choose_space' && (
+        <ChooseSpace state={state} payload={pending.payload} actor={actor} />
+      )}
+      {mineTurn && pending.kind === 'bus_choice' && (
+        <BusChoice state={state} payload={pending.payload} actor={actor} />
+      )}
       {mineTurn && pending.kind === 'pay_debt' && (
         <Debt
           state={state}
@@ -1740,6 +1892,7 @@ export default function Actions({ state, me, mine, onOpenTrade, onOpenSettlement
       <CorruptionSection state={state} me={me} actor={actor} isTurn={mineTurn && pending.kind === 'end_turn'} onPlayCard={handlePlayCard} />
       <FreeParkingBonusSection state={state} me={me} actor={actor} isTurn={mineTurn && pending.kind === 'end_turn'} onPlayCard={handlePlayCard} />
       <SaleVault state={state} me={me} actor={actor} onPlayCard={handlePlayCard} />
+      <BusTicketsSection state={state} me={me} />
 
       {(!mineTurn || pending.kind !== 'end_turn') && state.phase === 'playing' && pending.kind !== 'pay_debt' && (
         <Button tone="ghost" onClick={() => onOpenTrade()}>

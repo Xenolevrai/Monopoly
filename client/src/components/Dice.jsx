@@ -45,11 +45,49 @@ function Die({ value, rolling, delay = 0 }) {
 }
 
 /**
- * @param {{ values: number[]|null, rolling: boolean }} props
+ * Le troisième dé, quand la partie en a un.
+ *
+ * Il ne porte pas des points mais des symboles : 1, 2, 3, le chapeau de
+ * Mr Monopoly, et le bus. On le dessine dans une autre couleur que les deux
+ * dés blancs — c'est ce qui le distingue d'un coup d'œil, comme dans la boîte.
+ */
+function SpeedDie({ face, rolling }) {
+  const numeric = typeof face === 'number';
+  return (
+    <div
+      className={`flex items-center justify-center rounded-lg border border-black/25 shadow-[0_4px_10px_-4px_rgba(0,0,0,.6)] ${
+        rolling ? 'die-tumbling' : 'die-settle'
+      }`}
+      style={{
+        // Fond fixe : son encre doit l'être aussi, sinon le symbole disparaît
+        // sur les plateaux sombres (le piège maison des fonds fixes).
+        background: '#1f4f8f',
+        color: '#ffffff',
+        width: 'clamp(26px, 7cqw, 48px)',
+        height: 'clamp(26px, 7cqw, 48px)',
+        animationDelay: '180ms',
+      }}
+      title={numeric ? String(face) : face === 'bus' ? 'Bus' : 'Mr Monopoly'}
+    >
+      {numeric ? (
+        <span className="tabular font-condensed leading-none" style={{ fontSize: 'clamp(14px, 4cqw, 26px)' }}>
+          {face}
+        </span>
+      ) : (
+        <span style={{ fontSize: 'clamp(13px, 3.6cqw, 24px)', lineHeight: 1 }}>
+          {face === 'bus' ? '🚌' : '🎩'}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/**
+ * @param {{ values: number[]|null, speedDie: {face: number|string}|null, rolling: boolean }} props
  * `rolling` est piloté par la cinématique du tour : le pion ne part qu'une fois
  * les dés immobilisés.
  */
-export default function Dice({ values, rolling = false }) {
+export default function Dice({ values, speedDie = null, rolling = false }) {
   const [tumble, setTumble] = useState([1, 1]);
   const shown = values;
 
@@ -66,12 +104,16 @@ export default function Dice({ values, rolling = false }) {
   if (!shown) return <div style={{ height: 'clamp(26px, 7cqw, 48px)' }} />;
 
   const faces = rolling ? tumble : (shown ?? [1, 1]);
-  const total = shown ? shown.reduce((a, b) => a + b, 0) : null;
+  // Le total affiché est celui du **déplacement** : une face chiffrée du dé
+  // rapide s'y ajoute, ses deux autres faces non — elles ne font pas avancer.
+  const speedStep = typeof speedDie?.face === 'number' ? speedDie.face : 0;
+  const total = shown ? shown.reduce((a, b) => a + b, 0) + speedStep : null;
 
   return (
     <div className="flex items-center gap-[2cqw]">
       <Die value={faces[0]} rolling={rolling} />
       <Die value={faces[1]} rolling={rolling} delay={90} />
+      {speedDie && <SpeedDie face={speedDie.face} rolling={rolling} />}
       <span
         className={`tabular font-condensed transition-opacity duration-200 ${
           rolling ? 'opacity-0' : 'opacity-100'

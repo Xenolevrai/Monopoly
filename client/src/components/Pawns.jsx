@@ -82,8 +82,24 @@ export default function Pawns({ state, players, hold = false }) {
         const moving = space !== player.position;
         const rect = spaceRect(state, space);
         const group = perSpace[space];
-        const spread =
-          group.length > 1 ? (group.indexOf(player.id) - (group.length - 1) / 2) * (rect.w * 0.52) : 0;
+        // Jusqu'à huit pions peuvent se retrouver sur la même case (le plateau
+        // agrandi joue à huit). En éventail sur une seule ligne, ils sortiraient
+        // de la case ; on les range donc sur deux rangées dès qu'ils sont plus
+        // de quatre, et l'on resserre l'écart en conséquence.
+        const index = group.indexOf(player.id);
+        const perRow = group.length > 4 ? Math.ceil(group.length / 2) : group.length;
+        const rows = Math.ceil(group.length / perRow);
+        const row = Math.floor(index / perRow);
+        const inRow = index % perRow;
+        const rowCount = Math.min(perRow, group.length - row * perRow);
+        // L'éventail doit tenir dans la case : on répartit sur 90 % de sa
+        // largeur, sinon les pions d'un coin plein débordent du plateau.
+        const gap = perRow > 1 ? Math.min(rect.w * 0.52, (rect.w * 0.9) / (perRow - 1)) : 0;
+        const spread = group.length > 1 ? (inRow - (rowCount - 1) / 2) * gap : 0;
+        const stack = rows > 1 ? (row - (rows - 1) / 2) * (rect.h * 0.3) : 0;
+        // Au-delà de quatre pions sur une case, on les réduit un peu pour que
+        // deux rangées tiennent dans la hauteur d'une case de bord.
+        const size = group.length > 4 ? 2.9 : 3.6;
 
         const isDealMobile = state.dealMobileOwnerId === player.id;
 
@@ -95,11 +111,13 @@ export default function Pawns({ state, players, hold = false }) {
             }`}
             style={{
               left: `${rect.x + spread}%`,
-              top: `${rect.y + rect.h * 0.2}%`,
-              width: '3.6%',
-              height: '3.6%',
-              marginLeft: '-1.8%',
-              marginTop: '-1.8%',
+              // Deux rangées se centrent plus haut qu'une seule, sinon la
+              // rangée du bas déborde de la case.
+              top: `${rect.y + rect.h * (rows > 1 ? 0.06 : 0.2) + stack}%`,
+              width: `${size}%`,
+              height: `${size}%`,
+              marginLeft: `${-size / 2}%`,
+              marginTop: `${-size / 2}%`,
               opacity: player.bankrupt ? 0.3 : 1,
               transition: `left ${STEP_MS}ms ease-in-out, top ${STEP_MS}ms ease-in-out`,
               borderColor: isDealMobile ? '#d4af37' : player.color,

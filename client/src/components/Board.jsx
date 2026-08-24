@@ -48,9 +48,27 @@ function deckTint(state, type) {
   return editionFor(state).theming?.decks?.[type]?.color ?? null;
 }
 
-/** Maisons vertes et hôtel rouge, posés sur le bandeau de couleur. */
+/** Maisons vertes, hôtel rouge, gratte-ciel bleu, dépôt sur les gares. */
 function Buildings({ prop }) {
   if (!prop) return null;
+  // Un dépôt se pose sur une gare, qui n'a ni maison ni hôtel : il occupe donc
+  // seul la place, et un carré foncé le distingue nettement du reste.
+  if (prop.depot) {
+    return (
+      <span className="flex items-center justify-center gap-0.5">
+        <span className="h-[8px] w-[10px] rounded-[1px] border border-black/60 bg-[#1f4f8f]" />
+      </span>
+    );
+  }
+  // Le gratte-ciel est plus haut que l'hôtel, et d'une autre couleur : sur un
+  // bandeau de couleur, la seule hauteur ne suffirait pas à le reconnaître.
+  if (prop.skyscraper) {
+    return (
+      <span className="flex items-end justify-center gap-0.5">
+        <span className="h-[11px] w-[7px] rounded-t-[1px] border border-black/60 bg-[#1f4f8f]" />
+      </span>
+    );
+  }
   if (prop.hotel) {
     return (
       <span className="flex items-center justify-center gap-0.5">
@@ -120,6 +138,8 @@ function Space({ space, state, active, onSelect }) {
             className="color-band flex w-full shrink-0 items-end justify-center border-b border-black/80 pb-px"
             style={{ backgroundColor: color, height: '26%' }}
           >
+            {/* Une gare porte la couleur grise de son groupe : son dépôt s'affiche
+                donc ici comme les maisons d'un terrain, sans code particulier. */}
             <Buildings prop={prop} />
           </span>
         )}
@@ -285,7 +305,7 @@ function Center({ state, drawnCard, rolling, canDraw, deckToDraw, onDraw, reveal
             </span>
           </p>
         )}
-        <Dice values={state.dice?.values} rolling={rolling} />
+        <Dice values={state.dice?.values} speedDie={state.speedDie} rolling={rolling} />
         {(state.settings?.freeParkingPot || editionFor(state).mechanics?.jackpotPot) && (state.freeParkingPot ?? 0) > 0 && (
           <div className="flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-400/25 px-3 py-0.5 text-xs font-condensed tracking-wider shadow-sm backdrop-blur-sm">
             <span>💰</span>
