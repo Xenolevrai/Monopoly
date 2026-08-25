@@ -42,7 +42,7 @@ invariant est prouvé par `tests/locales.test.js`.
 npm install
 npm run build     # compile le client — à refaire après chaque pull
 npm start         # http://localhost:3000
-npm run check     # lint + 247 tests
+npm run check     # lint + 252 tests
 ```
 
 Node 22+, ESM partout, workspaces npm (racine + `client`).
@@ -97,12 +97,14 @@ server/
   engine/speeddie.js   troisième dé, tickets de bus, déplacements différés
   rooms.js             registre des parties, codes, sauvegarde disque
   sockets.js           passerelle Socket.io ↔ moteur
+  archive.js           carnet des parties terminées, pour entraîner (voir §7 quinquies)
   bots/                les joueuses artificielles (voir §5 ter)
-scripts/               train-bots.mjs · tune-bots.mjs — tournois et réglage
+scripts/               train-bots.mjs · tune-bots.mjs · stats-archives.mjs
+data/archives/         une ligne JSON par partie terminée (hors git)
 client/src/
   components/          Board, BoardSkin, Centerpiece, SpaceArt, SpaceIcons, Actions, Players…
   lib/                 board.js, i18n.js, theme.js, rulesText.jsx, useGame.js, useCinematic.js
-tests/                 bots · contrast · data · editions · engine · locales · mega-edition · payment-flow · points-edition · server · simulation
+tests/                 archive · bots · contrast · data · editions · engine · locales · mega-edition · payment-flow · points-edition · server · simulation
 docs/                  DATA_MODEL · MOTEUR · SERVEUR · CLIENT · ART_DIRECTION
 ```
 
@@ -646,6 +648,75 @@ au-dessus, plutôt que dans une colonne étroite.
 
 ---
 
+## 7 quater. Les notifications : informer sans déranger
+
+Deux composants, deux rôles bien distincts — et c'est cette séparation qui rend
+le jeu supportable sur téléphone :
+
+- `MiniGameLog.jsx` → `LiveEventToast`, une **bulle flottante qui ne bloque
+  rien**. Elle fait la queue (`QUEUE_MAX`) au lieu de s'écraser : à quatre bots
+  qui jouent toutes les 700 ms, les événements arrivent plus vite qu'on ne les
+  lit. Ce qui concerne une joueuse de ce poste passe devant et reste affiché
+  plus longtemps (`DURATION`).
+- `BroadcastOverlay.jsx` → la **modale plein écran**, avec voile noir. Elle ne
+  s'ouvre que si `shouldBlockScreen()` dit oui : l'événement nous concerne, ou
+  c'est la roulette du Parc Gratuit — le seul spectacle qu'on regarde ensemble.
+
+**Ne jamais élargir `SPECTACLE`.** Le défaut d'origine était exactement là :
+n'importe quel achat de n'importe qui ouvrait un voile plein écran pendant
+4,5 s. À trois bots, on passait le plus clair de son temps derrière un rideau à
+fermer des fenêtres sans intérêt. Mesuré après correction : l'écran n'est plus
+barré 0 % du temps sur une minute de jeu.
+
+Trois pièges corrigés dans la bulle, tous faciles à réintroduire :
+
+- l'autrice d'une entrée de journal est dans **`entry.data.playerId`**, jamais
+  `entry.meta` — sinon le pion n'apparaît jamais, sans la moindre erreur ;
+- l'effet doit dépendre de **l'identifiant de la dernière entrée**, pas de
+  `log.length` : le journal est plafonné à 500 entrées côté serveur, donc en
+  partie longue sa longueur cesse de changer et les bulles s'arrêtaient
+  définitivement ;
+- la liste `NOTABLE` et la table `EVENT_ICONS` doivent rester d'accord : `card`
+  avait son icône mais manquait à la liste, et tirer une carte ne notifiait rien.
+
+Sur téléphone la bulle se pose **en bas**, au-dessus des onglets : en haut elle
+masquait la case où l'on venait de tomber et la carte qu'on venait de tirer.
+
+**Les cibles tactiles** visent 40 px. Le bouton replier/déplier mesurait
+15 × 10 px. Quand une cible doit rester visuellement petite sur ordinateur, on
+lui donne `min-h-[40px] min-w-[40px]` plus une marge négative : la zone de
+touche grandit sans que l'en-tête ne grossisse.
+
+---
+
+## 7 quinquies. L'archive des parties (`server/archive.js`)
+
+Chaque partie **terminée** ajoute une ligne à `data/archives/AAAA-MM.jsonl`.
+Format et exemples : `data/archives/README.md`.
+
+Ce qu'elle apporte que le journal ne donnait pas : **la question posée et l'état
+d'avant le coup**. Le journal dit « Expert achète Gare Montparnasse » ; une
+décision archivée dit à quelle invite (`pending.kind`) elle répondait, avec quel
+solde, quel patrimoine, face à quels adversaires.
+
+- **`dispatch` est le seul endroit instrumenté** — toutes les actions y passent,
+  humaines comme artificielles, donc rien ne peut lui échapper. La photo se
+  prend **avant** l'appel, sinon on n'archiverait que des conséquences.
+- **Les décisions vivent sur la partie (`game.decisions`), pas dans `state`** —
+  même raison que `game.undo` (§6 bis). Une partie reprise après un redémarrage
+  perd donc son historique : elle est marquée `partial`, à écarter de tout
+  entraînement.
+- **L'écriture part du point de diffusion** (`broadcast`, dans `sockets.js`) :
+  le seul endroit d'où l'on voit toutes les fins de partie, quel qu'en soit le
+  chemin. L'appel est idempotent.
+- **Le chat n'y est pas** : conversations de famille, et sans intérêt pour un bot.
+- Les `.jsonl` sont **hors de git** (~500 Ko par partie).
+
+`scripts/stats-archives.mjs` en sort un résumé et **refuse de conclure sous
+trente parties** — voir l'avertissement sur le hasard en §5 ter.
+
+---
+
 ## 8. Mobile et ordinateur
 
 - **Ordinateur (≥ `xl`)** : aucun onglet. Plateau à gauche, panneau à droite,
@@ -749,7 +820,7 @@ hypothèquent, enchérissent, tranchent les cartes et négocient, sur les sept
 boîtes et toutes les extensions), la **Mega Edition** (§5 quater — plateau de
 52 cases, table de huit, dé rapide, tickets de bus, gratte-ciels, dépôts,
 règle de majorité), le retour en arrière sur les gestes réversibles (§6 bis),
-la colonne de droite réarrangeable (§7 ter), 247 tests.
+la colonne de droite réarrangeable (§7 ter), 252 tests.
 
 **Reste à faire**, par ordre de priorité annoncée :
 
