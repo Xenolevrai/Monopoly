@@ -58,7 +58,7 @@ export default function PanelColumn({ side, sections, layout, t }) {
                 type="button"
                 onClick={() => layout.toggleCollapse(section.id)}
                 aria-expanded={!isCollapsed}
-                className="flex-1 text-left font-condensed text-[11px] uppercase tracking-[0.18em] text-ink-soft hover:text-ink"
+                className="flex-1 py-2 text-left font-condensed text-[11px] uppercase tracking-[0.18em] text-ink-soft hover:text-ink xl:py-0"
               >
                 {section.title}
               </button>
@@ -97,7 +97,7 @@ export default function PanelColumn({ side, sections, layout, t }) {
                 type="button"
                 onClick={() => layout.toggleCollapse(section.id)}
                 aria-label={isCollapsed ? t('expand') : t('collapse')}
-                className="px-1 text-[10px] leading-none text-ink-soft hover:text-ink"
+                className="-my-2 flex min-h-[40px] min-w-[40px] items-center justify-center text-[13px] leading-none text-ink-soft hover:text-ink xl:my-0 xl:min-h-0 xl:min-w-0 xl:px-1 xl:text-[10px]"
               >
                 {isCollapsed ? '+' : '−'}
               </button>

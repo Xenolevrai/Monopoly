@@ -414,4 +414,17 @@ body {
   .bulb-odd {
     animation: none;
   }
+
+  /* La roulette du Parc Gratuit ne tourne pas par une animation mais par une
+     `transition` de 3,2 s sur `transform` : `animation: none` ne l'arrête donc
+     pas. On coupe les transitions longues partout — celles de survol, très
+     courtes, restent confortables et ne gênent personne. */
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -385,8 +385,8 @@ export default function App() {
         </div>
       )}
 
-      <LiveEventToast state={state} />
-      <BroadcastOverlay state={state} me={me} />
+      <LiveEventToast state={state} mine={mine} />
+      <BroadcastOverlay state={state} me={me} mine={mine} />
     </div>
   );
 }

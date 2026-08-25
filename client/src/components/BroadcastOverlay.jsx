@@ -402,23 +402,61 @@ function JailBroadcastModal({ event, isEn, onClose }) {
  * Superposé au centre de l'écran pour TOUS les joueurs :
  * Diffuse en direct les cartes jouées, les spins de roulette, les dés spéciaux et les achats.
  */
-export default function BroadcastOverlay({ state }) {
+/**
+ * Les seuls événements qui méritent de barrer l'écran à tout le monde.
+ *
+ * La roulette du Parc Gratuit est le spectacle partagé de son extension : on la
+ * regarde tourner ensemble, comme autour d'une vraie table. Tout le reste ne
+ * bloque que la personne concernée.
+ */
+const SPECTACLE = new Set(['spinner_spun']);
+
+/**
+ * Faut-il barrer l'écran pour cet événement ?
+ *
+ * **C'est ici que se joue le confort de jeu.** Avant, n'importe quel achat de
+ * n'importe quelle joueuse ouvrait un voile noir plein écran pendant 4,5 s : à
+ * trois bots qui achètent sans arrêt en début de partie, on passait le plus
+ * clair de son temps derrière un rideau, à fermer des fenêtres qui ne nous
+ * concernaient pas. Désormais une modale ne s'ouvre que si l'événement **nous**
+ * concerne, ou s'il s'agit du spectacle partagé. Le reste passe par la bulle
+ * flottante, qui informe sans rien bloquer.
+ */
+function shouldBlockScreen(event, mine) {
+  if (!event) return false;
+  if (SPECTACLE.has(event.type)) return true;
+  return mine.some((player) => player.id === event.actorId);
+}
+
+export default function BroadcastOverlay({ state, me, mine }) {
   const lastEvent = state?.lastEvent;
   const [currentEvent, setCurrentEvent] = useState(null);
   const [dismissedId, setDismissedId] = useState(null);
   const isEn = state?.locale === 'en';
 
+  // `mine` porte toutes les joueuses de ce poste (mode « même ordinateur ») ;
+  // `me` est le repli quand une seule y joue.
+  const local = mine?.length ? mine : me ? [me] : [];
+  const localIds = local.map((p) => p.id).join('|');
+
   useEffect(() => {
-    if (lastEvent && lastEvent.id && lastEvent.id !== dismissedId) {
-      setCurrentEvent(lastEvent);
-      const autoDismissDuration = lastEvent.type === 'spinner_spun' ? 6500 : 4500;
-      const timer = setTimeout(() => {
-        setCurrentEvent(null);
-        setDismissedId(lastEvent.id);
-      }, autoDismissDuration);
-      return () => clearTimeout(timer);
+    if (!lastEvent?.id || lastEvent.id === dismissedId) return;
+
+    // Ce qui ne nous concerne pas est marqué vu sans jamais s'afficher : la
+    // bulle flottante s'en charge.
+    if (!shouldBlockScreen(lastEvent, local)) {
+      setDismissedId(lastEvent.id);
+      return;
     }
-  }, [lastEvent?.id, dismissedId]);
+
+    setCurrentEvent(lastEvent);
+    const autoDismissDuration = lastEvent.type === 'spinner_spun' ? 6500 : 4500;
+    const timer = setTimeout(() => {
+      setCurrentEvent(null);
+      setDismissedId(lastEvent.id);
+    }, autoDismissDuration);
+    return () => clearTimeout(timer);
+  }, [lastEvent?.id, dismissedId, localIds]);
 
   if (!currentEvent) return null;
 

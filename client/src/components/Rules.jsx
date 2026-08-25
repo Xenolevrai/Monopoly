@@ -178,7 +178,7 @@ export default function Rules({ state }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded border border-black/15 bg-white px-2 py-1 font-condensed text-xs uppercase hover:bg-black/5"
+        className="rounded border border-black/15 bg-white px-2.5 py-2 font-condensed text-xs uppercase hover:bg-black/5 xl:py-1"
       >
         {t('rules')}
       </button>

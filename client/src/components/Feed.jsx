@@ -108,7 +108,7 @@ export default function Feed({ state, actor }) {
             key={id}
             type="button"
             onClick={() => setTab(id)}
-            className={`rounded px-2 py-1 font-condensed text-[11px] uppercase tracking-widest transition-colors ${
+            className={`rounded px-3 py-2 font-condensed text-[11px] uppercase tracking-widest transition-colors xl:px-2 xl:py-1 ${
               tab === id ? 'bg-[var(--color-accent)] text-white' : 'text-ink-soft hover:bg-black/5'
             }`}
           >
