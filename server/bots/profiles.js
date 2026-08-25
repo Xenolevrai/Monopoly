@@ -105,20 +105,22 @@ export const PROFILES = {
     id: 'expert',
     label: 'Expert',
     summary: "Joue les probabilités du plateau, bloque sans pitié, ne se trompe pas.",
-    // Réglages issus de `scripts/tune-bots.mjs` (22 rondes de 44 parties, 11
-    // améliorations retenues). Deux leçons de la mesure, contraires à mes
-    // premières intuitions : le rendement locatif pèse près du double de ce que
-    // je croyais face au prix affiché (`yieldToPrice` 90 → 169), et priver une
-    // adversaire de son groupe vaut plus cher que de compléter le sien
-    // (`blockRival` 0,95 → 1,2).
-    yieldToPrice: 169,
+    // Réglages issus de `scripts/tune-bots.mjs`, deux campagnes successives
+    // (22 rondes de 44 parties, puis 14 rondes de 40, 5 améliorations de plus).
+    // La leçon que la mesure répète, et qui va contre l'intuition : **le
+    // rendement locatif pèse bien plus que le prix affiché**. `yieldToPrice`
+    // est passé de 90 à 169 à la première campagne, puis à 218 à la seconde —
+    // à chaque fois le réglage qui a rapporté le plus. Autre acquis : priver
+    // une adversaire de son groupe vaut plus cher que de compléter le sien
+    // (`blockRival` 0,95 → 1,24).
+    yieldToPrice: 217.951,
     completesGroup: 2.74,
-    nearlyGroup: 2.23,
+    nearlyGroup: 2.508,
     deadGroup: 0.58,
-    blockRival: 1.2,
+    blockRival: 1.238,
     cashReserve: 2.0,
     buildTarget: 3,
-    mortgagePenalty: 0.41,
+    mortgagePenalty: 0.425,
     bidCeiling: 1.2,
     tradeMargin: 0.08,
     proposesTrades: true,
