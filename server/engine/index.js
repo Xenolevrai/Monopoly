@@ -12,6 +12,7 @@
 import { getEdition, editionOf, DEFAULT_EDITION, DEFAULT_LOCALE, listEditions } from '../../shared/index.js';
 import { createGameState, createPlayer } from '../../shared/schema.js';
 import { createRng } from './rng.js';
+import { recordDecision, snapshotBefore } from '../archive.js';
 import { log, say } from './log.js';
 import { playerById, currentPlayer, activePlayers } from './queries.js';
 import {
@@ -69,7 +70,10 @@ export function createGame(
   { seed, editionId = DEFAULT_EDITION, locale = DEFAULT_LOCALE, extensionIds = [] } = {},
 ) {
   const state = createGameState(code, hostId, editionId, locale, extensionIds);
-  return { state, rng: createRng(seed ?? Date.now()) };
+  // La graine est conservée : sans elle une partie n'est pas rejouable, et une
+  // archive qu'on ne peut pas rejouer vaut beaucoup moins pour déboguer.
+  const actualSeed = seed ?? Date.now();
+  return { state, rng: createRng(actualSeed), seed: actualSeed };
 }
 
 export { listEditions, getEdition };
@@ -287,7 +291,13 @@ export function dispatch(game, playerId, action) {
 
   // On photographie *avant* d'agir, et l'on jette la photo si l'action échoue.
   const snapshot = UNDOABLE.has(action.type) ? structuredClone(state) : null;
+  // Ce que la joueuse voyait au moment de décider — c'est cette photo-là, prise
+  // avant le coup, qui fait la valeur de l'archive d'entraînement.
+  const pendingKind = state.pending?.kind ?? null;
+  const before = snapshotBefore(state, playerId);
+
   const result = applyAction(game, state, rng, player, action);
+  recordDecision(game, playerId, action, pendingKind, before, result);
   if (result.ok) {
     if (snapshot) rememberForUndo(game, playerId, action, snapshot);
     // Tout le reste rend les instantanés caducs : un jet de dés, un paiement,

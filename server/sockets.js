@@ -22,6 +22,7 @@ import {
 } from './engine/index.js';
 import { createRoom, getRoom, newPlayerId, scheduleSave } from './rooms.js';
 import { scheduleBots, stopBots } from './bots/runner.js';
+import { archiveGame } from './archive.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, PROFILES } from './bots/profiles.js';
 import { listEditions, DEFAULT_EDITION } from '../shared/index.js';
 
@@ -41,11 +42,19 @@ function cleanName(name) {
 function broadcast(io, room) {
   io.to(room.state.code).emit('game:state', publicState(room.state));
   scheduleSave(room);
-  if (room.state.phase === 'finished') stopBots(room.state.code);
-  else scheduleBots(room, (r) => {
+  // La diffusion suit chaque changement d'état : c'est donc le seul endroit
+  // d'où l'on est sûr de voir toutes les fins de partie, quel qu'en soit le
+  // chemin (faillite, exploration, carte verte, arrêt à la main).
+  if (room.state.phase === 'finished') {
+    stopBots(room.state.code);
+    archiveGame(room);
+  } else scheduleBots(room, (r) => {
     io.to(r.state.code).emit('game:state', publicState(r.state));
     scheduleSave(r);
-    if (r.state.phase === 'finished') stopBots(r.state.code);
+    if (r.state.phase === 'finished') {
+      stopBots(r.state.code);
+      archiveGame(r);
+    }
   });
 }
 

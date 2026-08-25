@@ -5,3 +5,5 @@ dist/
 server/data/
 .claude/
 *.exe
+# Les parties archivées : ~500 Ko chacune, et ce sont nos parties de famille.
+data/archives/*.jsonl
