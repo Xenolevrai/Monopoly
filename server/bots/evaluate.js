@@ -206,6 +206,17 @@ export function positionScore(state, playerId, profile) {
 
     if (ownsFullGroup(state, playerId, groupId)) score += potential * profile.completesGroup;
     else if (status.minePossible) score += potential * (status.mine / status.size) * profile.nearlyGroup;
+    else if (status.bestRivalCount > 0) {
+      // **La valeur de verrou.** Un terrain qu'on ne pourra jamais assortir vaut
+      // pourtant cher : il empêche l'adversaire de fermer son groupe. Sans cette
+      // ligne, `positionScore` ne voyait qu'un actif à son prix affiché — et
+      // comme c'est lui qui juge les échanges (`judgeTrade`), un bot cédait son
+      // verrou contre un peu de liquide sans jamais voir ce qu'il donnait. Le
+      // levier est le même que dans `spaceWorth`, pour que proposer et accepter
+      // se chiffrent sur la même échelle.
+      const urgence = status.bestRivalCount / Math.max(1, status.size - 1);
+      score += potential * profile.blockRival * urgence;
+    }
   }
 
   // Les terrains hypothéqués ne rapportent rien tant qu'ils dorment.

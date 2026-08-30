@@ -457,6 +457,36 @@ réuni**, le moins cher d'abord.
 Un test verrouille l'invariant (« un bot ne se déclare jamais en faillite avec
 du revendable debout ») ; il tombe sur l'ancien cerveau, c'est vérifié.
 
+#### Le verrou qu'on cédait à son prix affiché
+
+`judgeTrade` mesure un échange sur `positionScore` — **son propre** score, avant
+et après. Or `positionScore` ne comptait un terrain que de trois façons :
+patrimoine, potentiel d'un groupe qu'on tient, potentiel d'un groupe qu'on peut
+encore fermer. Rien pour le quatrième cas, qui est pourtant la moitié du jeu :
+**le terrain qu'on ne pourra jamais assortir, mais qui empêche l'adversaire de
+fermer le sien**. Un bot le cédait donc pour son prix affiché plus un peu de
+liquide, sans jamais voir ce qu'il donnait.
+
+`spaceWorth` connaissait déjà cette valeur (`blockRival` × l'urgence du groupe
+adverse) ; `positionScore` l'ignorait. Les deux lisent maintenant le même levier
+— proposer et accepter se chiffrent enfin sur la même échelle.
+
+Mesuré : les échanges conclus qui ferment le groupe de l'autre tombent de 77 % à
+60 %, et le tournoi à quatre (300 parties) passe de 38,3 % à **46,7 %** pour
+l'expert. Le gain profite surtout aux niveaux hauts, et c'est voulu : le terme
+est proportionnel à `blockRival`, qui vaut 1,24 chez l'expert et 0 chez le
+facile. Contrairement aux corrections précédentes, **celle-ci élargit l'échelle
+au lieu de la resserrer**.
+
+| niveau | avant | après |
+|---|---|---|
+| expert | 38,3 % | **46,7 %** |
+| difficile | 35,0 % | 29,3 % |
+| moyen | 26,0 % | 23,7 % |
+| facile | 0,7 % | 0,3 % |
+
+En face à face : expert contre facile 96 %, difficile contre moyen 60 %.
+
 #### Deux invites de prison, deux politiques — corrigé
 
 L'invite `roll` arbitrait la prison à la mesure (`jailValue` : l'abri contre les
