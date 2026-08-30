@@ -175,12 +175,23 @@ for (const game of games) {
       // niveau de chaque case on prenait un groupe déjà coiffé d'hôtels pour un
       // refus de bâtir — l'archive porte donc `buildings` depuis peu, et les
       // parties d'avant restent muettes sur ce point.
+      // ⚠️ **Le stock qui manque n'est pas toujours celui qu'on regarde.** La
+      // première version exigeait `bank.houses > 0` et criait au coup bête
+      // devant un groupe à 5/5/4 — or passer de quatre maisons à l'hôtel
+      // consomme un *hôtel*, et la banque n'en avait plus. 96 faux positifs
+      // pour l'expert, tous dans la même fin de partie interminable.
+      //
+      // Et l'on s'arrête aux maisons : le passage de quatre maisons à l'hôtel
+      // n'est **pas** un coup évident. Il rend douze maisons à la banque et
+      // desserre donc l'étau sur les adversaires, quand les garder les prive de
+      // toute construction. C'est un débat de stratégie, pas une bêtise — ce
+      // détecteur ne juge que ce qu'une joueuse énoncerait sans hésiter.
       const niveaux = b.buildings;
+      const constructible = (id) => (niveaux[id] ?? 0) < 4 && (b.bank?.houses ?? 0) > 0;
       const complet = niveaux === undefined ? null : [...groupSpaces.entries()].find(([, spaces]) =>
         spaces.length > 0 && spaces.every((id) => owned.has(id)) &&
         edition.board[spaces[0]]?.type === 'property' &&
-        spaces.some((id) => (niveaux[id] ?? 0) < 5) &&
-        (b.bank?.houses ?? 0) > 0);
+        spaces.some(constructible));
       if (complet) {
         const [group, spaces] = complet;
         const cout = edition.board[spaces[0]]?.houseCost ?? 0;

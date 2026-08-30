@@ -105,14 +105,23 @@ export const PROFILES = {
     id: 'expert',
     label: 'Expert',
     summary: "Joue les probabilités du plateau, bloque sans pitié, ne se trompe pas.",
-    // Réglages issus de `scripts/tune-bots.mjs`, deux campagnes successives
-    // (22 rondes de 44 parties, puis 14 rondes de 40, 5 améliorations de plus).
-    // La leçon que la mesure répète, et qui va contre l'intuition : **le
-    // rendement locatif pèse bien plus que le prix affiché**. `yieldToPrice`
-    // est passé de 90 à 169 à la première campagne, puis à 218 à la seconde —
-    // à chaque fois le réglage qui a rapporté le plus. Autre acquis : priver
-    // une adversaire de son groupe vaut plus cher que de compléter le sien
+    // Réglages issus de `scripts/tune-bots.mjs`. Les chiffres actuels tiennent
+    // depuis la campagne qui a appris que **le rendement locatif pèse bien plus
+    // que le prix affiché** (`yieldToPrice` 90 → 169 → 218) et que **priver une
+    // adversaire de son groupe vaut plus cher que de compléter le sien**
     // (`blockRival` 0,95 → 1,24).
+    //
+    // ⚠️ **Ne pas rejouer ce disque : ces neuf nombres sont sur un plateau.**
+    // Une campagne complète menée après la correction du tuner (§5 ter) n'a
+    // sorti *aucun* levier au-delà de deux écarts-types, dans un sens comme
+    // dans l'autre. La combinaison des trois directions les plus insistantes
+    // (blocage ↑, rendement ↓, marge d'échange ↑) donnait bien +0,06 rang à
+    // 2,05σ sur 500 graines appariées — mais le tournoi de contrôle, lui,
+    // rendait 45,3 % au lieu de 47,0 %. Deux mesures dans le bruit qui se
+    // contredisent : le 2,05σ venait d'une combinaison choisie *après* avoir
+    // regardé les données, ce qui ne vaut pas preuve. Elle n'est donc pas
+    // retenue. Ce qui a vraiment fait progresser les bots, ce sont les défauts
+    // de politique (§5 ter), pas ces curseurs.
     yieldToPrice: 217.951,
     completesGroup: 2.74,
     nearlyGroup: 2.508,

@@ -516,14 +516,27 @@ gratuite. Les deux invites partagent désormais le même calcul.
 
 #### Mesures après ces corrections
 
-Coups bêtes détectés, sur 60 parties (62 247 décisions) :
+Coups bêtes détectés, sur 60 parties (71 002 décisions) :
 
 | niveau | décisions | coups bêtes | taux |
 |---|---|---|---|
-| expert | 19 106 | 2 | 0,01 % |
-| difficile | 17 910 | 118 | 0,66 % |
-| moyen | 14 950 | 388 | 2,6 % |
-| facile | 10 281 | 810 | 7,9 % |
+| expert | 22 017 | 2 | 0,01 % |
+| difficile | 20 235 | 133 | 0,66 % |
+| moyen | 17 149 | 398 | 2,3 % |
+| facile | 11 601 | 731 | 6,3 % |
+
+⚠️ **Deux faux positifs de plus, corrigés dans le détecteur** — la leçon du §
+précédent se répète, elle vaut d'être lue deux fois :
+
+- il exigeait `bank.houses > 0` pour crier « riche et ne bâtit pas », devant un
+  groupe à 5/5/4. Or passer de quatre maisons à l'hôtel consomme un **hôtel**,
+  et la banque n'en avait plus : 96 accusations pour l'expert, toutes dans la
+  même fin de partie interminable, toutes fausses ;
+- et le passage de quatre maisons à l'hôtel a été **retiré du détecteur** : il
+  rend douze maisons à la banque et desserre l'étau sur les adversaires, quand
+  les garder les prive de toute construction. C'est un débat de stratégie, pas
+  une bêtise, et ce détecteur ne juge que ce qu'une joueuse énoncerait sans
+  hésiter.
 
 Le taux monte proprement à mesure qu'on descend — c'est exactement ce que
 `noise` et `blunderRate` sont censés produire. Les deux restants de l'expert
