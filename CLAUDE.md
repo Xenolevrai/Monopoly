@@ -487,6 +487,18 @@ au lieu de la resserrer**.
 
 En face à face : expert contre facile 96 %, difficile contre moyen 60 %.
 
+#### Proposer de l'argent, tout simplement
+
+`findTradeOffer` construisait ses offres à partir de ses **terrains nus**
+uniquement. Un bot assis sur 2 000 € à qui il ne manquait qu'une case pour
+fermer un groupe ne pouvait donc rien proposer du tout, faute d'avoir un terrain
+dont se défaire — alors que l'argent, lui, intéresse tout le monde. Une offre en
+liquide pur ferme désormais la liste des candidates.
+
+Mesuré : effet **nul** sur le tournoi (47,0 % contre 46,7 %, soit l'épaisseur du
+bruit à 300 parties). C'est gardé quand même — un bot qui ne sait pas dire
+« je te l'achète » joue faux même quand ça ne lui coûte pas la partie.
+
 #### Deux invites de prison, deux politiques — corrigé
 
 L'invite `roll` arbitrait la prison à la mesure (`jailValue` : l'abri contre les

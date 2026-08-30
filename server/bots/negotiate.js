@@ -123,7 +123,13 @@ export function findTradeOffer(state, playerId, profile) {
       // d'échange idéale.
       .sort((a, b) => b.valueToThem - b.costToMe - (a.valueToThem - a.costToMe));
 
-    for (const offer of offers.slice(0, 3)) {
+    // Une offre en **liquide pur** ferme la liste : on n'a pas toujours un
+    // terrain dont l'autre veuille, et l'argent intéresse tout le monde. Sans
+    // ce cas, un bot assis sur 2 000 € à qui il ne manquait qu'une case ne
+    // pouvait rien proposer du tout, faute d'avoir un terrain nu à céder.
+    const candidats = [...offers.slice(0, 3), { spaceId: null, costToMe: 0, valueToThem: 0 }];
+
+    for (const offer of candidats) {
       // On ne donne pas un terrain qui vaut plus pour nous que ce qu'on prend.
       if (offer.costToMe > target.worth) continue;
 
@@ -135,7 +141,7 @@ export function findTradeOffer(state, playerId, profile) {
       const trade = {
         fromPlayerId: playerId,
         toPlayerId: partner.id,
-        give: { cash, spaceIds: [offer.spaceId], jailCards: 0 },
+        give: { cash, spaceIds: offer.spaceId == null ? [] : [offer.spaceId], jailCards: 0 },
         receive: { cash: 0, spaceIds: [target.spaceId], jailCards: 0 },
       };
 
