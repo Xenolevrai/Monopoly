@@ -42,7 +42,7 @@ invariant est prouvé par `tests/locales.test.js`.
 npm install
 npm run build     # compile le client — à refaire après chaque pull
 npm start         # http://localhost:3000
-npm run check     # lint + 252 tests
+npm run check     # lint + 253 tests
 ```
 
 Node 22+, ESM partout, workspaces npm (racine + `client`).
@@ -392,8 +392,14 @@ tirée dans la **moitié haute** de l'écart permis.
 Et l'arbitre reste `train-bots.mjs` : le taux de victoire sur quelques centaines
 de parties, seul chiffre qui décrit ce qu'on joue vraiment.
 
-Mesure de référence (100 parties à quatre, sièges tournants) : expert 54 %,
-difficile 26 %, moyen 20 %, facile 0 %, pour 25 % au hasard.
+Mesure de référence (300 parties à quatre, sièges tournants) : expert 47 %,
+difficile 28 %, moyen 24 %, facile 0,3 %, pour 25 % au hasard. En face à face,
+expert contre facile 96 %, difficile contre moyen 60 %.
+
+⚠️ **Ne pas comparer ce tableau à une mesure plus ancienne sans regarder le
+nombre de parties.** Les premières campagnes tenaient sur 100 parties, où
+l'écart-type approche 5 points : une différence de 4 points n'y voulait rien
+dire. Afficher toujours le nombre de parties à côté du pourcentage.
 
 ### Chercher les coups bêtes plutôt que de régler à l'aveugle
 
@@ -987,7 +993,7 @@ hypothèquent, enchérissent, tranchent les cartes et négocient, sur les sept
 boîtes et toutes les extensions), la **Mega Edition** (§5 quater — plateau de
 52 cases, table de huit, dé rapide, tickets de bus, gratte-ciels, dépôts,
 règle de majorité), le retour en arrière sur les gestes réversibles (§6 bis),
-la colonne de droite réarrangeable (§7 ter), 252 tests.
+la colonne de droite réarrangeable (§7 ter), 253 tests.
 
 **Reste à faire**, par ordre de priorité annoncée :
 
