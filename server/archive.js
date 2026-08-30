@@ -25,7 +25,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { netWorth, propertiesOf, activePlayers } from './engine/queries.js';
+import { netWorth, propertiesOf, activePlayers, buildingLevel } from './engine/queries.js';
 
 const MODULE_DIR = path.dirname(fileURLToPath(import.meta.url));
 
@@ -64,9 +64,21 @@ function snapshotBefore(state, playerId) {
     inJail: me.inJail,
     netWorth: netWorth(state, playerId),
     owned: propertiesOf(state, playerId).map((prop) => prop.spaceId),
+    // Le niveau de construction de chacune, et ce qu'il reste en banque : sans
+    // ça, une décision de bâtir ne se juge pas — on ne sait pas si le groupe
+    // était déjà coiffé d'hôtels, ni si la banque avait encore des maisons.
+    buildings: Object.fromEntries(
+      propertiesOf(state, playerId)
+        .map((prop) => [prop.spaceId, buildingLevel(prop)])
+        .filter(([, level]) => level > 0),
+    ),
+    mortgaged: propertiesOf(state, playerId).filter((p) => p.mortgaged).map((p) => p.spaceId),
+    bank: { houses: state.bank?.houses ?? 0, hotels: state.bank?.hotels ?? 0 },
     // La case et le prix en jeu, quand l'invite en désigne un.
     spaceId: payload.spaceId ?? null,
     price: payload.price ?? null,
+    // La mise courante : sans elle, « a passé une enchère » ne se juge pas.
+    currentBid: state.auction ? state.auction.highestBid : null,
     debt: state.debt ? { amount: state.debt.amount, creditorId: state.debt.creditorId } : null,
     freeParkingPot: state.freeParkingPot ?? 0,
     opponents: activePlayers(state)

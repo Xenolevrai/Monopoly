@@ -367,6 +367,57 @@ après toute retouche à `evaluate.js` ou `cards.js`.**
 Mesure de référence (100 parties à quatre, sièges tournants) : expert 54 %,
 difficile 26 %, moyen 20 %, facile 0 %, pour 25 % au hasard.
 
+### Chercher les coups bêtes plutôt que de régler à l'aveugle
+
+`scripts/audit-bots.mjs` relit les archives (§7 quinquies) et cherche les
+décisions qu'une joueuse humaine trouverait absurdes : refuser un terrain qu'on
+peut s'offrir six fois, laisser filer une enchère à moitié prix, hypothéquer en
+étant riche, ne pas bâtir sur un groupe complet avec de quoi le faire.
+
+**C'est ce script, et non l'auto-jeu, qui a trouvé le vrai défaut.**
+`tune-bots.mjs` répond à « ce réglage bat-il l'ancien ? » ; il ne dit jamais
+*pourquoi* un bot a joué ça. L'audit, lui, a sorti 809 « laisse filer une
+enchère à moitié prix » sur 40 parties — dont des gares à 200 € abandonnées
+pour 1 € avec 1 500 € en poche.
+
+Cause : `rentAtLevel` appliquait **deux poids, deux mesures**. Un terrain était
+chiffré sur l'hypothèse du groupe complet et bâti ; une gare sur son loyer
+courant, « sans supposer qu'on en possédera d'autres ». Une gare à 200 € valait
+donc 14 à 55 €, quand un terrain à 100 € en valait 384. Les gares et les
+compagnies se chiffrent désormais sur le lot qu'on peut encore réunir, comme un
+terrain sur son groupe.
+
+Deux gardes-fous appris en le corrigeant :
+
+- **une compagnie ne se chiffre pas comme une gare.** Son loyer suit le jet et
+  non un barème qui grimpe, et son groupe ne compte que deux cases — la prime
+  « il n'en manque plus qu'une » se déclenche donc dès la première. Chiffrée sur
+  le lot, une compagnie à 150 € en valait 1 239, plus qu'une gare : l'inverse de
+  ce que vaut vraiment le plateau ;
+- **un détecteur naïf trouve surtout ses propres préjugés.** La première version
+  criait 255 fois « ne bâtit pas alors qu'il est riche » : elle regardait la fin
+  de tour sans voir que bâtir est une action *distincte*, jouée juste avant.
+  Après correction, il en restait une seule — vraie. Toujours vérifier qu'un
+  « défaut » n'est pas un défaut du détecteur.
+
+Mesure après correction, sur 40 parties (42 734 décisions) :
+
+| niveau | décisions | coups bêtes | taux |
+|---|---|---|---|
+| expert | 12 638 | **0** | 0 % |
+| difficile | 12 025 | 86 | 0,7 % |
+| moyen | 10 533 | 259 | 2,5 % |
+| facile | 7 538 | 577 | 7,7 % |
+
+L'expert n'en fait plus aucun, et le taux monte proprement à mesure qu'on
+descend — c'est exactement ce que `noise` et `blunderRate` sont censés produire.
+
+**Le prix payé, dit franchement** : en retirant une bêtise que *tous* les
+niveaux partageaient, on a resserré l'échelle. L'expert passe de 57 % à 47,5 %
+sur le tournoi à quatre — non parce qu'il joue moins bien, mais parce qu'une
+partie de son avance tenait à ce qu'il était « moins mauvais que les autres sur
+les gares ». En valeur absolue rien n'est perdu : 87,5 % contre le facile.
+
 ### Pièges déjà rencontrés ici
 
 - **Les boucles de propositions.** Un bot qui repropose un marché refusé fige la
