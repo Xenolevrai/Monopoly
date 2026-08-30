@@ -152,7 +152,19 @@ for (const game of games) {
       }
     }
 
-    // — 5. Finir son tour sur un groupe complet, riche, sans bâtir ——
+    // — 5. Se déclarer en faillite avec du revendable debout ————————
+    // Le pire coup possible : abandonner la partie en tenant de quoi payer.
+    // `maxRaisable` (le moteur) comptait bien les hôtels ; c'est le bot qui ne
+    // savait pas les vendre. 24 faillites sur 180 avant correction.
+    if (d.action.type === 'DECLARE_BANKRUPTCY' && b.buildings) {
+      const debout = Object.values(b.buildings).filter((n) => n > 0).length;
+      if (debout > 0) {
+        note('Fait faillite en tenant des constructions revendables',
+          `${who} abandonne (dette ${b.debt?.amount ?? '?'}) avec ${debout} case(s) construite(s) — ${where}`);
+      }
+    }
+
+    // — 6. Finir son tour sur un groupe complet, riche, sans bâtir ——
     if (
       d.pendingKind === 'end_turn' &&
       d.action.type === 'END_TURN' &&

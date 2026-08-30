@@ -13,14 +13,34 @@
  */
 import {
   playerById, activePlayers, propertiesOf, buildingLevel, canBuild, canSellBuilding, canMortgage,
-  maxRaisable, unmortgageCost, config,
+  maxRaisable, unmortgageCost, netWorth, config,
 } from '../engine/queries.js';
+import { getSpace } from '../../shared/index.js';
 import { getCard } from '../engine/cards.js';
 import { busDestinations } from '../engine/speeddie.js';
 import { profileOf } from './profiles.js';
-import { spaceWorth, spendable, cashFloor, buildRanking } from './evaluate.js';
+import { spaceWorth, spendable, cashFloor, buildRanking, sellLoss } from './evaluate.js';
 import { findTradeOffer, findSettlementOffer, judgeTrade } from './negotiate.js';
 import { bestOption, actionValue, landingValue, shouldRollBuyDie, saleCardToPlay } from './cards.js';
+
+/**
+ * Qui viser avec une carte hostile : la joueuse en tête au patrimoine.
+ *
+ * Les cartes des extensions (Corruption, Vente, Super Corruption) désignaient
+ * toutes `opponents[0]`, c'est-à-dire la première inscrite — un choix qui ne
+ * dépendait ni de la partie ni de la carte. Frapper la meneuse est la règle
+ * qu'une joueuse humaine énoncerait, et elle vaut pour toutes ces cartes.
+ */
+function strongestRival(state, playerId, among = null) {
+  const pool = activePlayers(state).filter(
+    (p) => p.id !== playerId && (!among || among.includes(p.id)),
+  );
+  let best = null;
+  for (const p of pool) {
+    if (!best || netWorth(state, p.id) > netWorth(state, best.id)) best = p;
+  }
+  return best;
+}
 
 /** Bruit multiplicatif : un bot faible juge mal, il ne joue pas au hasard. */
 function blur(value, profile, rng) {
@@ -73,9 +93,16 @@ export function decideAction(state, playerId, rng, difficulty) {
 
     case 'jail_decision': {
       const p = pending.payload;
-      if (p.canPayBail && (p.forced || p.jailTurns >= 2 || player.cash >= p.bail * 2)) {
-        return { type: 'PAY_BAIL' };
-      }
+      // Le même arbitrage que sur l'invite `roll` (voir `decideRoll`) : la
+      // prison abrite quand le plateau est bâti et coûte cher quand il reste
+      // des terrains à prendre. On lisait ici un seuil écrit à la main —
+      // « payer dès qu'on a deux fois la caution » — qui faisait sortir un bot
+      // riche d'un plateau hérissé d'hôtels, et deux invites de prison
+      // répondaient donc à deux politiques différentes.
+      const wantOut = p.forced || actionValue(state, playerId, { type: 'go_to_jail' }, profile) < 0;
+      // Une carte de sortie ne coûte rien : elle passe avant la caution.
+      if (wantOut && player.getOutOfJailCards > 0) return { type: 'USE_JAIL_CARD' };
+      if (wantOut && p.canPayBail) return { type: 'PAY_BAIL' };
       if (p.canStay) return { type: 'STAY_IN_JAIL' };
       if (p.canPayBail) return { type: 'PAY_BAIL' };
       return { type: 'STAY_IN_JAIL' };
@@ -107,7 +134,7 @@ export function decideAction(state, playerId, rng, difficulty) {
     }
 
     case 'force_discard_sale_card': {
-      const victimId = pending.payload.victimIds?.[0];
+      const victimId = strongestRival(state, playerId, pending.payload.victimIds)?.id;
       const victim = playerById(state, victimId);
       const targetCardId = victim?.saleCards?.[0];
       if (victimId && targetCardId) {
@@ -294,33 +321,58 @@ function decideDebt(state, player, profile) {
 }
 
 /**
- * Réunir `needed` : on vend les constructions les moins rentables, puis on
- * hypothèque les terrains les moins utiles. Une action à la fois — le moteur
- * nous redonnera la main tant que la dette est ouverte.
+ * Réunir `needed` : on liquide ce qui coûte le moins cher à perdre, **par euro
+ * réuni**. Une action à la fois — le moteur nous redonnera la main tant que la
+ * dette est ouverte.
+ *
+ * ⚠️ **Deux défauts corrigés ici, tous deux mesurés dans l'archive.**
+ *
+ * 1. *Un hôtel ne se revendait jamais.* La liste des constructions à vendre
+ *    venait de `buildRanking`, qui ne classe que ce qu'on peut encore *bâtir*
+ *    et écarte donc tout ce qui est au plafond — c'est-à-dire précisément les
+ *    hôtels. Sur 180 faillites archivées, 18 se déclaraient en tenant un hôtel
+ *    debout, dont une pour 10 € de dette et une autre pour 2 020 € avec douze
+ *    hôtels sur le plateau.
+ * 2. *L'ordre était à l'envers.* On rasait toutes les constructions avant
+ *    d'envisager la première hypothèque. Il manque 80 € : on démolissait
+ *    l'hôtel de son groupe complet — son unique source de revenu — pendant
+ *    qu'un terrain nu d'un groupe déjà cassé dormait à côté.
  */
 function raiseCash(state, player, profile, needed) {
   if (needed <= 0) return null;
+  const candidats = [];
 
-  // Vendre une construction : on commence par celle dont la perte coûte le moins.
-  const sellable = buildRanking(state, player.id, profile)
-    .filter(({ spaceId }) => canSellBuilding(state, player.id, spaceId).ok)
-    .reverse();
-  if (sellable.length) return { type: 'SELL_BUILDING', spaceId: sellable[0].spaceId };
-
-  // Hypothéquer : le terrain le moins précieux d'abord. Toutes les boîtes ne
-  // connaissent pas l'hypothèque — la Coupe des Quatre Maisons s'en passe — et
-  // insister y faisait tourner le bot en rond (4 852 refus mesurés).
-  if (config(state).mechanics?.mortgage) {
-    const mortgageable = propertiesOf(state, player.id)
-      // `canMortgage` porte la règle du groupe entier : s'en remettre à elle
-      // évite que le bot s'entête sur un terrain nu d'un groupe encore bâti.
-      .filter((prop) => canMortgage(state, player.id, prop.spaceId).ok)
-      .map((prop) => ({ spaceId: prop.spaceId, worth: spaceWorth(state, prop.spaceId, player.id, profile) }))
-      .sort((a, b) => a.worth - b.worth);
-    if (mortgageable.length) return { type: 'MORTGAGE', spaceId: mortgageable[0].spaceId };
+  // Toutes les cases construites, pas seulement celles qu'on peut encore bâtir.
+  for (const prop of propertiesOf(state, player.id)) {
+    const check = canSellBuilding(state, player.id, prop.spaceId);
+    if (!check.ok || !check.refund) continue;
+    // Le loyer qu'on cesse de toucher, plus la moitié du prix qu'il faudra
+    // remettre pour rebâtir : une construction revendue ne revient qu'à plein
+    // tarif, alors qu'elle n'a remboursé que la moitié.
+    const perte = sellLoss(state, prop.spaceId, player.id, profile) + check.refund;
+    candidats.push({ action: { type: 'SELL_BUILDING', spaceId: prop.spaceId }, perte, rend: check.refund });
   }
 
-  return null;
+  // Toutes les boîtes ne connaissent pas l'hypothèque — la Coupe des Quatre
+  // Maisons s'en passe — et insister y faisait tourner le bot en rond
+  // (4 852 refus mesurés).
+  if (config(state).mechanics?.mortgage) {
+    for (const prop of propertiesOf(state, player.id)) {
+      // `canMortgage` porte la règle du groupe entier : s'en remettre à elle
+      // évite que le bot s'entête sur un terrain nu d'un groupe encore bâti.
+      if (!canMortgage(state, player.id, prop.spaceId).ok) continue;
+      const rend = getSpace(state, prop.spaceId).mortgage ?? 0;
+      if (rend <= 0) continue;
+      // Un bien hypothéqué n'est pas perdu : il dort, et se réveille pour 10 %
+      // de plus. `mortgagePenalty` chiffre déjà ce sommeil dans `positionScore`.
+      const perte = spaceWorth(state, prop.spaceId, player.id, profile) * profile.mortgagePenalty;
+      candidats.push({ action: { type: 'MORTGAGE', spaceId: prop.spaceId }, perte, rend });
+    }
+  }
+
+  if (!candidats.length) return null;
+  candidats.sort((a, b) => a.perte / a.rend - b.perte / b.rend);
+  return candidats[0].action;
 }
 
 /**
@@ -355,8 +407,7 @@ function decideEndTurn(state, player, profile, rng) {
     const card = getCard(state, cardId);
     if (!card || card.reaction) continue;
     if (['trespass', 'pickpocket', 'creative_zoning', 'money_laundering', 'bribe', 'snitch'].includes(card.action?.type)) {
-      const opponents = activePlayers(state).filter((p) => p.id !== player.id);
-      const payload = { targetPlayerId: opponents[0]?.id };
+      const payload = { targetPlayerId: strongestRival(state, player.id)?.id };
       return { type: 'PLAY_CORRUPTION_CARD', cardId, payload };
     }
   }
@@ -367,8 +418,7 @@ function decideEndTurn(state, player, profile, rng) {
     const card = getCard(state, cardId);
     if (!card || card.reaction) continue;
     if (['auction_hoax', 'caper', 'blackmail', 'shoplift', 'long_con', 'cook_the_books', 'forgery', 'robbery'].includes(card.action?.type)) {
-      const opponents = activePlayers(state).filter((p) => p.id !== player.id);
-      const payload = { targetPlayerId: opponents[0]?.id };
+      const payload = { targetPlayerId: strongestRival(state, player.id)?.id };
       return { type: 'PLAY_SUPER_CORRUPTION_CARD', cardId, payload };
     }
   }

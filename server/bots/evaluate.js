@@ -216,6 +216,23 @@ export function positionScore(state, playerId, profile) {
   return score;
 }
 
+/**
+ * Ce qu'on perd en revendant un cran de construction sur cette case.
+ *
+ * ⚠️ **À ne pas confondre avec `buildRanking`**, qui ne classe que ce qu'on peut
+ * encore *bâtir* et écarte donc tout ce qui est au plafond. S'en servir pour
+ * choisir quoi revendre rendait un hôtel définitivement invendable : mesuré
+ * dans l'archive, des bots déclaraient faillite pour 10 € de dette en tenant
+ * deux hôtels debout.
+ */
+export function sellLoss(state, spaceId, playerId, profile) {
+  const level = buildingLevel(state.properties[spaceId] ?? {});
+  if (level <= 0) return 0;
+  return (
+    yieldOf(state, spaceId, level, playerId) - yieldOf(state, spaceId, level - 1, playerId)
+  ) * profile.yieldToPrice;
+}
+
 /** Les constructions qu'on peut poser, de la plus rentable à la moins. */
 export function buildRanking(state, playerId, profile) {
   const mechanics = rulesOf(state).mechanics ?? {};

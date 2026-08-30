@@ -400,23 +400,69 @@ Deux gardes-fous appris en le corrigeant :
   Après correction, il en restait une seule — vraie. Toujours vérifier qu'un
   « défaut » n'est pas un défaut du détecteur.
 
-Mesure après correction, sur 40 parties (42 734 décisions) :
+#### Le pire coup possible : abandonner en tenant de quoi payer
+
+La deuxième passe d'audit a sorti bien plus grave que des gares bradées :
+**24 faillites sur 180 se déclaraient constructions debout**, dont une pour
+**10 € de dette avec deux hôtels sur le plateau**, et une autre pour 2 020 €
+avec douze hôtels.
+
+Cause, dans `raiseCash` (`brain.js`) : la liste des constructions à vendre
+venait de `buildRanking`, qui ne classe que ce qu'on peut encore **bâtir** et
+écarte donc tout ce qui est au plafond (`level >= cap`) — c'est-à-dire
+précisément les hôtels. Le moteur, lui, savait compter : `maxRaisable` incluait
+bien ces hôtels, si bien que `decideDebt` voyait « de quoi payer », ne tentait
+même pas d'arrangement, et tombait droit sur la faillite.
+
+⚠️ **`buildRanking` ne dit pas ce qu'on peut vendre.** Les deux questions se
+ressemblent et n'ont pas la même réponse : ce qu'on peut encore bâtir exclut le
+sommet, ce qu'on peut vendre y commence. `sellLoss` (`evaluate.js`) chiffre le
+second cas, et `raiseCash` énumère désormais `propertiesOf` + `canSellBuilding`.
+
+Du même coup, **l'ordre de liquidation était à l'envers** : on rasait toutes les
+constructions avant d'envisager la première hypothèque. Il manque 80 € et l'on
+démolissait l'hôtel de son groupe complet — son unique source de revenu —
+pendant qu'un terrain nu d'un groupe cassé dormait à côté. Les deux gestes se
+comparent maintenant sur la même échelle : **la valeur détruite par euro
+réuni**, le moins cher d'abord.
+
+Un test verrouille l'invariant (« un bot ne se déclare jamais en faillite avec
+du revendable debout ») ; il tombe sur l'ancien cerveau, c'est vérifié.
+
+#### Deux invites de prison, deux politiques — corrigé
+
+L'invite `roll` arbitrait la prison à la mesure (`jailValue` : l'abri contre les
+loyers, moins les achats manqués). L'invite `jail_decision` — celle de
+l'extension Prison — lisait un seuil écrit à la main, « payer dès qu'on a deux
+fois la caution » : un bot riche sortait donc d'un plateau hérissé d'hôtels pour
+aller le parcourir. Et il ne pensait jamais à sa carte de sortie, pourtant
+gratuite. Les deux invites partagent désormais le même calcul.
+
+#### Mesures après ces corrections
+
+Coups bêtes détectés, sur 60 parties (62 247 décisions) :
 
 | niveau | décisions | coups bêtes | taux |
 |---|---|---|---|
-| expert | 12 638 | **0** | 0 % |
-| difficile | 12 025 | 86 | 0,7 % |
-| moyen | 10 533 | 259 | 2,5 % |
-| facile | 7 538 | 577 | 7,7 % |
+| expert | 19 106 | 2 | 0,01 % |
+| difficile | 17 910 | 118 | 0,66 % |
+| moyen | 14 950 | 388 | 2,6 % |
+| facile | 10 281 | 810 | 7,9 % |
 
-L'expert n'en fait plus aucun, et le taux monte proprement à mesure qu'on
-descend — c'est exactement ce que `noise` et `blunderRate` sont censés produire.
+Le taux monte proprement à mesure qu'on descend — c'est exactement ce que
+`noise` et `blunderRate` sont censés produire. Les deux restants de l'expert
+sont des refus avec la trésorerie au ras du prix : un arbitrage discutable, pas
+une bêtise.
 
-**Le prix payé, dit franchement** : en retirant une bêtise que *tous* les
-niveaux partageaient, on a resserré l'échelle. L'expert passe de 57 % à 47,5 %
-sur le tournoi à quatre — non parce qu'il joue moins bien, mais parce qu'une
-partie de son avance tenait à ce qu'il était « moins mauvais que les autres sur
-les gares ». En valeur absolue rien n'est perdu : 87,5 % contre le facile.
+**Le prix payé, dit franchement** : chaque bêtise retirée était partagée par
+*tous* les niveaux, donc chaque correction resserre l'échelle. Le tournoi à
+quatre passe de 57 % pour l'expert à 47,5 % après la correction des gares, puis
+à 38 % (200 parties) après celle de la liquidation — non parce qu'il joue moins
+bien, mais parce qu'une partie de son avance tenait à ce qu'il était « moins
+mauvais que les autres ». C'est le bon échange : un adversaire qui abandonne en
+tenant deux hôtels n'est pas un adversaire difficile, c'est un adversaire cassé.
+L'écart se regagne en réglant les profils (`tune-bots.mjs`), pas en laissant
+dormir un défaut.
 
 ### Pièges déjà rencontrés ici
 

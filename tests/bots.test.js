@@ -16,7 +16,7 @@ import assert from 'node:assert/strict';
 
 import { createGame, addPlayer, startGame, dispatch } from '../server/engine/index.js';
 import { createRng } from '../server/engine/rng.js';
-import { activePlayers, netWorth } from '../server/engine/queries.js';
+import { activePlayers, netWorth, propertiesOf, canSellBuilding } from '../server/engine/queries.js';
 import { decideAction, answerPendingTrade } from '../server/bots/brain.js';
 import { DIFFICULTIES, profileOf, PROFILES } from '../server/bots/profiles.js';
 import { spaceWorth, groupStatus } from '../server/bots/evaluate.js';
@@ -200,4 +200,59 @@ test('un bot faible ne voit pas le blocage, un expert le paie', () => {
   const pourExpert = spaceWorth(game.state, 19, 'p0', profileOf('expert'));
   const pourFacile = spaceWorth(game.state, 19, 'p0', profileOf('facile'));
   assert.ok(pourExpert > pourFacile, "l'expert doit payer plus cher pour bloquer");
+});
+
+test('un bot ne se déclare jamais en faillite avec du revendable debout', () => {
+  // Le pire coup possible, et il était bien réel : `raiseCash` prenait sa liste
+  // de constructions à vendre dans `buildRanking`, qui n'inspecte que ce qu'on
+  // peut encore *bâtir* et écarte donc tout ce qui est au plafond — les hôtels.
+  // Mesuré dans l'archive avant correction : 24 faillites sur 180 se
+  // déclaraient hôtels debout, dont une pour 10 € de dette.
+  const lineup = ['expert', 'difficile', 'moyen', 'facile'];
+  let faillites = 0;
+
+  for (const seed of [11, 23, 41, 57]) {
+    const game = createGame(`FAI${seed}`, 'p0', { seed, editionId: 'classic-fr' });
+    lineup.forEach((_, i) => addPlayer(game, { id: `p${i}`, name: `B${i}`, token: null }));
+    assert.ok(startGame(game, 'p0').ok);
+
+    const rng = createRng(seed * 13 + 1);
+    const levelOf = Object.fromEntries(lineup.map((d, i) => [`p${i}`, d]));
+
+    for (let steps = 0; steps < 8000 && game.state.phase === 'playing'; steps += 1) {
+      let answered = false;
+      for (const player of activePlayers(game.state)) {
+        const reply = answerPendingTrade(game.state, player.id, levelOf[player.id]);
+        if (reply) {
+          dispatch(game, player.id, reply);
+          answered = true;
+          break;
+        }
+      }
+      if (answered) continue;
+
+      const playerId = game.state.pending.playerIds[0];
+      if (!playerId) break;
+      const action = decideAction(game.state, playerId, rng, levelOf[playerId]);
+      if (!action) break;
+
+      // La vérification se fait **avant** le coup : après, la faillite a déjà
+      // rendu les biens à la banque et il n'y a plus rien à constater.
+      if (action.type === 'DECLARE_BANKRUPTCY') {
+        faillites += 1;
+        const revendable = propertiesOf(game.state, playerId).find(
+          (prop) => canSellBuilding(game.state, playerId, prop.spaceId).ok,
+        );
+        assert.equal(
+          revendable,
+          undefined,
+          `${levelOf[playerId]} abandonne alors que la case ${revendable?.spaceId} est encore revendable`,
+        );
+      }
+      dispatch(game, playerId, action);
+    }
+  }
+
+  // Sans faillite du tout, le test ne prouverait rien.
+  assert.ok(faillites > 0, 'aucune faillite observée : le test ne vérifie rien');
 });
