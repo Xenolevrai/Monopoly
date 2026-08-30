@@ -18,7 +18,7 @@ import { createGame, addPlayer, startGame, dispatch } from '../server/engine/ind
 import { createRng } from '../server/engine/rng.js';
 import { netWorth, activePlayers } from '../server/engine/queries.js';
 import { decideAction, answerPendingTrade } from '../server/bots/brain.js';
-import { PROFILES } from '../server/bots/profiles.js';
+import { PROFILES, DIFFICULTIES } from '../server/bots/profiles.js';
 
 const args = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -30,6 +30,9 @@ const LEVEL = flag('level', 'expert');
 const ROUNDS = Number(flag('rounds', 10));
 const GAMES = Number(flag('games', 50));
 const MAX_STEPS = 5000;
+// La graine de la marche : deux campagnes de graines différentes explorent des
+// chemins différents, et se lancent donc en parallèle sans se répéter.
+const SEED = Number(flag('seed', 20260820));
 
 /** Les leviers qu'on secoue, et de combien on ose les bouger. */
 const KNOBS = {
@@ -45,14 +48,39 @@ const KNOBS = {
 };
 
 /**
- * Une partie entre deux profils donnés en objets (pas en identifiants) : c'est
- * ce qui permet de faire jouer une variante qui n'existe pas dans le catalogue.
+ * Les trois autres niveaux du catalogue : le champ où le profil réglé jouera
+ * vraiment. **C'est le point qui a été corrigé ici, et il coûtait cher.**
+ *
+ * L'ancienne version faisait s'affronter le challenger et le tenant *entre eux*,
+ * deux sièges chacun. Elle mesurait donc « bat-il son propre miroir ? », une
+ * question voisine mais différente de « gagne-t-il la partie de famille ? ».
+ * Mesuré : une campagne de 24 rondes remportées en duel (yieldToPrice 218 → 410)
+ * a fait *baisser* l'expert de 38 % à 30,7 % au tournoi à quatre — sous le
+ * difficile. Un réglage qui écrase un adversaire aussi vorace que soi peut être
+ * mauvais contre un champ mêlé, et c'est le champ mêlé qu'on joue.
  */
-function duel(profileA, profileB, seed) {
+const FIELD = DIFFICULTIES.filter((id) => id !== LEVEL).map((id) => PROFILES[id]);
+
+/**
+ * Une partie à quatre : `profile` occupe un siège, les trois autres niveaux du
+ * catalogue occupent le reste. Renvoie ce que `profile` y marque — 3 points
+ * pour la victoire, puis 2, 1, 0 selon le patrimoine final.
+ *
+ * ⚠️ **Pourquoi le rang et non la victoire.** Mesuré : un écart de ±10 % sur un
+ * levier ne change *qui gagne* que sur une graine sur quarante. Comparer deux
+ * réglages sur la seule victoire demandait donc des milliers de parties par
+ * ronde pour sortir du bruit. Le rang, lui, bouge à presque chaque partie et
+ * porte la même information — finir deuxième plutôt que troisième, c'est mieux
+ * jouer. Le taux de victoire reste l'arbitre final : il se relit sur
+ * `train-bots.mjs` une fois les réglages retenus.
+ */
+function fieldScore(profile, seed) {
   const game = createGame(`T${String(seed).padStart(5, '0')}`, 'p0', { seed, editionId: 'classic-fr' });
-  const seats = seed % 2 ? [profileA, profileB, profileA, profileB] : [profileB, profileA, profileB, profileA];
+  const table = [profile, ...FIELD];
+  // Sièges tournants : l'ordre de jeu donne à lui seul un avantage réel.
+  const seats = table.map((_, i) => table[(i + seed) % table.length]);
   seats.forEach((_, i) => addPlayer(game, { id: `p${i}`, name: `B${i}`, token: null }));
-  if (!startGame(game, 'p0').ok) return null;
+  if (!startGame(game, 'p0').ok) return 0;
 
   const rng = createRng(seed * 29 + 5);
   const profileOfSeat = Object.fromEntries(seats.map((p, i) => [`p${i}`, p]));
@@ -91,16 +119,32 @@ function duel(profileA, profileB, seed) {
   const ranked = game.state.players
     .map((p) => ({ profile: profileOfSeat[p.id], bankrupt: p.bankrupt, worth: netWorth(game.state, p.id) }))
     .sort((a, b) => (a.bankrupt === b.bankrupt ? b.worth - a.worth : a.bankrupt ? 1 : -1));
-  return ranked[0].profile;
+  return 3 - ranked.findIndex((r) => r.profile === profile);
 }
 
-/** Le taux de victoire du challenger contre le tenant, sur `games` parties. */
+/**
+ * Comparaison **appariée** : à graine égale, on rejoue le même champ une fois
+ * avec le challenger, une fois avec le tenant, et l'on ne regarde que l'écart
+ * de rang. Le hasard des dés étant identique des deux côtés, il s'annule au
+ * lieu de noyer le signal.
+ *
+ * Le verdict est un t de Student sur ces écarts : au-delà de deux, l'avance
+ * cesse de s'expliquer par la chance.
+ */
 function winRate(challenger, holder, games) {
-  let wins = 0;
+  const ecarts = [];
+  let gagnees = 0;
   for (let seed = 1; seed <= games; seed++) {
-    if (duel(challenger, holder, seed) === challenger) wins += 1;
+    const c = fieldScore(challenger, seed);
+    const h = fieldScore(holder, seed);
+    ecarts.push(c - h);
+    if (c === 3) gagnees += 1;
   }
-  return wins / games;
+  const n = ecarts.length;
+  const moyenne = ecarts.reduce((a, b) => a + b, 0) / n;
+  const variance = ecarts.reduce((sum, d) => sum + (d - moyenne) ** 2, 0) / Math.max(1, n - 1);
+  const erreur = Math.sqrt(variance / n);
+  return { rate: gagnees / n, gain: moyenne, sigma: erreur > 0 ? moyenne / erreur : 0 };
 }
 
 /** Secoue un ou deux leviers au hasard. */
@@ -111,35 +155,41 @@ function mutate(profile, rng) {
   for (let i = 0; i < count; i++) {
     const key = keys[Math.floor(rng.next() * keys.length)];
     const spread = KNOBS[key];
-    const factor = 1 + (rng.next() * 2 - 1) * spread;
+    // Le pas est **franc**, jamais tiède : l'amplitude est tirée dans la moitié
+    // haute de l'écart permis. Une secousse de 3 % ne change l'issue d'aucune
+    // partie sur quarante — elle produisait des rondes à 0,0σ où le tenant
+    // gagnait par défaut, faute d'avoir été mis à l'épreuve.
+    const sens = rng.next() < 0.5 ? -1 : 1;
+    const ampleur = spread / 2 + rng.next() * (spread / 2);
     // `tradeMargin` peut être négatif : on le décale, on ne le multiplie pas.
     next[key] = key === 'tradeMargin'
-      ? Number((profile[key] + (rng.next() * 2 - 1) * 0.05).toFixed(3))
-      : Number(Math.max(0, profile[key] * factor).toFixed(3));
+      ? Number((profile[key] + sens * (0.02 + rng.next() * 0.05)).toFixed(3))
+      : Number(Math.max(0, profile[key] * (1 + sens * ampleur)).toFixed(3));
   }
   return next;
 }
 
-console.log(`Réglage de « ${LEVEL} » — ${ROUNDS} rondes de ${GAMES} parties`);
-console.log('Un challenger ne l\'emporte que s\'il bat le tenant à plus de 53 % :');
-console.log('en dessous, l\'écart se confond avec le bruit.\n');
+console.log(`Réglage de « ${LEVEL} » — ${ROUNDS} rondes de ${GAMES} parties (graine ${SEED})`);
+console.log('Chaque graine est jouée deux fois — une avec le challenger, une avec le');
+console.log('tenant — et l\'on compare les rangs obtenus. Il faut deux écarts-types');
+console.log('d\'avance : en dessous, c\'est le hasard des dés.\n');
 
-const rng = createRng(20260820);
+const rng = createRng(SEED);
 let best = { ...PROFILES[LEVEL] };
 let improvements = 0;
 
 for (let round = 1; round <= ROUNDS; round++) {
   const challenger = mutate(best, rng);
-  const rate = winRate(challenger, best, GAMES);
+  const { rate, gain, sigma } = winRate(challenger, best, GAMES);
   const changed = Object.keys(KNOBS).filter((k) => challenger[k] !== best[k]);
-  const detail = changed.map((k) => `${k} ${best[k]}→${challenger[k]}`).join(', ');
+  const detail = `${changed.map((k) => `${k} ${best[k]}→${challenger[k]}`).join(', ')}`;
 
-  if (rate > 0.53) {
+  if (sigma > 2) {
     best = challenger;
     improvements += 1;
-    console.log(`ronde ${String(round).padStart(2)} : ✅ ${(rate * 100).toFixed(0)}%  ${detail}`);
+    console.log(`ronde ${String(round).padStart(2)} : ✅ ${(rate * 100).toFixed(0)}% de victoires, ${gain >= 0 ? '+' : ''}${gain.toFixed(2)} rang (${sigma.toFixed(1)}σ)  ${detail}`);
   } else {
-    console.log(`ronde ${String(round).padStart(2)} : ·  ${(rate * 100).toFixed(0)}%  ${detail}`);
+    console.log(`ronde ${String(round).padStart(2)} : ·  ${(rate * 100).toFixed(0)}% de victoires, ${gain >= 0 ? '+' : ''}${gain.toFixed(2)} rang (${sigma.toFixed(1)}σ)  ${detail}`);
   }
 }
 

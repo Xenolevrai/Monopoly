@@ -359,10 +359,38 @@ node scripts/tune-bots.mjs --level expert --rounds 20 --games 44
 ```
 
 `tune-bots.mjs` est une montée de colline : il secoue les paramètres d'un
-profil, fait jouer la variante contre la version en place, et garde ce qui
-l'emporte **à plus de 53 %** — en dessous, l'écart se confond avec le bruit. Les
-réglages retenus s'affichent à la fin, à recopier dans `profiles.js`. **Relancer
-après toute retouche à `evaluate.js` ou `cards.js`.**
+profil, fait jouer la variante, et garde ce qui l'emporte. Les réglages retenus
+s'affichent à la fin, à recopier dans `profiles.js`. **Relancer après toute
+retouche à `evaluate.js` ou `cards.js`.**
+
+Trois choix de mesure, chacun payé par une campagne perdue :
+
+- **On mesure dans le champ réel, pas contre son miroir.** L'ancienne version
+  opposait le challenger et le tenant *entre eux*, deux sièges chacun : elle
+  répondait à « bat-il sa propre copie ? », pas à « gagne-t-il la partie de
+  famille ? ». Les deux questions divergent. Une campagne de 24 rondes gagnées
+  en duel (`yieldToPrice` 218 → 410) a fait **tomber** l'expert de 38,3 % à
+  30,7 % au tournoi à quatre — **sous le difficile**. Le challenger occupe donc
+  désormais un siège face aux trois autres niveaux du catalogue.
+- **On compare des rangs, pas des victoires.** Un écart de ±10 % sur un levier
+  ne change *qui gagne* que sur une graine sur quarante : sur la seule victoire,
+  il fallait des milliers de parties par ronde pour sortir du bruit. Le rang
+  (3-2-1-0) bouge presque à chaque partie et porte la même information — finir
+  deuxième plutôt que troisième, c'est mieux jouer. Chaque graine est jouée deux
+  fois, une par profil, et l'on ne regarde que l'écart : le hasard des dés étant
+  identique des deux côtés, il s'annule.
+- **Le seuil est un t de Student, pas un pourcentage.** Deux écarts-types
+  d'avance sur les écarts de rang. Le vieux « plus de 53 % » ne disait rien sans
+  le nombre de parties qui l'avaient produit.
+
+⚠️ **Un pas de mutation tiède ne mesure rien.** Les secousses étaient tirées
+uniformément dans ±25 %, donc la moitié valaient moins de 3 % — de quoi ne
+changer l'issue d'aucune partie sur soixante, et le tenant gagnait par défaut,
+faute d'avoir été mis à l'épreuve (rondes à 0,0σ). L'amplitude est maintenant
+tirée dans la **moitié haute** de l'écart permis.
+
+Et l'arbitre reste `train-bots.mjs` : le taux de victoire sur quelques centaines
+de parties, seul chiffre qui décrit ce qu'on joue vraiment.
 
 Mesure de référence (100 parties à quatre, sièges tournants) : expert 54 %,
 difficile 26 %, moyen 20 %, facile 0 %, pour 25 % au hasard.
